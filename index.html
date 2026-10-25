@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="bn" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0C4A34">
+<meta name="description" content="Gamoro — খেলুন, পয়েন্ট অর্জন করুন এবং মাসিক লিডারবোর্ডে এগিয়ে যান।">
+<meta property="og:title" content="Gamoro 2.0 — গেম খেলুন">
+<meta property="og:description" content="Gamoro — খেলুন, পয়েন্ট অর্জন করুন এবং মাসিক লিডারবোর্ডে এগিয়ে যান।">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<title>Gamoro 2.0 — গেম খেলুন</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script type="importmap">
+{
+  "imports": {
+    "firebase/app": "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js",
+    "firebase/auth": "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js",
+    "firebase/firestore": "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"
+  }
+}
+</script>
+<style>
+:root{color-scheme:light;--green:#0C4A34;--green-2:#176746;--gold:#E9A820;--coral:#D6403B;--bg:#F0F8F2;--surface:#fff;--surface2:#E4F1E8;--text:#17372B;--muted:#63796D;--line:#D5E5D9;--shadow:0 8px 25px rgba(12,74,52,.08);--focus:#D6403B;--ad:#F8FCF9}
+:root[data-theme=dark]{color-scheme:dark;--bg:#101B17;--surface:#182720;--surface2:#25382E;--text:#F1F7F3;--muted:#B3C5B9;--line:#354B3E;--shadow:0 8px 25px rgba(0,0,0,.23);--focus:#FFD16B;--ad:#14221B}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--text);font-family:"Hind Siliguri",system-ui,sans-serif;min-height:100vh}button,input{font:inherit}button{cursor:pointer}button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid var(--focus);outline-offset:3px}.app{max-width:480px;width:100%;margin:auto;min-height:100vh;background:var(--bg);padding-bottom:calc(18px + env(safe-area-inset-bottom))}
+.topwrap{position:sticky;top:0;z-index:20}.header{display:flex;align-items:center;gap:11px;padding:calc(9px + env(safe-area-inset-top)) 15px 9px;background:var(--green);color:white;min-height:65px;box-shadow:0 4px 15px #062b1d25}.icon-button{display:grid;place-items:center;width:42px;height:42px;border:0;border-radius:13px;color:white;background:#ffffff18;flex:none}.icon-button svg{width:22px;height:22px}.brand{display:flex;align-items:center;gap:8px;font-weight:700;font-size:23px;letter-spacing:-.4px;white-space:nowrap}.brand-mark{display:grid;place-items:center;width:34px;height:34px;border-radius:11px;background:var(--gold);color:#17372B;font-weight:700;font-size:21px;box-shadow:inset 0 -3px #00000010}.points{display:flex;align-items:center;gap:6px;border:1px solid #e9a82080;background:#e9a82020;color:white;border-radius:99px;padding:7px 10px;font-size:13px;font-weight:600;white-space:nowrap}.coin{display:grid;place-items:center;width:19px;height:19px;background:var(--gold);color:#493200;border-radius:50%;font-size:12px}
+.notice{display:flex;align-items:center;gap:9px;padding:7px 8px 7px 15px;background:#FFF1CC;color:#4A3500;border-bottom:1px solid #E8C66E;font-size:13px;line-height:1.4}.notice p{margin:0;flex:1}.notice[hidden]{display:none}.notice-close{flex:none;width:32px;height:32px;border:0;border-radius:9px;background:transparent;color:inherit;font-size:22px;line-height:1}[data-theme=dark] .notice{background:#3A2E0F;color:#FFE6A5;border-color:#6B5518}
+.bell{position:relative;margin-left:auto}.badge{position:absolute;top:-4px;right:-4px;min-width:19px;height:19px;padding:0 4px;border-radius:99px;background:var(--coral);color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center;border:2px solid var(--green)}.badge[hidden]{display:none}
+.npanel{position:absolute;right:12px;top:calc(100% + 6px);width:min(330px,calc(100vw - 24px));background:var(--surface);color:var(--text);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);overflow:hidden}.npanel[hidden]{display:none}.nhead{display:flex;justify-content:space-between;align-items:center;padding:11px 14px;border-bottom:1px solid var(--line);font-size:14px}.ntext{border:0;background:none;color:var(--green-2);font-size:12px;font-weight:600;padding:4px}[data-theme=dark] .ntext{color:#9BD6B5}.nitem{display:flex;gap:10px;padding:12px 14px;font-size:13px;line-height:1.45}.nitem p{margin:0}.nitem small{color:var(--muted);font-size:11px}.nempty{padding:18px 14px;text-align:center;color:var(--muted);font-size:13px}.nitem[hidden],.nempty[hidden]{display:none}
+@media(max-width:400px){.plabel{display:none}.brand{font-size:21px}.header{gap:8px}}
+main{padding:15px}.welcome{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:3px 1px 14px}.welcome h1{font-size:23px;line-height:1.25;margin:0;font-weight:700}.welcome p{margin:3px 0 0;color:var(--muted);font-size:13px}.avatar{display:grid;place-items:center;width:43px;height:43px;border-radius:15px;background:var(--surface2);font-size:22px}
+.announcement{display:flex;align-items:flex-start;gap:10px;padding:12px 13px;border:1px solid #E8C66E;border-radius:15px;background:linear-gradient(110deg,#e9a82025,#e9a82008);margin-bottom:14px}.announce-icon{font-size:20px}.announcement strong{display:block;color:var(--green);font-size:14px}.announcement p{margin:2px 0 0;font-size:13px;line-height:1.45}[data-theme=dark] .announcement strong{color:#FFD16B}
+.ad{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:4px;min-height:82px;padding:12px;border:1.5px dashed var(--muted);border-radius:15px;background:var(--ad);color:var(--muted);text-align:center}.ad strong{font-size:12px;letter-spacing:.5px}.ad small{font-size:11px}.ad-tag:before{content:"";display:inline-block;width:6px;height:6px;margin:0 6px 1px 0;border-radius:50%;background:var(--gold)}.ad-large{min-height:170px;margin-top:20px}#gamesTitle{font-size:20px}
+.quick-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:20px 0 4px}.stat{padding:11px 7px;border:1px solid var(--line);border-radius:14px;background:var(--surface);text-align:center;box-shadow:var(--shadow)}.stat-icon{font-size:18px}.stat strong{display:block;font-size:16px;line-height:1.35}.stat span:last-child{display:block;font-size:11px;color:var(--muted)}
+.section-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:21px 0 12px}.section-head h2{margin:0;font-size:20px;line-height:1.3}.text-button{border:0;background:transparent;color:var(--green-2);font-size:13px;font-weight:600;padding:5px}[data-theme=dark] .text-button{color:#9BD6B5}
+.search[hidden],.filters[hidden]{display:none}.search{display:flex;align-items:center;gap:9px;background:var(--surface);border:1px solid var(--line);border-radius:13px;padding:0 12px;margin-bottom:12px}.search svg{width:19px;height:19px;color:var(--muted);flex:none}.search input{width:100%;min-width:0;border:0;outline:none;background:transparent;color:var(--text);padding:12px 0;font-size:14px}.search input:focus-visible{outline:none}.search:focus-within{outline:3px solid var(--focus);outline-offset:2px}
+.filters{display:flex;gap:7px;overflow-x:auto;padding:1px 1px 5px;margin-bottom:12px;scrollbar-width:none}.filters::-webkit-scrollbar{display:none}.filter{flex:none;border:1px solid var(--line);border-radius:99px;background:var(--surface);color:var(--muted);padding:6px 12px;font-size:12px}.filter.active{background:var(--green);color:white;border-color:var(--green)}
+.game-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.game-card{min-width:0;display:flex;flex-direction:column;align-items:center;gap:8px;padding:11px 5px 10px;border:1px solid var(--line);border-radius:16px;background:var(--surface);color:var(--text);box-shadow:var(--shadow);text-align:center;transition:transform .16s,border-color .16s}.game-card:hover{transform:translateY(-2px);border-color:var(--gold)}.game-icon{display:grid;place-items:center;width:55px;height:55px;border-radius:17px;font-size:29px;position:relative}.game-card .name{font-size:12px;font-weight:600;line-height:1.3}.game-card .tag{font-size:10px;color:var(--muted);line-height:1}.game-card .play-dot{position:absolute;right:-4px;bottom:-4px;display:grid;place-items:center;width:22px;height:22px;border:2px solid var(--surface);border-radius:50%;background:var(--green);color:white;font-size:10px}.game-card[hidden]{display:none}.empty{display:none;padding:24px 10px;text-align:center;color:var(--muted);font-size:14px}.empty.show{display:block}
+.mission{display:flex;align-items:center;gap:12px;padding:14px;border-radius:16px;background:var(--green);color:white;margin-top:12px;box-shadow:var(--shadow)}.mission-icon{display:grid;place-items:center;width:44px;height:44px;flex:none;border-radius:14px;background:#ffffff1b;font-size:23px}.mission-content{flex:1;min-width:0}.mission h3{font-size:15px;margin:0 0 2px}.mission p{font-size:12px;color:#d5e8dc;margin:0 0 8px}.progress{height:6px;border-radius:99px;background:#ffffff2d;overflow:hidden}.progress span{display:block;width:60%;height:100%;background:var(--gold);border-radius:99px}.mission-count{font-size:12px;color:#ffe6a5;white-space:nowrap}
+.leader-list{display:flex;flex-direction:column;gap:8px}.leader-row{display:flex;align-items:center;gap:10px;padding:10px 11px;background:var(--surface);border:1px solid var(--line);border-radius:13px}.rank{display:grid;place-items:center;width:29px;height:29px;border-radius:10px;background:var(--surface2);font-weight:700;font-size:13px}.leader-avatar{display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:var(--surface2);font-size:18px}.leader-name{flex:1;font-size:13px;font-weight:600}.leader-points{font-size:12px;color:var(--green-2);font-weight:700}[data-theme=dark] .leader-points{color:#9BD6B5}
+footer{margin:22px 15px 0;padding:15px 4px 3px;border-top:1px solid var(--line);text-align:center;color:var(--muted);font-size:12px}footer strong{color:var(--green)}[data-theme=dark] footer strong{color:#9BD6B5}
+.overlay{position:fixed;inset:0;z-index:40;background:#0008;opacity:0;visibility:hidden;transition:opacity .22s,visibility .22s}.overlay.open{opacity:1;visibility:visible}.drawer{position:fixed;inset:0 auto 0 0;z-index:41;width:min(85vw,340px);display:flex;flex-direction:column;background:var(--surface);color:var(--text);transform:translateX(-105%);transition:transform .24s ease;box-shadow:var(--shadow);padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}.drawer.open{transform:translateX(0)}.drawer-head{display:flex;align-items:center;gap:10px;padding:17px 15px;background:var(--green);color:white}.drawer-head .brand{font-size:22px}.drawer-head .brand-mark{width:37px;height:37px}.close-btn{margin-left:auto;width:38px;height:38px;border:0;border-radius:11px;background:#ffffff1c;color:white;font-size:24px}.drawer-body{overflow:auto;padding:10px}.nav-item,.account-toggle{display:flex;align-items:center;gap:11px;width:100%;padding:11px;border:0;border-radius:11px;background:transparent;color:var(--text);text-align:left;font-size:14px}.nav-item:hover,.account-toggle:hover{background:var(--surface2)}.nav-icon{display:grid;place-items:center;width:31px;height:31px;border-radius:10px;background:var(--surface2);flex:none}.chevron{margin-left:auto;transition:transform .2s}.account-toggle[aria-expanded=true] .chevron{transform:rotate(180deg)}.submenu{display:none;margin:0 0 5px 43px;padding-left:9px;border-left:2px solid var(--line)}.submenu.open{display:block}.submenu button{display:block;width:100%;padding:9px 8px;border:0;border-radius:8px;background:transparent;color:var(--muted);text-align:left;font-size:13px}.submenu button:hover{background:var(--surface2)}.drawer-bottom{margin-top:auto;border-top:1px solid var(--line);padding:13px 15px}.theme-row{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px}.theme-switch{padding:8px 11px;border:1px solid var(--line);border-radius:99px;background:var(--surface2);color:var(--text);font-size:12px}.toast{position:fixed;z-index:60;left:50%;bottom:calc(22px + env(safe-area-inset-bottom));width:max-content;max-width:calc(100vw - 28px);transform:translate(-50%,18px);opacity:0;pointer-events:none;background:var(--green);color:white;padding:11px 15px;border-radius:12px;box-shadow:var(--shadow);font-size:13px;transition:opacity .2s,transform .2s}.toast.show{opacity:1;transform:translate(-50%,0)}
+@media(min-width:481px){body{padding:20px 0}.app{min-height:calc(100vh - 40px);border-radius:22px;overflow:clip;box-shadow:0 15px 50px #0c4a341c}.header{border-radius:22px 22px 0 0}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+<div class="topwrap">
+<header class="header">
+ <button class="icon-button" id="openMenu" aria-label="মেনু খুলুন" aria-controls="drawer" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+ <div class="brand"><span class="brand-mark">G</span><span>Gamoro</span></div>
+ <button class="icon-button bell" id="bellBtn" aria-label="নোটিফিকেশন" aria-expanded="false" aria-controls="npanel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0112 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9M10 20a2 2 0 004 0"/></svg><span class="badge" id="badge">১</span></button>
+ <div class="points" aria-label="পয়েন্ট"><span class="coin">★</span><span id="points">০</span><span class="plabel">পয়েন্ট</span></div>
+</header>
+ <div class="npanel" id="npanel" hidden role="dialog" aria-label="নোটিফিকেশন"><div class="nhead"><strong>নোটিফিকেশন</strong><button class="ntext" id="markRead">সব পড়া হয়েছে</button></div><div class="nitem" id="nitem"><span aria-hidden="true">📣</span><div><p id="announcementText"></p><small>এইমাত্র</small></div></div><div class="nempty" id="nempty" hidden>কোনো নতুন নোটিফিকেশন নেই।</div></div>
+</div>
+<main>
+ <section class="ad" aria-label="উপরের বিজ্ঞাপন"><strong class="ad-tag">বিজ্ঞাপন</strong><small>Ad slot · 320 × 90</small></section>
+ <section aria-labelledby="gamesTitle">
+  <div class="section-head"><h2 id="gamesTitle">গেম খেলুন</h2><button class="text-button" id="showAll" hidden>সব গেম দেখুন →</button></div>
+  <label class="search" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg><input id="gameSearch" type="search" placeholder="গেম খুঁজুন..." aria-label="গেম খুঁজুন"></label>
+  <div class="filters" aria-label="গেম ক্যাটাগরি" hidden>
+   <button class="filter active" data-category="সব">সব গেম</button><button class="filter" data-category="পাজল">পাজল</button><button class="filter" data-category="আর্কেড">আর্কেড</button><button class="filter" data-category="অ্যাকশন">অ্যাকশন</button><button class="filter" data-category="ক্যাজুয়াল">ক্যাজুয়াল</button>
+  </div>
+  <div class="game-grid" id="gameGrid">
+   <button class="game-card" data-game="রঙ মিলান" data-category="পাজল"><span class="game-icon" style="background:#FFE4C7">🎨<i class="play-dot">▶</i></span><span class="name">রঙ মিলান</span><span class="tag">পাজল</span></button>
+   <button class="game-card" data-game="দ্রুত ট্যাপ" data-category="আর্কেড"><span class="game-icon" style="background:#D9F1E3">⚡<i class="play-dot">▶</i></span><span class="name">দ্রুত ট্যাপ</span><span class="tag">আর্কেড</span></button>
+   <button class="game-card" data-game="মেমোরি কার্ড" data-category="পাজল"><span class="game-icon" style="background:#E7E0FF">🧠<i class="play-dot">▶</i></span><span class="name">মেমোরি কার্ড</span><span class="tag">পাজল</span></button>
+   <button class="game-card" data-game="পাজল টাইম" data-category="পাজল"><span class="game-icon" style="background:#FFE0E0">🧩<i class="play-dot">▶</i></span><span class="name">পাজল টাইম</span><span class="tag">পাজল</span></button>
+   <button class="game-card" data-game="স্পেস রান" data-category="অ্যাকশন"><span class="game-icon" style="background:#DDEBFF">🚀<i class="play-dot">▶</i></span><span class="name">স্পেস রান</span><span class="tag">অ্যাকশন</span></button>
+   <button class="game-card" data-game="ফল কাটুন" data-category="ক্যাজুয়াল"><span class="game-icon" style="background:#FFF0B8">🍉<i class="play-dot">▶</i></span><span class="name">ফল কাটুন</span><span class="tag">ক্যাজুয়াল</span></button>
+   <button class="game-card" data-game="বল বাউন্স" data-category="আর্কেড"><span class="game-icon" style="background:#D8F3F5">🏀<i class="play-dot">▶</i></span><span class="name">বল বাউন্স</span><span class="tag">আর্কেড</span></button>
+   <button class="game-card" data-game="ম্যাচ থ্রি" data-category="পাজল"><span class="game-icon" style="background:#FADFF0">💎<i class="play-dot">▶</i></span><span class="name">ম্যাচ থ্রি</span><span class="tag">পাজল</span></button>
+   <button class="game-card" data-game="মিনি ফুটবল" data-category="ক্যাজুয়াল"><span class="game-icon" style="background:#DDF2D5">⚽<i class="play-dot">▶</i></span><span class="name">মিনি ফুটবল</span><span class="tag">ক্যাজুয়াল</span></button>
+  </div>
+  <div class="empty" id="emptyState">এই নামে কোনো গেম পাওয়া যায়নি।</div>
+ </section>
+ <section class="quick-stats" aria-label="আপনার অবস্থা">
+  <div class="stat"><span class="stat-icon">🎯</span><strong>৩/৫</strong><span>আজকের লক্ষ্য</span></div>
+  <div class="stat"><span class="stat-icon">🔥</span><strong>৪ দিন</strong><span>খেলার ধারাবাহিকতা</span></div>
+  <div class="stat"><span class="stat-icon">🏆</span><strong>#১২</strong><span>মাসিক র‍্যাঙ্ক</span></div>
+ </section>
+ <section class="mission" aria-label="দৈনিক মিশন"><div class="mission-icon">🎯</div><div class="mission-content"><h3>দৈনিক মিশন</h3><p>আজ ৫টি গেম খেলুন · পুরস্কার: ৫০ পয়েন্ট</p><div class="progress"><span></span></div></div><span class="mission-count">৩/৫</span></section>
+ <section class="ad ad-large" aria-label="নিচের বিজ্ঞাপন"><strong class="ad-tag">বিজ্ঞাপন</strong><small>Bottom ad slot · 320 × 180</small></section>
+</main>
+<footer><strong>Gamoro</strong> · খেলুন, উপভোগ করুন, এগিয়ে যান।<br><span>সব তথ্য ও পয়েন্ট এই ডেমোর জন্য।</span></footer>
+</div>
+<div class="overlay" id="overlay" aria-hidden="true"></div>
+<aside class="drawer" id="drawer" aria-label="প্রধান মেনু" aria-hidden="true">
+ <div class="drawer-head"><div class="brand"><span class="brand-mark">G</span><span>Gamoro</span></div><button class="close-btn" id="closeMenu" aria-label="মেনু বন্ধ করুন">×</button></div>
+ <nav class="drawer-body">
+  <button class="account-toggle" id="accountToggle" aria-expanded="false" aria-controls="accountSubmenu"><span class="nav-icon">👤</span><span id="accountLabel">অ্যাকাউন্ট</span><span class="chevron">⌄</span></button>
+  <div class="submenu" id="accountSubmenu">
+    <button data-action="লগইন" id="menuLogin">লগইন</button>
+    <button data-action="সাইন আপ" id="menuSignup">সাইন আপ</button>
+    <button data-action="পাসওয়ার্ড ভুলে গেছেন" id="menuForgot">পাসওয়ার্ড ভুলে গেছেন</button>
+    <button data-action="লগআউট" id="menuLogout" style="display:none;color:var(--coral)">লগআউট</button>
+  </div>
+  <button class="nav-item" data-action="লিডারবোর্ড"><span class="nav-icon">🏆</span>লিডারবোর্ড</button>
+  <button class="nav-item" data-action="উইথড্রয়াল"><span class="nav-icon">💸</span>উইথড্রয়াল</button>
+  <button class="nav-item" data-action="রেফারেল"><span class="nav-icon">🎁</span>রেফারেল</button>
+  <button class="nav-item" data-action="সাধারণ জিজ্ঞাসা"><span class="nav-icon">❔</span>FAQ / সাধারণ জিজ্ঞাসা</button>
+  <button class="nav-item" data-action="প্রাইভেসি পলিসি"><span class="nav-icon">🔒</span>প্রাইভেসি পলিসি</button>
+ </nav>
+ <div class="drawer-bottom"><div class="theme-row"><span>থিম পরিবর্তন</span><button class="theme-switch" id="themeToggle">🌙 ডার্ক মোড</button></div></div>
+</aside>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script type="module">
+import { auth, db } from "./firebase-config.js";
+import { onAuthStateChanged, signOut } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
+
+(() => {
+ const root=document.documentElement, openBtn=document.getElementById('openMenu'), closeBtn=document.getElementById('closeMenu'), drawer=document.getElementById('drawer'), overlay=document.getElementById('overlay'), accountToggle=document.getElementById('accountToggle'), submenu=document.getElementById('accountSubmenu'), themeToggle=document.getElementById('themeToggle'), toast=document.getElementById('toast');
+ let previousFocus=null, toastTimer=null, activeCategory='সব';
+ function openDrawer(){previousFocus=document.activeElement;drawer.classList.add('open');overlay.classList.add('open');drawer.setAttribute('aria-hidden','false');overlay.setAttribute('aria-hidden','false');openBtn.setAttribute('aria-expanded','true');closeBtn.focus();document.addEventListener('keydown',keyHandler)}
+ function closeDrawer(){drawer.classList.remove('open');overlay.classList.remove('open');drawer.setAttribute('aria-hidden','true');overlay.setAttribute('aria-hidden','true');openBtn.setAttribute('aria-expanded','false');document.removeEventListener('keydown',keyHandler);if(previousFocus)previousFocus.focus()}
+ function keyHandler(e){if(e.key==='Escape'){closeDrawer();return}if(e.key!=='Tab'||!drawer.classList.contains('open'))return;const f=[...drawer.querySelectorAll('button:not([disabled]),a[href]')];if(!f.length)return;if(e.shiftKey&&document.activeElement===f[0]){e.preventDefault();f[f.length-1].focus()}else if(!e.shiftKey&&document.activeElement===f[f.length-1]){e.preventDefault();f[0].focus()}}
+ function showToast(msg){toast.textContent=msg;toast.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.classList.remove('show'),2400)}
+ 
+ openBtn.addEventListener('click',openDrawer);closeBtn.addEventListener('click',closeDrawer);overlay.addEventListener('click',closeDrawer);
+ accountToggle.addEventListener('click',()=>{const on=accountToggle.getAttribute('aria-expanded')==='true';accountToggle.setAttribute('aria-expanded',String(!on));submenu.classList.toggle('open',!on)});
+ themeToggle.addEventListener('click',()=>{const dark=root.getAttribute('data-theme')!=='dark';root.setAttribute('data-theme',dark?'dark':'light');themeToggle.textContent=dark?'☀️ লাইট মোড':'🌙 ডার্ক মোড';document.querySelector('meta[name="theme-color"]').content=dark?'#101B17':'#0C4A34'});
+
+ // Handle navigation to auth.html and demo actions
+ document.querySelectorAll('[data-action]').forEach(b=>b.addEventListener('click',()=>{
+   const act = b.dataset.action;
+   if(act === 'লগইন'){
+     window.location.href = 'auth.html#login';
+     return;
+   }
+   if(act === 'সাইন আপ'){
+     window.location.href = 'auth.html#signup';
+     return;
+   }
+   if(act === 'পাসওয়ার্ড ভুলে গেছেন'){
+     window.location.href = 'auth.html#forgot';
+     return;
+   }
+   if(act === 'লগআউট'){
+     signOut(auth).then(()=>{
+       showToast('সফলভাবে লগআউট হয়েছে');
+       if(drawer.classList.contains('open'))closeDrawer();
+     }).catch(e=>{
+       showToast('লগআউট ব্যর্থ হয়েছে');
+     });
+     return;
+   }
+   showToast(act+' — ডেমো ফিচার, এখনো চালু নয়');
+   if(drawer.classList.contains('open'))closeDrawer();
+ }));
+
+ document.querySelectorAll('[data-game]').forEach(b=>b.addEventListener('click',()=>showToast(b.dataset.game+' — ডেমো গেম, এখনো চালু নয়')));
+ const search=document.getElementById('gameSearch'), cards=[...document.querySelectorAll('.game-card')], empty=document.getElementById('emptyState');
+ function filterGames(){const q=search.value.trim().toLocaleLowerCase('bn');let shown=0;cards.forEach(card=>{const matchName=card.dataset.game.toLocaleLowerCase('bn').includes(q);const matchCategory=activeCategory==='সব'||card.dataset.category===activeCategory;const visible=matchName&&matchCategory;card.hidden=!visible;if(visible)shown++});empty.classList.toggle('show',shown===0)}
+ search.addEventListener('input',filterGames);
+ document.querySelectorAll('.filter').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('.filter').forEach(x=>x.classList.toggle('active',x===btn));activeCategory=btn.dataset.category;filterGames()}));
+ document.getElementById('showAll').addEventListener('click',()=>{search.value='';activeCategory='সব';document.querySelectorAll('.filter').forEach(x=>x.classList.toggle('active',x.dataset.category==='সব'));filterGames();showToast('সব ডেমো গেম দেখানো হচ্ছে')});
+ 
+ const demoAnnouncement='নতুন গেম খেলুন, মজা করুন আর আপনার পয়েন্ট বাড়ান! 🎮';
+ document.getElementById('announcementText').textContent=demoAnnouncement;
+ const bell=document.getElementById('bellBtn'),np=document.getElementById('npanel'),badge=document.getElementById('badge');
+ function setPanel(o){np.hidden=!o;bell.setAttribute('aria-expanded',String(o))}
+ bell.addEventListener('click',e=>{e.stopPropagation();setPanel(np.hidden)});
+ document.addEventListener('click',e=>{if(!np.hidden&&!np.contains(e.target))setPanel(false)});
+ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!np.hidden){setPanel(false);bell.focus()}});
+ document.getElementById('markRead').addEventListener('click',()=>{document.getElementById('nitem').hidden=true;document.getElementById('nempty').hidden=false;badge.hidden=true});
+
+ // Firebase Auth state listener
+ const menuLogin = document.getElementById('menuLogin');
+ const menuSignup = document.getElementById('menuSignup');
+ const menuForgot = document.getElementById('menuForgot');
+ const menuLogout = document.getElementById('menuLogout');
+ const accountLabel = document.getElementById('accountLabel');
+ const pointsElem = document.getElementById('points');
+
+ onAuthStateChanged(auth, async (user) => {
+   if (user) {
+     menuLogin.style.display = 'none';
+     menuSignup.style.display = 'none';
+     menuForgot.style.display = 'none';
+     menuLogout.style.display = 'block';
+     try {
+       const userDocRef = doc(db, 'users', user.uid);
+       const snap = await getDoc(userDocRef);
+       if (snap.exists()) {
+         const data = snap.data();
+         if (data.name) {
+           accountLabel.textContent = data.name;
+         }
+         if (data.points !== undefined && data.points !== null) {
+           pointsElem.textContent = Number(data.points).toLocaleString('bn-BD');
+         } else {
+           pointsElem.textContent = '০';
+         }
+       } else {
+         if (user.displayName) {
+           accountLabel.textContent = user.displayName;
+         }
+         pointsElem.textContent = '০';
+       }
+     } catch (e) {
+       console.log('Firebase user doc fetch error (rules or config):', e.message);
+       pointsElem.textContent = '০';
+     }
+   } else {
+     accountLabel.textContent = 'অ্যাকাউন্ট';
+     pointsElem.textContent = '০';
+     menuLogin.style.display = 'block';
+     menuSignup.style.display = 'block';
+     menuForgot.style.display = 'block';
+     menuLogout.style.display = 'none';
+   }
+ });
+})();
+</script>
+</body>
+</html>

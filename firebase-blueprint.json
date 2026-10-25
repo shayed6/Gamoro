@@ -1,0 +1,45 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile data stored at /users/{uid}. Created on signup.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Full name of the user",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "mobile": {
+          "type": "string",
+          "description": "Mobile phone number with +88 prefix",
+          "pattern": "^\\+8801[3-9]\\d{8}$",
+          "maxLength": 20
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address of the user",
+          "format": "email",
+          "maxLength": 120
+        },
+        "referralCode": {
+          "type": "string",
+          "description": "Optional referral code provided during registration",
+          "maxLength": 50
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Server timestamp when the user profile was created"
+        }
+      },
+      "required": ["name", "mobile", "email", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{uid}": {
+      "schema": "UserProfile",
+      "description": "Stores user account details. Strictly enforces that points, sessions, and payouts cannot be written from client SDK."
+    }
+  }
+}

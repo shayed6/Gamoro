@@ -1,0 +1,6 @@
+{
+  "name": "Gamoro",
+  "description": "Gamoro — খেলুন, পয়েন্ট অর্জন করুন এবং মাসিক লিডারবোর্ডে এগিয়ে যান।",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

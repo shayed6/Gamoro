@@ -1,0 +1,88 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny all access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Validation helper for creating user profile
+    function isValidNewUser(data, uid) {
+      return data.keys().hasAll(['name', 'mobile', 'email', 'createdAt']) &&
+             data.keys().hasOnly(['name', 'mobile', 'email', 'referralCode', 'createdAt']) &&
+             !data.keys().hasAny(['points', 'sessions', 'payouts', 'balance']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+             data.mobile is string && data.mobile.matches('^\\+8801[3-9][0-9]{8}$') &&
+             data.email is string && data.email.size() > 3 && data.email.size() <= 120 &&
+             (!('referralCode' in data) || data.referralCode == null || (data.referralCode is string && data.referralCode.size() <= 50)) &&
+             data.createdAt == request.time;
+    }
+
+    // Users collection rules
+    match /users/{uid} {
+      // User can read their own profile
+      allow get: if isOwner(uid) && isValidId(uid);
+
+      // Prevent list query scraping of users to protect PII
+      allow list: if false;
+
+      // Create rule on signup:
+      // Client is ONLY allowed to set name, mobile, email, referralCode, createdAt.
+      // Client CAN NEVER write points, sessions, payouts.
+      allow create: if isOwner(uid) &&
+                       isValidId(uid) &&
+                       isValidNewUser(incoming(), uid);
+
+      // Update rule:
+      // শুধু name ঘর বদলাতে দেবে (name স্ট্রিং, ১-১০০ অক্ষর)।
+      // mobile, referralCode, email, createdAt বা অন্য কোনো ফিল্ড আর বদলানো যাবে না।
+      allow update: if isOwner(uid) &&
+                       isValidId(uid) &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['name']) &&
+                       incoming().name is string &&
+                       incoming().name.size() > 0 &&
+                       incoming().name.size() <= 100;
+
+      // Deletion is blocked from client SDK
+      allow delete: if false;
+
+      // Subcollections: points, sessions, payouts
+      // Client write is strictly forbidden!
+      match /sessions/{sessionId} {
+        allow read: if isOwner(uid);
+        allow write: if false;
+      }
+
+      match /payouts/{payoutId} {
+        allow read: if isOwner(uid);
+        allow write: if false;
+      }
+
+      match /points/{pointId} {
+        allow read: if isOwner(uid);
+        allow write: if false;
+      }
+    }
+  }
+}

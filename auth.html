@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="bn" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0C4A34">
+<meta name="description" content="Gamoro – লগইন ও সাইন আপ">
+<title>Gamoro – লগইন ও সাইন আপ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script type="importmap">
+{
+  "imports": {
+    "firebase/app": "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js",
+    "firebase/auth": "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js",
+    "firebase/firestore": "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"
+  }
+}
+</script>
+<style>
+:root{color-scheme:light;--green:#0C4A34;--green-2:#176746;--gold:#E9A820;--coral:#D6403B;--bg:#F0F8F2;--surface:#fff;--surface2:#E4F1E8;--text:#17372B;--muted:#63796D;--line:#D5E5D9;--focus:#D6403B}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){color-scheme:dark;--bg:#101B17;--surface:#182720;--surface2:#25382E;--text:#F1F7F3;--muted:#B3C5B9;--line:#354B3E;--focus:#FFD16B;--green-2:#9BD6B5;--coral:#FF7A74}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:"Hind Siliguri",system-ui,sans-serif;min-height:100vh}
+button,input{font:inherit}button{cursor:pointer}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.app{max-width:480px;margin:auto;min-height:100vh;padding-bottom:calc(24px + env(safe-area-inset-bottom))}
+.top{background:var(--green);color:#fff;padding:calc(14px + env(safe-area-inset-top)) 16px 54px;display:flex;align-items:center;gap:10px}
+.back{width:40px;height:40px;border:0;border-radius:12px;background:#ffffff1c;color:#fff;font-size:20px}
+.brand{display:flex;align-items:center;gap:8px;font-weight:700;font-size:22px}
+.mark{display:grid;place-items:center;width:34px;height:34px;border-radius:11px;background:var(--gold);color:#17372B;font-size:21px}
+.card{margin:-34px 14px 0;background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:20px 16px;box-shadow:0 8px 25px #0c4a3414}
+h1{margin:0 0 4px;font-size:22px}
+.sub{margin:0 0 16px;color:var(--muted);font-size:14px;line-height:1.5}
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:4px;background:var(--surface2);padding:4px;border-radius:13px;margin-bottom:18px}
+.tab{border:0;background:transparent;color:var(--muted);padding:9px;border-radius:10px;font-weight:600;font-size:14px}
+.tab[aria-selected=true]{background:var(--green);color:#fff}
+.field{margin-bottom:13px}
+label{display:block;font-size:13px;font-weight:600;margin-bottom:5px}
+label small{font-weight:400;color:var(--muted)}
+.inp{display:flex;align-items:center;border:1.5px solid var(--line);border-radius:12px;background:var(--bg);padding:0 12px}
+.inp:focus-within{border-color:var(--green-2)}
+.inp.bad{border-color:var(--coral)}
+.inp input{flex:1;min-width:0;border:0;outline:0;background:transparent;color:var(--text);padding:12px 0;font-size:15px}
+.pre{color:var(--muted);font-size:14px;padding-right:8px;margin-right:8px;border-right:1px solid var(--line)}
+.eye{border:0;background:none;color:var(--muted);font-size:13px;padding:6px 0 6px 8px}
+.err{display:none;color:var(--coral);font-size:12px;margin-top:4px}
+.inp.bad+.err{display:block}
+.check{display:flex;gap:9px;align-items:flex-start;font-size:13px;line-height:1.5;margin:6px 0 14px}
+.check input{width:18px;height:18px;margin-top:2px;accent-color:var(--green)}
+.btn{width:100%;border:0;border-radius:13px;background:var(--green);color:#fff;font-weight:700;font-size:16px;padding:13px;transition:opacity .2s,transform .1s}
+.btn:active{transform:scale(.99)}
+.btn:disabled{opacity:.65;cursor:not-allowed}
+.link{border:0;background:none;color:var(--green-2);font-weight:600;font-size:13px;padding:6px 0}
+.row{display:flex;justify-content:flex-end;margin:-4px 0 12px}
+.note{background:var(--surface2);border-radius:12px;padding:11px 12px;font-size:13px;line-height:1.5;margin-bottom:14px}
+.note b{color:var(--green-2)}
+.view{display:none}.view.on{display:block}
+.toast{position:fixed;left:50%;bottom:calc(22px + env(safe-area-inset-bottom));transform:translate(-50%,16px);opacity:0;pointer-events:none;background:var(--green);color:#fff;padding:11px 15px;border-radius:12px;font-size:13px;max-width:calc(100vw - 28px);transition:opacity .2s,transform .2s;z-index:99}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+ <header class="top"><button class="back" id="back" aria-label="ফিরে যান">←</button><div class="brand"><span class="mark">G</span>Gamoro</div></header>
+ <main class="card">
+
+  <section class="view on" id="v-login" aria-labelledby="t-login">
+   <h1 id="t-login">স্বাগতম</h1><p class="sub">খেলতে ও পয়েন্ট জমাতে লগইন করুন।</p>
+   <div class="tabs" role="tablist"><button class="tab" role="tab" aria-selected="true" data-go="login">লগইন</button><button class="tab" role="tab" aria-selected="false" data-go="signup">সাইন আপ</button></div>
+   <form data-form="login" novalidate>
+    <div class="field"><label for="l-email">ইমেইল</label><div class="inp"><input id="l-email" type="email" autocomplete="email" inputmode="email" placeholder="you@example.com"></div><div class="err">সঠিক ইমেইল লিখুন।</div></div>
+    <div class="field"><label for="l-pass">পাসওয়ার্ড</label><div class="inp"><input id="l-pass" type="password" autocomplete="current-password" placeholder="পাসওয়ার্ড"><button type="button" class="eye" data-eye="l-pass">দেখুন</button></div><div class="err">পাসওয়ার্ড লিখুন।</div></div>
+    <div class="row"><button type="button" class="link" data-go="forgot">পাসওয়ার্ড ভুলে গেছেন?</button></div>
+    <button class="btn" id="l-submit" type="submit">লগইন করুন</button>
+   </form>
+  </section>
+
+  <section class="view" id="v-signup" aria-labelledby="t-signup">
+   <h1 id="t-signup">নতুন অ্যাকাউন্ট</h1><p class="sub">তথ্য দিয়ে বিনামূল্যে অ্যাকাউন্ট খুলুন।</p>
+   <div class="tabs" role="tablist"><button class="tab" role="tab" aria-selected="false" data-go="login">লগইন</button><button class="tab" role="tab" aria-selected="true" data-go="signup">সাইন আপ</button></div>
+   <form data-form="signup" novalidate>
+    <div class="field"><label for="s-name">পুরো নাম</label><div class="inp"><input id="s-name" autocomplete="name" placeholder="আপনার নাম"></div><div class="err">নাম লিখুন।</div></div>
+    <div class="field"><label for="s-mob">মোবাইল নম্বর</label><div class="inp"><span class="pre">+৮৮</span><input id="s-mob" type="tel" inputmode="numeric" maxlength="11" autocomplete="tel-national" placeholder="01XXXXXXXXX"></div><div class="err">১১ ডিজিটের সঠিক নম্বর দিন (01 দিয়ে শুরু)।</div></div>
+    <div class="field"><label for="s-email">ইমেইল</label><div class="inp"><input id="s-email" type="email" autocomplete="email" inputmode="email" placeholder="you@example.com"></div><div class="err">সঠিক ইমেইল লিখুন।</div></div>
+    <div class="field"><label for="s-pass">পাসওয়ার্ড <small>(কমপক্ষে ৮ অক্ষর)</small></label><div class="inp"><input id="s-pass" type="password" autocomplete="new-password" placeholder="পাসওয়ার্ড"><button type="button" class="eye" data-eye="s-pass">দেখুন</button></div><div class="err">কমপক্ষে ৮ অক্ষর দিন।</div></div>
+    <div class="field"><label for="s-pass2">পাসওয়ার্ড আবার লিখুন</label><div class="inp"><input id="s-pass2" type="password" autocomplete="new-password" placeholder="আবার লিখুন"></div><div class="err">দুটি পাসওয়ার্ড মেলেনি।</div></div>
+    <div class="field"><label for="s-ref">রেফারেল কোড <small>(ঐচ্ছিক)</small></label><div class="inp"><input id="s-ref" autocapitalize="characters" placeholder="বন্ধুর কোড থাকলে দিন"></div></div>
+    <div class="field"><label class="check"><input type="checkbox" id="s-terms"><span>আমি <button type="button" class="link" data-toast="শর্তাবলী পেজ (ডেমো)">শর্তাবলী</button> ও <button type="button" class="link" data-toast="প্রাইভেসি পলিসি পেজ (ডেমো)">প্রাইভেসি পলিসি</button> মেনে নিচ্ছি।</span></label><div class="inp" style="display:none"></div><div class="err" id="e-terms" style="margin-top:-8px">চালিয়ে যেতে সম্মতি দিন।</div></div>
+    <button class="btn" id="s-submit" type="submit">অ্যাকাউন্ট খুলুন</button>
+   </form>
+  </section>
+
+  <section class="view" id="v-forgot" aria-labelledby="t-forgot">
+   <h1 id="t-forgot">পাসওয়ার্ড রিসেট</h1><p class="sub">Telegram বট থেকে কোড নিয়ে নতুন পাসওয়ার্ড দিন।</p>
+   <div class="note"><b>মনে রাখুন:</b> আগে Telegram ভেরিফাই করা অ্যাকাউন্টেই রিসেট করা যাবে।</div>
+   <form data-form="forgot" novalidate>
+    <div id="f1">
+     <div class="field"><label for="f-email">ইমেইল</label><div class="inp"><input id="f-email" type="email" autocomplete="email" inputmode="email" placeholder="you@example.com"></div><div class="err">সঠিক ইমেইল লিখুন।</div></div>
+     <button class="btn" id="f1-submit" type="submit">Telegram কোড চাই</button>
+    </div>
+    <div id="f2" hidden>
+     <div class="note">Telegram বটে ৬ ডিজিটের কোড গেছে। কোডটি ১০ মিনিট চলবে ও একবারই ব্যবহার করা যাবে।</div>
+     <div class="field"><label for="f-code">৬ ডিজিটের কোড</label><div class="inp"><input id="f-code" inputmode="numeric" maxlength="6" placeholder="------"></div><div class="err">৬ ডিজিটের কোড দিন।</div></div>
+     <div class="field"><label for="f-pass">নতুন পাসওয়ার্ড</label><div class="inp"><input id="f-pass" type="password" autocomplete="new-password" placeholder="কমপক্ষে ৮ অক্ষর"><button type="button" class="eye" data-eye="f-pass">দেখুন</button></div><div class="err">কমপক্ষে ৮ অক্ষর দিন।</div></div>
+     <button class="btn" id="f2-submit" type="submit">পাসওয়ার্ড বদলান</button>
+    </div>
+   </form>
+   <div class="row" style="margin:14px 0 0;justify-content:center"><button class="link" data-go="login">← লগইনে ফিরুন</button></div>
+  </section>
+ </main>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script type="module">
+import { auth, db, handleFirestoreError, isFirebaseConfigured } from "./firebase-config.js";
+import { 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
+  updateProfile,
+  sendPasswordResetEmail,
+  deleteUser
+} from "firebase/auth";
+import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+
+(()=>{
+ const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+ const toast=$('#toast');let tt;
+ function say(m){toast.textContent=m;toast.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>toast.classList.remove('show'),3200)}
+ function go(v){
+   $$('.view').forEach(x=>x.classList.toggle('on',x.id==='v-'+v));
+   $$('.tabs .tab').forEach(t=>{
+     t.setAttribute('aria-selected', String(t.dataset.go === v));
+   });
+   if(location.hash!=='#'+v)history.replaceState(null,'','#'+v);
+   window.scrollTo(0,0);
+ }
+ $$('[data-go]').forEach(b=>b.addEventListener('click',()=>go(b.dataset.go)));
+ $$('[data-toast]').forEach(b=>b.addEventListener('click',()=>say(b.dataset.toast)));
+ $$('[data-eye]').forEach(b=>b.addEventListener('click',()=>{const i=document.getElementById(b.dataset.eye),s=i.type==='password';i.type=s?'text':'password';b.textContent=s?'লুকান':'দেখুন'}));
+ 
+ $('#back').addEventListener('click',()=>{
+   if (window.history.length > 1) {
+     window.history.back();
+   } else {
+     window.location.href = 'index.html';
+   }
+ });
+
+ const rx={email:/^[^\s@]+@[^\s@]+\.[^\s@]+$/,mob:/^01[3-9]\d{8}$/};
+ function mark(id,ok){const w=document.getElementById(id).closest('.inp');w.classList.toggle('bad',!ok);return ok}
+ function val(f){
+  if(f==='login')return [mark('l-email',rx.email.test($('#l-email').value.trim())),mark('l-pass',!!$('#l-pass').value)].every(Boolean);
+  if(f==='signup'){const t=$('#s-terms').checked;$('#e-terms').style.display=t?'none':'block';
+   return [mark('s-name',!!$('#s-name').value.trim()),mark('s-mob',rx.mob.test($('#s-mob').value)),mark('s-email',rx.email.test($('#s-email').value.trim())),mark('s-pass',$('#s-pass').value.length>=8),mark('s-pass2',$('#s-pass2').value===$('#s-pass').value&&!!$('#s-pass2').value),t].every(Boolean)}
+  if(f==='forgot'){if($('#f2').hidden)return mark('f-email',rx.email.test($('#f-email').value.trim()));return [mark('f-code',/^\d{6}$/.test($('#f-code').value)),mark('f-pass',$('#f-pass').value.length>=8)].every(Boolean)}
+ }
+
+ // Firebase friendly Bengali error mapper
+ function mapAuthError(err) {
+   const code = err?.code || '';
+   const msg = err?.message || '';
+   if (code === 'auth/invalid-credential' || code === 'auth/user-not-found' || code === 'auth/wrong-password') {
+     return 'ইমেইল বা পাসওয়ার্ড সঠিক নয়।';
+   }
+   if (code === 'auth/email-already-in-use') {
+     return 'এই ইমেইল দিয়ে ইতিমধ্যে একটি অ্যাকাউন্ট খোলা আছে।';
+   }
+   if (code === 'auth/invalid-email') {
+     return 'সঠিক ইমেইল ঠিকানা লিখুন।';
+   }
+   if (code === 'auth/weak-password') {
+     return 'পাসওয়ার্ড দুর্বল। কমপক্ষে ৮ অক্ষরের পাসওয়ার্ড দিন।';
+   }
+   if (code === 'auth/user-disabled') {
+     return 'এই অ্যাকাউন্টটি নিষ্ক্রিয় করা হয়েছে।';
+   }
+   if (code === 'auth/too-many-requests') {
+     return 'অনেকবার ভুল চেষ্টা করা হয়েছে। কিছুক্ষণ পর আবার চেষ্টা করুন।';
+   }
+   if (code === 'auth/network-request-failed') {
+     return 'ইন্টারনেট সংযোগ চেক করুন।';
+   }
+   if (code === 'auth/api-key-not-valid' || msg.includes('API key') || !isFirebaseConfigured()) {
+     return 'Firebase কনফিগারেশন প্রয়োজন। firebase-config.js ফাইলে আসল তথ্য দিন।';
+   }
+   return 'ত্রুটি: ' + (err.message || 'আবার চেষ্টা করুন।');
+ }
+
+ $$('form').forEach(fm=>fm.addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const f=fm.dataset.form;
+  if(!val(f)){
+    say('লাল চিহ্নিত ঘরগুলো ঠিক করুন');
+    return;
+  }
+
+  // LOGIN FLOW
+  if(f==='login'){
+    const email = $('#l-email').value.trim();
+    const pass = $('#l-pass').value;
+    const submitBtn = $('#l-submit');
+    const originalText = submitBtn.textContent;
+    
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'লগইন হচ্ছে...';
+
+    try {
+      await signInWithEmailAndPassword(auth, email, pass);
+      say('লগইন সফল হয়েছে!');
+      setTimeout(() => {
+        window.location.href = 'index.html';
+      }, 1200);
+    } catch(err) {
+      console.error('Firebase Login Error:', err);
+      say(mapAuthError(err));
+      submitBtn.disabled = false;
+      submitBtn.textContent = originalText;
+    }
+    return;
+  }
+
+  // SIGNUP FLOW
+  if(f==='signup'){
+    const name = $('#s-name').value.trim();
+    const mob = $('#s-mob').value.trim();
+    const email = $('#s-email').value.trim();
+    const pass = $('#s-pass').value;
+    const ref = $('#s-ref').value.trim();
+    const submitBtn = $('#s-submit');
+    const originalText = submitBtn.textContent;
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'অ্যাকাউন্ট তৈরি হচ্ছে...';
+
+    try {
+      // 1. Firebase Auth createUser
+      const cred = await createUserWithEmailAndPassword(auth, email, pass);
+      const user = cred.user;
+
+      try {
+        await updateProfile(user, { displayName: name });
+      } catch(_) {}
+
+      // 2. Save strictly name, mobile, email, referralCode in users/{uid}
+      // CRITICAL RULE: points, sessions, payouts NEVER written from client!
+      const userDocRef = doc(db, 'users', user.uid);
+      const userData = {
+        name: name,
+        mobile: '+88' + mob,
+        email: email,
+        referralCode: ref ? ref : null,
+        createdAt: serverTimestamp()
+      };
+
+      try {
+        await setDoc(userDocRef, userData);
+      } catch (dbErr) {
+        handleFirestoreError(dbErr, 'create', 'users/' + user.uid);
+        // setDoc ব্যর্থ হলে user.delete() চালিয়ে Auth ইউজার মুছে ফেলা হচ্ছে
+        try {
+          if (typeof user.delete === 'function') {
+            await user.delete();
+          } else {
+            await deleteUser(user);
+          }
+        } catch (delErr) {
+          console.error('Auth user delete rollback error:', delErr);
+        }
+        throw new Error('PROFILE_CREATION_FAILED');
+      }
+
+      say('অ্যাকাউন্ট সফলভাবে তৈরি হয়েছে!');
+      setTimeout(() => {
+        window.location.href = 'index.html';
+      }, 1200);
+
+    } catch(err) {
+      console.error('Firebase Signup Error:', err);
+      if (err.message === 'PROFILE_CREATION_FAILED') {
+        say('অ্যাকাউন্টের তথ্য সংরক্ষণ করা যায়নি। অনুগ্রহ করে আবার চেষ্টা করুন।');
+      } else {
+        say(mapAuthError(err));
+      }
+      submitBtn.disabled = false;
+      submitBtn.textContent = originalText;
+    }
+    return;
+  }
+
+  // FORGOT PASSWORD FLOW
+  if(f==='forgot'){
+    if($('#f2').hidden){
+      const email = $('#f-email').value.trim();
+      const submitBtn = $('#f1-submit');
+      const originalText = submitBtn.textContent;
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'পাঠানো হচ্ছে...';
+
+      // Send Firebase reset email in background if configured
+      try {
+        await sendPasswordResetEmail(auth, email);
+      } catch (err) {
+        console.log('Firebase Password Reset Email note:', err.message);
+      }
+
+      $('#f1').hidden = true;
+      $('#f2').hidden = false;
+      say('কোড ও পাসওয়ার্ড রিসেট লিংক পাঠানো হয়েছে');
+      submitBtn.disabled = false;
+      submitBtn.textContent = originalText;
+    } else {
+      say('পাসওয়ার্ড রিসেট সম্পন্ন হয়েছে। এবার লগইন করুন।');
+      setTimeout(() => go('login'), 1500);
+    }
+    return;
+  }
+ }));
+
+ $('#s-mob').addEventListener('input',e=>e.target.value=e.target.value.replace(/\D/g,''));
+ $('#f-code').addEventListener('input',e=>e.target.value=e.target.value.replace(/\D/g,''));
+ const h=location.hash.slice(1);if(['login','signup','forgot'].includes(h))go(h);
+})();
+</script>
+</body>
+</html>
