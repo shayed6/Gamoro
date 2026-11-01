@@ -16,6 +16,10 @@ export default defineConfig(() => {
         input: {
           main: path.resolve(__dirname, 'index.html'),
           auth: path.resolve(__dirname, 'auth.html'),
+          leaderboard: path.resolve(__dirname, 'leaderboard.html'),
+          verify: path.resolve(__dirname, 'verify.html'),
+          referral: path.resolve(__dirname, 'referral.html'),
+          withdraw: path.resolve(__dirname, 'withdraw.html'),
         },
       },
     },

@@ -1,0 +1,1232 @@
+<!--
+সার্ভার নিয়ম (ভবিষ্যতে Netlify Function): (ক) সাইন আপের পর ownCode তৈরি; (খ) referralCode যাচাই: কোড বিদ্যমান কি না, নিজের কোড কি না, একই মোবাইল/IP/ডিভাইস কি না; (গ) Y-এর email_verified ও totalActiveMinutes সার্ভারে যাচাই; (ঘ) X ও Y দুজনের ইমেইল ভেরিফাইড এবং Y ৩০ ঘণ্টা পার করলে status=review, ৭ দিন পরে অ্যাডমিন অনুমোদনে qualified ও পয়েন্ট যোগ; (ঙ) আগে বোনাস পেয়ে থাকলে দ্বিতীয়বার নয়।
+-->
+<!DOCTYPE html>
+<html lang="bn" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0C4A34">
+<meta name="description" content="Gamoro – রেফারেল ও বোনাস">
+<title>Gamoro – রেফারেল</title>
+<link rel="icon" type="image/png" href="logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script type="importmap">
+{
+  "imports": {
+    "firebase/app": "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js",
+    "firebase/auth": "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js",
+    "firebase/firestore": "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"
+  }
+}
+</script>
+<style>
+:root{
+  color-scheme:light;
+  --green:#0C4A34;
+  --green-2:#176746;
+  --gold:#E9A820;
+  --coral:#D6403B;
+  --bg:#F0F8F2;
+  --surface:#ffffff;
+  --surface2:#E4F1E8;
+  --text:#17372B;
+  --muted:#63796D;
+  --line:#D5E5D9;
+  --shadow:0 8px 25px rgba(12,74,52,.08);
+  --focus:#D6403B;
+}
+:root[data-theme=dark]{
+  color-scheme:dark;
+  --bg:#101B17;
+  --surface:#182720;
+  --surface2:#25382E;
+  --text:#F1F7F3;
+  --muted:#B3C5B9;
+  --line:#354B3E;
+  --shadow:0 8px 25px rgba(0,0,0,.28);
+  --focus:#FFD16B;
+  --green-2:#9BD6B5;
+  --coral:#FF7A74;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:"Hind Siliguri",system-ui,sans-serif;
+  min-height:100vh;
+}
+button,input,a{font:inherit}
+button{cursor:pointer}
+button:focus-visible,a:focus-visible{
+  outline:3px solid var(--focus);
+  outline-offset:2px;
+}
+.app{
+  max-width:480px;
+  margin:auto;
+  min-height:100vh;
+  padding-bottom:calc(28px + env(safe-area-inset-bottom));
+  display:flex;
+  flex-direction:column;
+}
+
+/* Header */
+.top{
+  background:var(--green);
+  color:#fff;
+  padding:calc(12px + env(safe-area-inset-top)) 16px 14px;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  position:sticky;
+  top:0;
+  z-index:30;
+  box-shadow:0 4px 15px rgba(6,43,29,.25);
+}
+.back{
+  width:40px;
+  height:40px;
+  border:0;
+  border-radius:12px;
+  background:#ffffff1c;
+  color:#fff;
+  font-size:20px;
+  display:grid;
+  place-items:center;
+  flex:none;
+  transition:background .15s;
+}
+.back:hover{background:#ffffff2a}
+.top-title{
+  margin:0;
+  font-size:20px;
+  font-weight:700;
+  flex:1;
+}
+.demo-badge{
+  background:#FFE6A5;
+  color:#4A3500;
+  font-size:11px;
+  font-weight:700;
+  padding:3px 9px;
+  border-radius:99px;
+  flex:none;
+}
+.theme-btn{
+  width:36px;
+  height:36px;
+  border:0;
+  border-radius:10px;
+  background:#ffffff1c;
+  color:#fff;
+  font-size:16px;
+  display:grid;
+  place-items:center;
+  flex:none;
+}
+
+/* Preview test bar */
+.test-bar{
+  background:var(--surface2);
+  padding:8px 16px;
+  font-size:12px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  border-bottom:1px solid var(--line);
+  color:var(--muted);
+}
+.test-btn{
+  background:transparent;
+  border:1px solid var(--muted);
+  border-radius:6px;
+  padding:2px 8px;
+  color:inherit;
+  font-size:12px;
+}
+
+/* Main card */
+.main-content{
+  padding:16px;
+  flex:1;
+}
+.card{
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:20px;
+  padding:22px 18px;
+  box-shadow:var(--shadow);
+}
+
+/* Dividers */
+.divider{
+  border:0;
+  border-top:1px solid var(--line);
+  margin:22px 0;
+}
+
+/* Section labels & typography */
+.sec-label{
+  font-size:13px;
+  font-weight:600;
+  color:var(--muted);
+  text-transform:uppercase;
+  letter-spacing:.5px;
+  margin-bottom:8px;
+}
+.sec-title{
+  margin:0 0 12px;
+  font-size:18px;
+  font-weight:700;
+}
+
+/* (খ) আপনার রেফারেল কোড */
+.code-wrap{
+  text-align:center;
+  padding:6px 0 2px;
+}
+.code-display{
+  display:inline-block;
+  font-size:28px;
+  font-weight:700;
+  letter-spacing:3px;
+  color:var(--green-2);
+  background:var(--surface2);
+  padding:10px 22px;
+  border-radius:14px;
+  border:1px dashed var(--green-2);
+  margin-bottom:14px;
+  user-select:all;
+  word-break:break-all;
+}
+.code-actions{
+  display:flex;
+  gap:10px;
+  justify-content:center;
+}
+.btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  padding:10px 20px;
+  border-radius:12px;
+  font-weight:600;
+  font-size:15px;
+  border:0;
+  transition:all .15s ease;
+  text-decoration:none;
+}
+.btn-primary{
+  background:var(--green);
+  color:#fff;
+}
+.btn-primary:hover{
+  background:var(--green-2);
+}
+.btn-outline{
+  background:transparent;
+  color:var(--text);
+  border:1.5px solid var(--line);
+}
+.btn-outline:hover{
+  background:var(--surface2);
+}
+.pending-notice{
+  margin:8px 0;
+  color:var(--muted);
+  font-size:14px;
+  text-align:center;
+}
+
+/* (গ) বোনাস পাওয়ার শর্ত */
+.conditions{
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+}
+.cond-item{
+  display:flex;
+  align-items:flex-start;
+  gap:10px;
+  font-size:14px;
+  line-height:1.5;
+}
+.cond-num{
+  width:24px;
+  height:24px;
+  border-radius:50%;
+  background:var(--surface2);
+  color:var(--green-2);
+  font-weight:700;
+  display:grid;
+  place-items:center;
+  font-size:13px;
+  flex:none;
+  margin-top:1px;
+}
+.cond-text strong{
+  font-weight:700;
+  color:var(--text);
+}
+.cond-footnote{
+  margin:12px 0 0;
+  font-size:12.5px;
+  color:var(--muted);
+  line-height:1.5;
+}
+
+/* (ঘ) ৮০/২০ ভাগ */
+.split-wrap{
+  padding:4px 0;
+}
+.split-bar{
+  height:12px;
+  border-radius:6px;
+  background:var(--line);
+  display:flex;
+  overflow:hidden;
+  margin-bottom:8px;
+}
+.split-p1{
+  background:var(--green);
+  height:100%;
+}
+.split-p2{
+  background:var(--gold);
+  height:100%;
+}
+.split-legend{
+  display:flex;
+  justify-content:space-between;
+  font-size:13px;
+  font-weight:600;
+}
+.legend-item{
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+.legend-dot{
+  width:9px;
+  height:9px;
+  border-radius:50%;
+}
+.dot-p1{background:var(--green)}
+.dot-p2{background:var(--gold)}
+
+/* (ঙ) নিজের ভেরিফাই অবস্থা */
+.v-status{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:12px 14px;
+  border-radius:12px;
+  font-size:14px;
+}
+.v-status.is-ok{
+  background:var(--surface2);
+  color:var(--green-2);
+  font-weight:600;
+}
+.v-status.is-warn{
+  background:#FFF1CC;
+  color:#4A3500;
+  border:1px solid #E8C66E;
+}
+[data-theme=dark] .v-status.is-warn{
+  background:#3A2E0F;
+  color:#FFE6A5;
+  border-color:#6B5518;
+}
+.mark-ok{
+  color:var(--green);
+  font-weight:700;
+  margin-right:4px;
+}
+[data-theme=dark] .mark-ok{color:var(--green-2)}
+.mark-no{
+  color:var(--coral);
+  font-weight:700;
+  margin-right:4px;
+}
+.v-btn{
+  background:var(--coral);
+  color:#fff;
+  padding:6px 14px;
+  border-radius:8px;
+  font-size:13px;
+  font-weight:600;
+  text-decoration:none;
+  white-space:nowrap;
+  flex:none;
+}
+.v-btn:hover{opacity:.9}
+
+/* (চ) আপনার আমন্ত্রিতরা */
+.ref-summary{
+  font-size:13px;
+  color:var(--muted);
+  margin-top:-6px;
+  margin-bottom:14px;
+}
+.ref-list{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+.ref-item{
+  padding:12px 0;
+  border-bottom:1px dashed var(--line);
+}
+.ref-item:last-child{
+  border-bottom:0;
+  padding-bottom:0;
+}
+.ref-row1{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:6px;
+  font-size:14px;
+}
+.ref-name{
+  font-weight:600;
+}
+.ref-v-tag{
+  font-size:12px;
+  font-weight:600;
+  padding:2px 8px;
+  border-radius:6px;
+}
+.ref-v-ok{
+  background:var(--surface2);
+  color:var(--green-2);
+}
+.ref-v-no{
+  background:#FDE8E8;
+  color:#9B1C1C;
+}
+[data-theme=dark] .ref-v-no{
+  background:#471818;
+  color:#FF8A8A;
+}
+.ref-status-badge{
+  font-size:12px;
+  font-weight:600;
+  padding:2px 8px;
+  border-radius:6px;
+}
+.badge-qualified{
+  background:var(--surface2);
+  color:var(--green-2);
+}
+.badge-review{
+  background:rgba(233,168,32,0.18);
+  color:#9B6800;
+}
+[data-theme=dark] .badge-review{
+  background:rgba(233,168,32,0.22);
+  color:#FFD16B;
+}
+.badge-pending{
+  background:var(--bg);
+  color:var(--muted);
+  border:1px solid var(--line);
+}
+.progress-wrap{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.p-bar-outer{
+  flex:1;
+  height:7px;
+  border-radius:4px;
+  background:var(--line);
+  overflow:hidden;
+}
+.p-bar-inner{
+  height:100%;
+  background:var(--green-2);
+  border-radius:4px;
+}
+.p-time{
+  font-size:12px;
+  color:var(--muted);
+  flex:none;
+  font-weight:500;
+}
+.ref-bonus-won{
+  margin-top:6px;
+  font-size:12.5px;
+  color:var(--green-2);
+  font-weight:600;
+}
+.empty-box{
+  text-align:center;
+  padding:24px 10px;
+  color:var(--muted);
+  font-size:14px;
+}
+
+/* (ছ) আপনাকে আমন্ত্রণ করেছেন */
+.referred-by-box{
+  background:var(--surface2);
+  border-radius:14px;
+  padding:14px;
+  font-size:13.5px;
+}
+.referred-title{
+  font-weight:700;
+  margin-bottom:8px;
+}
+.referred-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:6px;
+}
+.referred-note{
+  font-size:12.5px;
+  color:var(--muted);
+  margin-top:8px;
+  line-height:1.4;
+}
+
+/* Login required card */
+.login-card{
+  text-align:center;
+  padding:24px 12px;
+}
+.login-card p{
+  margin:0 0 16px;
+  color:var(--muted);
+  font-size:15px;
+  line-height:1.5;
+}
+
+/* Skeleton & States */
+.skeleton{
+  background:linear-gradient(90deg, var(--surface2) 25%, var(--line) 50%, var(--surface2) 75%);
+  background-size:200% 100%;
+  animation:skel 1.5s infinite;
+  border-radius:8px;
+}
+@keyframes skel{
+  0%{background-position:200% 0}
+  100%{background-position:-200% 0}
+}
+@media (prefers-reduced-motion: reduce){
+  .skeleton{animation:none}
+  .btn{transition:none}
+}
+.error-box{
+  text-align:center;
+  padding:30px 16px;
+  color:var(--coral);
+}
+.error-box p{
+  margin:0 0 14px;
+  font-size:15px;
+}
+
+/* Toast */
+.toast{
+  position:fixed;
+  bottom:calc(20px + env(safe-area-inset-bottom));
+  left:50%;
+  transform:translateX(-50%) translateY(30px);
+  background:var(--text);
+  color:var(--bg);
+  padding:10px 20px;
+  border-radius:99px;
+  font-size:14px;
+  font-weight:500;
+  box-shadow:0 6px 20px rgba(0,0,0,.2);
+  opacity:0;
+  pointer-events:none;
+  transition:all .2s ease;
+  z-index:99;
+  white-space:nowrap;
+}
+.toast.show{
+  opacity:1;
+  transform:translateX(-50%) translateY(0);
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- Header -->
+  <header class="top">
+    <button class="back" id="backBtn" aria-label="ফিরে যান">←</button>
+    <h1 class="top-title">রেফারেল</h1>
+    <span class="demo-badge" id="demoBadge" style="display:none">ডেমো ডেটা</span>
+    <button class="theme-btn" id="themeToggle" aria-label="থিম পরিবর্তন">🌙</button>
+  </header>
+
+  <!-- TEMP: প্রোডাকশনের আগে মুছতে হবে -->
+  <div class="test-bar">
+    <span>প্রিভিউ টেস্ট:</span>
+    <button id="toggleDemoBtn" class="test-btn">ডেমো দেখুন</button>
+  </div>
+
+  <main class="main-content">
+    <!-- Loading skeleton -->
+    <div id="loadingView" class="card" style="display:none">
+      <div class="skeleton" style="height:32px;width:60%;margin:0 auto 16px"></div>
+      <div class="skeleton" style="height:50px;width:75%;margin:0 auto 24px"></div>
+      <div class="skeleton" style="height:120px;margin-bottom:20px"></div>
+      <div class="skeleton" style="height:80px"></div>
+    </div>
+
+    <!-- Error View -->
+    <div id="errorView" class="card error-box" style="display:none">
+      <p id="errorMsg">তথ্য লোড করতে সমস্যা হয়েছে। ইন্টারনেট সংযোগ দেখে আবার চেষ্টা করুন।</p>
+      <button class="btn btn-outline" id="retryBtn">আবার চেষ্টা করুন</button>
+    </div>
+
+    <!-- Main Container -->
+    <div id="mainCard" class="card">
+      
+      <!-- (খ) আপনার রেফারেল কোড (লগইন থাকলে বা ডেমোতে) -->
+      <section id="secCode" aria-labelledby="labelRefCode">
+        <div class="sec-label" id="labelRefCode">আপনার রেফারেল কোড</div>
+        <div class="code-wrap">
+          <div id="codeDisplayWrap">
+            <div class="code-display" id="ownCodeText">------</div>
+            <div class="code-actions" id="codeActionBtns">
+              <button class="btn btn-outline" id="copyCodeBtn">কপি</button>
+              <button class="btn btn-primary" id="shareCodeBtn">শেয়ার করুন</button>
+            </div>
+          </div>
+          <p class="pending-notice" id="ownCodePending" style="display:none">আপনার কোড তৈরি হচ্ছে, কিছুক্ষণ পরে আবার দেখুন।</p>
+        </div>
+      </section>
+
+      <!-- Guest Login prompt (লগইন না থাকলে কোডের জায়গায় দেখাবে) -->
+      <section id="secGuest" class="login-card" style="display:none">
+        <p>রেফারেল কোড পেতে ও বন্ধুদের আমন্ত্রণ জানিয়ে পয়েন্ট জিততে লগইন করুন।</p>
+        <a href="auth.html#login" class="btn btn-primary">লগইন করুন</a>
+      </section>
+
+      <hr class="divider">
+
+      <!-- (গ) বোনাস পাওয়ার শর্ত -->
+      <section aria-labelledby="titleConditions">
+        <h2 class="sec-title" id="titleConditions">বোনাস পাওয়ার শর্ত</h2>
+        <div class="conditions">
+          <div class="cond-item">
+            <div class="cond-num">১</div>
+            <div class="cond-text">
+              <strong>ইমেইল ভেরিফাই</strong> — আপনি ও আপনার বন্ধু, দুজনেরই ইমেইল ভেরিফাই করা থাকতে হবে।
+            </div>
+          </div>
+          <div class="cond-item">
+            <div class="cond-num">২</div>
+            <div class="cond-text">
+              <strong>সক্রিয় খেলার সময়</strong> — আপনার বন্ধুকে মোট <span id="condReqHours">২৫</span> ঘণ্টা সক্রিয়ভাবে খেলতে হবে।
+            </div>
+          </div>
+          <div class="cond-item">
+            <div class="cond-num">৩</div>
+            <div class="cond-text">
+              <strong>বোনাসের পরিমাণ</strong> — দুটি শর্ত পূরণ হলে সর্বোচ্চ <span id="condTotalBonus">১,০০০</span> পয়েন্ট বোনাস। এর <span id="condRefPercent">৮০</span>% (<span id="condRefPoints">৮০০</span> পয়েন্ট) আপনি এবং <span id="condInvPercent">২০</span>% (<span id="condInvPoints">২০০</span> পয়েন্ট) আপনার বন্ধু পাবেন।
+            </div>
+          </div>
+        </div>
+        <p class="cond-footnote">শর্ত পূরণের পর যাচাইয়ের জন্য ৭ দিন সময় লাগে, তারপর বোনাস যোগ হয়।</p>
+      </section>
+
+      <hr class="divider">
+
+      <!-- (ঘ) ৮০/২০ ভাগ -->
+      <section aria-label="বোনাস বণ্টনের অনুপাত">
+        <div class="split-wrap">
+          <div class="split-bar">
+            <div class="split-p1" id="splitBarP1" style="width:80%"></div>
+            <div class="split-p2" id="splitBarP2" style="width:20%"></div>
+          </div>
+          <div class="split-legend">
+            <span class="legend-item"><span class="legend-dot dot-p1"></span><span id="legendP1">আপনি: ৮০% (৮০০ পয়েন্ট)</span></span>
+            <span class="legend-item"><span class="legend-dot dot-p2"></span><span id="legendP2">বন্ধু: ২০% (২০০ পয়েন্ট)</span></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- (ঙ) নিজের ভেরিফাই অবস্থা (লগইন থাকলে) -->
+      <div id="secMyVerifyWrap" style="display:none">
+        <hr class="divider">
+        <section aria-label="আপনার ভেরিফাই অবস্থা">
+          <div class="v-status is-ok" id="vStatusOk" style="display:none">
+            <div><span class="mark-ok">✓</span> <span>আপনার ইমেইল ভেরিফাইড</span></div>
+          </div>
+          <div class="v-status is-warn" id="vStatusWarn" style="display:none">
+            <div><span class="mark-no">✗</span> <span>বোনাস পেতে আপনার ইমেইল ভেরিফাই করুন</span></div>
+            <button type="button" class="v-btn" id="myResendEmailBtn" style="border:0;cursor:pointer">ভেরিফাই ইমেইল আবার পাঠান</button>
+          </div>
+        </section>
+      </div>
+
+      <!-- (চ) আপনার আমন্ত্রিতরা (লগইন থাকলে) -->
+      <div id="secReferralsWrap" style="display:none">
+        <hr class="divider">
+        <section aria-labelledby="titleReferrals">
+          <h2 class="sec-title" id="titleReferrals">আপনার আমন্ত্রিতরা</h2>
+          <div class="ref-summary" id="refSummaryLine">মোট আমন্ত্রিত: ০ জন · বোনাস পেয়েছেন: ০ জন</div>
+          <div class="ref-list" id="refListContainer"></div>
+          <div class="empty-box" id="refEmptyBox" style="display:none">এখনো কাউকে আমন্ত্রণ করেননি।</div>
+        </section>
+      </div>
+
+      <!-- (ছ) আপনাকে আমন্ত্রণ করেছেন (যদি referredByMasked থাকে) -->
+      <div id="secReferredByWrap" style="display:none">
+        <hr class="divider">
+        <section class="referred-by-box" aria-labelledby="titleReferredBy">
+          <div class="referred-title" id="titleReferredBy">আপনাকে আমন্ত্রণ করেছেন ------</div>
+          <div class="referred-row">
+            <span>আপনার ইমেইল ভেরিফাই:</span>
+            <span id="myInvVerifiedTag" style="font-weight:600">✗ বাকি</span>
+          </div>
+          <div class="referred-row" style="margin-bottom:4px">
+            <span>সক্রিয় খেলার সময়:</span>
+            <span id="myInvTimeText" style="font-weight:600">০ / ২৫ ঘণ্টা</span>
+          </div>
+          <div class="p-bar-outer" style="margin-bottom:8px">
+            <div class="p-bar-inner" id="myInvProgressBar" style="width:0%"></div>
+          </div>
+          <div class="referred-note" id="myInvBonusNote">শর্ত পূরণ হলে আপনি ২০০ পয়েন্ট পাবেন।</div>
+        </section>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script type="module">
+import { auth, db } from "./firebase-config.js";
+import { onAuthStateChanged, sendEmailVerification } from "firebase/auth";
+import { doc, getDoc, collection, query, orderBy, limit, getDocs } from "firebase/firestore";
+
+(() => {
+  const root = document.documentElement;
+  const backBtn = document.getElementById('backBtn');
+  const themeToggle = document.getElementById('themeToggle');
+  const toggleDemoBtn = document.getElementById('toggleDemoBtn');
+  const demoBadge = document.getElementById('demoBadge');
+  const toast = document.getElementById('toast');
+  const retryBtn = document.getElementById('retryBtn');
+
+  const loadingView = document.getElementById('loadingView');
+  const errorView = document.getElementById('errorView');
+  const mainCard = document.getElementById('mainCard');
+
+  const secCode = document.getElementById('secCode');
+  const secGuest = document.getElementById('secGuest');
+  const ownCodeText = document.getElementById('ownCodeText');
+  const codeActionBtns = document.getElementById('codeActionBtns');
+  const ownCodePending = document.getElementById('ownCodePending');
+  const copyCodeBtn = document.getElementById('copyCodeBtn');
+  const shareCodeBtn = document.getElementById('shareCodeBtn');
+
+  const condReqHours = document.getElementById('condReqHours');
+  const condTotalBonus = document.getElementById('condTotalBonus');
+  const condRefPercent = document.getElementById('condRefPercent');
+  const condRefPoints = document.getElementById('condRefPoints');
+  const condInvPercent = document.getElementById('condInvPercent');
+  const condInvPoints = document.getElementById('condInvPoints');
+
+  const splitBarP1 = document.getElementById('splitBarP1');
+  const splitBarP2 = document.getElementById('splitBarP2');
+  const legendP1 = document.getElementById('legendP1');
+  const legendP2 = document.getElementById('legendP2');
+
+  const secMyVerifyWrap = document.getElementById('secMyVerifyWrap');
+  const vStatusOk = document.getElementById('vStatusOk');
+  const vStatusWarn = document.getElementById('vStatusWarn');
+
+  const secReferralsWrap = document.getElementById('secReferralsWrap');
+  const refSummaryLine = document.getElementById('refSummaryLine');
+  const refListContainer = document.getElementById('refListContainer');
+  const refEmptyBox = document.getElementById('refEmptyBox');
+
+  const secReferredByWrap = document.getElementById('secReferredByWrap');
+  const titleReferredBy = document.getElementById('titleReferredBy');
+  const myInvVerifiedTag = document.getElementById('myInvVerifiedTag');
+  const myInvTimeText = document.getElementById('myInvTimeText');
+  const myInvProgressBar = document.getElementById('myInvProgressBar');
+  const myInvBonusNote = document.getElementById('myInvBonusNote');
+
+  // Bengali numbers converter
+  const toBn = n => {
+    if (n === null || n === undefined || isNaN(n)) return '০';
+    return Number(n).toLocaleString('bn-BD');
+  };
+
+  // Toast
+  let toastTimer;
+  function showToast(msg) {
+    toast.textContent = msg;
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('show'), 2600);
+  }
+
+  // Theme Handling
+  function initTheme() {
+    const saved = localStorage.getItem('gamoro_theme');
+    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const isDark = saved ? saved === 'dark' : prefersDark;
+    applyTheme(isDark);
+  }
+  function applyTheme(dark) {
+    root.setAttribute('data-theme', dark ? 'dark' : 'light');
+    themeToggle.textContent = dark ? '☀️' : '🌙';
+    localStorage.setItem('gamoro_theme', dark ? 'dark' : 'light');
+    const metaTheme = document.querySelector('meta[name="theme-color"]');
+    if (metaTheme) metaTheme.content = dark ? '#101B17' : '#0C4A34';
+  }
+  themeToggle.addEventListener('click', () => {
+    const isDark = root.getAttribute('data-theme') === 'dark';
+    applyTheme(!isDark);
+  });
+  initTheme();
+
+  // Navigation
+  backBtn.addEventListener('click', () => {
+    if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      window.location.href = 'index.html';
+    }
+  });
+
+  // Default config values
+  let config = {
+    totalBonus: 1000,
+    referrerPercent: 80,
+    inviteePercent: 20,
+    requiredHours: 25
+  };
+
+  function updateConfigUI() {
+    const refPoints = Math.round((config.totalBonus * config.referrerPercent) / 100);
+    const invPoints = Math.round((config.totalBonus * config.inviteePercent) / 100);
+
+    condReqHours.textContent = toBn(config.requiredHours);
+    condTotalBonus.textContent = toBn(config.totalBonus);
+    condRefPercent.textContent = toBn(config.referrerPercent);
+    condRefPoints.textContent = toBn(refPoints);
+    condInvPercent.textContent = toBn(config.inviteePercent);
+    condInvPoints.textContent = toBn(invPoints);
+
+    splitBarP1.style.width = `${config.referrerPercent}%`;
+    splitBarP2.style.width = `${config.inviteePercent}%`;
+    legendP1.textContent = `আপনি: ${toBn(config.referrerPercent)}% (${toBn(refPoints)} পয়েন্ট)`;
+    legendP2.textContent = `বন্ধু: ${toBn(config.inviteePercent)}% (${toBn(invPoints)} পয়েন্ট)`;
+  }
+
+  // Check Demo Mode
+  const urlParams = new URLSearchParams(window.location.search);
+  const isDemo = urlParams.get('demo') === '1';
+
+  toggleDemoBtn.textContent = isDemo ? 'আসল মোডে ফিরুন' : 'ডেমো দেখুন';
+  toggleDemoBtn.addEventListener('click', () => {
+    if (isDemo) {
+      urlParams.delete('demo');
+    } else {
+      urlParams.set('demo', '1');
+    }
+    const search = urlParams.toString();
+    window.location.search = search ? `?${search}` : '';
+  });
+
+  let currentCode = '';
+
+  function setupCodeActions(code) {
+    currentCode = code;
+    if (code) {
+      ownCodeText.textContent = code;
+      ownCodePending.style.display = 'none';
+      codeActionBtns.style.display = 'flex';
+      ownCodeText.style.display = 'inline-block';
+    } else {
+      ownCodeText.style.display = 'none';
+      codeActionBtns.style.display = 'none';
+      ownCodePending.style.display = 'block';
+    }
+  }
+
+  // Copy code
+  copyCodeBtn.addEventListener('click', async () => {
+    if (!currentCode) return;
+    try {
+      await navigator.clipboard.writeText(currentCode);
+      showToast('কপি হয়েছে');
+    } catch {
+      showToast('কপি ব্যর্থ হয়েছে');
+    }
+  });
+
+  // Share code
+  shareCodeBtn.addEventListener('click', async () => {
+    if (!currentCode) return;
+    const link = `${window.location.origin}/auth.html?ref=${encodeURIComponent(currentCode)}#signup`;
+    const shareText = `Gamoro-তে গেম খেলে পয়েন্ট জমান! আমার কোড: ${currentCode} — ${link}`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Gamoro',
+          text: shareText,
+          url: link
+        });
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          // Fallback to clipboard
+          copyFallback(link);
+        }
+      }
+    } else {
+      copyFallback(link);
+    }
+  });
+
+  async function copyFallback(link) {
+    try {
+      await navigator.clipboard.writeText(link);
+      showToast('রেফারেল লিংক কপি হয়েছে');
+    } catch {
+      showToast('লিংক কপি করা সম্ভব হয়নি');
+    }
+  }
+
+  // Email verification resend button
+  const myResendBtn = document.getElementById('myResendEmailBtn');
+  if (myResendBtn) {
+    myResendBtn.addEventListener('click', async () => {
+      if (isDemo) {
+        showToast('আপনার ইমেইলে ভেরিফাই লিংক পাঠানো হয়েছে।');
+        return;
+      }
+      if (!auth.currentUser) {
+        showToast('অনুগ্রহ করে লগইন করুন।');
+        return;
+      }
+      try {
+        await sendEmailVerification(auth.currentUser);
+        showToast('আপনার ইমেইলে ভেরিফাই লিংক পাঠানো হয়েছে।');
+      } catch (err) {
+        showToast('ত্রুটি: ' + (err.message || 'আবার চেষ্টা করুন'));
+      }
+    });
+  }
+
+  // Render Referral Item Row
+  function renderReferralRow(item, reqHours) {
+    const playedMinutes = Number(item.playedMinutes || 0);
+    const playedHrsNum = (playedMinutes / 60);
+    const playedHrsStr = playedHrsNum.toFixed(1).replace('.0', '');
+    const percent = Math.min(100, Math.round((playedHrsNum / reqHours) * 100));
+
+    const div = document.createElement('div');
+    div.className = 'ref-item';
+
+    const row1 = document.createElement('div');
+    row1.className = 'ref-row1';
+    
+    const nameSpan = document.createElement('span');
+    nameSpan.className = 'ref-name';
+    nameSpan.textContent = item.maskedName || 'ব্যবহারকারী***';
+
+    const isEmailVerified = item.emailVerified !== undefined ? !!item.emailVerified : !!item.verified;
+
+    const vTag = document.createElement('span');
+    vTag.className = `ref-v-tag ${isEmailVerified ? 'ref-v-ok' : 'ref-v-no'}`;
+    vTag.textContent = isEmailVerified ? 'ইমেইল ✓' : 'ইমেইল ✗';
+
+    // Status badge: 'qualified', 'review', or 'pending'
+    let statusBadgeText = 'অপেক্ষমাণ';
+    let statusBadgeClass = 'badge-pending';
+    const st = item.status || 'pending';
+
+    if (st === 'qualified' || (Number(item.referrerReward) > 0)) {
+      statusBadgeText = 'সম্পন্ন ✓';
+      statusBadgeClass = 'badge-qualified';
+    } else if (st === 'review') {
+      statusBadgeText = 'যাচাই চলছে';
+      statusBadgeClass = 'badge-review';
+    }
+
+    const sBadge = document.createElement('span');
+    sBadge.className = `ref-status-badge ${statusBadgeClass}`;
+    sBadge.textContent = statusBadgeText;
+
+    const tagsWrap = document.createElement('div');
+    tagsWrap.style.display = 'flex';
+    tagsWrap.style.alignItems = 'center';
+    tagsWrap.style.gap = '6px';
+    tagsWrap.appendChild(vTag);
+    tagsWrap.appendChild(sBadge);
+
+    row1.appendChild(nameSpan);
+    row1.appendChild(tagsWrap);
+    div.appendChild(row1);
+
+    const progWrap = document.createElement('div');
+    progWrap.className = 'progress-wrap';
+
+    const pBarOuter = document.createElement('div');
+    pBarOuter.className = 'p-bar-outer';
+    const pBarInner = document.createElement('div');
+    pBarInner.className = 'p-bar-inner';
+    pBarInner.style.width = `${percent}%`;
+    pBarOuter.appendChild(pBarInner);
+
+    const pTime = document.createElement('span');
+    pTime.className = 'p-time';
+    pTime.textContent = `${toBn(playedHrsStr)} / ${toBn(reqHours)} ঘণ্টা`;
+
+    progWrap.appendChild(pBarOuter);
+    progWrap.appendChild(pTime);
+    div.appendChild(progWrap);
+
+    if (st === 'qualified' || (Number(item.referrerReward) > 0)) {
+      const rewardVal = item.referrerReward || Math.round((config.totalBonus * config.referrerPercent) / 100);
+      const bonusTag = document.createElement('div');
+      bonusTag.className = 'ref-bonus-won';
+      bonusTag.textContent = `বোনাস পেয়েছেন: ${toBn(rewardVal)} পয়েন্ট ✓`;
+      div.appendChild(bonusTag);
+    } else if (st === 'review') {
+      const reviewNote = document.createElement('div');
+      reviewNote.className = 'ref-review-note';
+      reviewNote.style.marginTop = '4px';
+      reviewNote.style.fontSize = '12px';
+      reviewNote.style.color = 'var(--muted)';
+      reviewNote.textContent = 'যাচাই শেষ হলে বোনাস যোগ হবে।';
+      div.appendChild(reviewNote);
+    }
+
+    return div;
+  }
+
+  // Render Referrals List
+  function renderReferrals(list) {
+    refListContainer.innerHTML = '';
+    if (!list || list.length === 0) {
+      refEmptyBox.style.display = 'block';
+      refSummaryLine.textContent = 'মোট আমন্ত্রিত: ০ জন · বোনাস পেয়েছেন: ০ জন';
+      return;
+    }
+
+    refEmptyBox.style.display = 'none';
+    let qualifiedCount = 0;
+    list.forEach(item => {
+      if (item.status === 'qualified' || (Number(item.referrerReward) > 0)) {
+        qualifiedCount++;
+      }
+      refListContainer.appendChild(renderReferralRow(item, config.requiredHours));
+    });
+
+    refSummaryLine.textContent = `মোট আমন্ত্রিত: ${toBn(list.length)} জন · বোনাস পেয়েছেন: ${toBn(qualifiedCount)} জন`;
+  }
+
+  // Render Section G (Referred By)
+  function renderReferredBy(referredByMasked, isVerified, activeMinutes) {
+    if (!referredByMasked) {
+      secReferredByWrap.style.display = 'none';
+      return;
+    }
+    secReferredByWrap.style.display = 'block';
+    titleReferredBy.textContent = `আপনাকে আমন্ত্রণ করেছেন ${referredByMasked}`;
+    myInvVerifiedTag.innerHTML = isVerified ? '<span style="color:var(--green)">✓ সম্পন্ন</span>' : '<span style="color:var(--coral)">✗ বাকি</span>';
+
+    const myHrs = (Number(activeMinutes || 0) / 60);
+    const myHrsStr = myHrs.toFixed(1).replace('.0', '');
+    const myPercent = Math.min(100, Math.round((myHrs / config.requiredHours) * 100));
+
+    myInvTimeText.textContent = `${toBn(myHrsStr)} / ${toBn(config.requiredHours)} ঘণ্টা`;
+    myInvProgressBar.style.width = `${myPercent}%`;
+
+    const invPoints = Math.round((config.totalBonus * config.inviteePercent) / 100);
+    myInvBonusNote.textContent = `শর্ত পূরণ হলে আপনি ${toBn(invPoints)} পয়েন্ট পাবেন।`;
+  }
+
+  // Load Demo Data
+  function loadDemoData() {
+    demoBadge.style.display = 'inline-block';
+    updateConfigUI();
+
+    secCode.style.display = 'block';
+    secGuest.style.display = 'none';
+    setupCodeActions('GMR-4K7Q');
+
+    // My verification in demo: show unverified or verified
+    secMyVerifyWrap.style.display = 'block';
+    vStatusOk.style.display = 'none';
+    vStatusWarn.style.display = 'flex';
+
+    // 5 Demo referrals with review status
+    const demoReferrals = [
+      {
+        maskedName: 'সাকিব***',
+        emailVerified: true,
+        playedMinutes: 1560,
+        status: 'qualified',
+        referrerReward: 800
+      },
+      {
+        maskedName: 'রাকিব***',
+        emailVerified: true,
+        playedMinutes: 1500,
+        status: 'review',
+        referrerReward: 0
+      },
+      {
+        maskedName: 'তানভীর***',
+        emailVerified: true,
+        playedMinutes: 720,
+        status: 'pending',
+        referrerReward: 0
+      },
+      {
+        maskedName: 'ফারহান***',
+        emailVerified: false,
+        playedMinutes: 480,
+        status: 'pending',
+        referrerReward: 0
+      },
+      {
+        maskedName: 'নাঈম***',
+        emailVerified: false,
+        playedMinutes: 60,
+        status: 'pending',
+        referrerReward: 0
+      }
+    ];
+
+    secReferralsWrap.style.display = 'block';
+    renderReferrals(demoReferrals);
+
+    // Section G demo
+    renderReferredBy('করিম***', true, 900);
+  }
+
+  // Load Live Firestore Data
+  async function loadLiveUserData(user) {
+    loadingView.style.display = 'block';
+    errorView.style.display = 'none';
+    mainCard.style.display = 'none';
+
+    try {
+      // 1. Fetch config/referral if present
+      try {
+        const cfgDoc = await getDoc(doc(db, 'config', 'referral'));
+        if (cfgDoc.exists()) {
+          const cd = cfgDoc.data();
+          if (typeof cd.totalBonus === 'number') config.totalBonus = cd.totalBonus;
+          if (typeof cd.referrerPercent === 'number') config.referrerPercent = cd.referrerPercent;
+          if (typeof cd.inviteePercent === 'number') config.inviteePercent = cd.inviteePercent;
+          if (typeof cd.requiredHours === 'number') config.requiredHours = cd.requiredHours;
+        }
+      } catch (err) {
+        console.log('Referral config doc error (using defaults):', err.message);
+      }
+
+      updateConfigUI();
+
+      // 2. Fetch User Profile
+      const userDocSnap = await getDoc(doc(db, 'users', user.uid));
+      const userData = userDocSnap.exists() ? userDocSnap.data() : {};
+
+      secCode.style.display = 'block';
+      secGuest.style.display = 'none';
+      setupCodeActions(userData.ownCode || '');
+
+      // Verify status (Checked against auth.currentUser.emailVerified)
+      secMyVerifyWrap.style.display = 'block';
+      const isEmailVerified = user.emailVerified === true;
+      if (isEmailVerified) {
+        vStatusOk.style.display = 'flex';
+        vStatusWarn.style.display = 'none';
+      } else {
+        vStatusOk.style.display = 'none';
+        vStatusWarn.style.display = 'flex';
+      }
+
+      // 3. Fetch referrals subcollection (limit 100, order by createdAt desc)
+      secReferralsWrap.style.display = 'block';
+      let referralsList = [];
+      try {
+        const refQuery = query(
+          collection(db, 'users', user.uid, 'referrals'),
+          orderBy('createdAt', 'desc'),
+          limit(100)
+        );
+        const refSnap = await getDocs(refQuery);
+        refSnap.forEach(d => {
+          referralsList.push({ id: d.id, ...d.data() });
+        });
+      } catch (e) {
+        console.log('Referrals subcollection fetch note:', e.message);
+      }
+      renderReferrals(referralsList);
+
+      // 4. Section G (if referredByMasked exists)
+      if (userData.referredByMasked) {
+        renderReferredBy(userData.referredByMasked, isEmailVerified, userData.totalActiveMinutes || 0);
+      } else {
+        secReferredByWrap.style.display = 'none';
+      }
+
+      loadingView.style.display = 'none';
+      mainCard.style.display = 'block';
+    } catch (err) {
+      console.error('Data load error:', err);
+      loadingView.style.display = 'none';
+      errorView.style.display = 'block';
+      document.getElementById('errorMsg').textContent = 'তথ্য লোড করতে সমস্যা হয়েছে: ' + (err.message || 'পুনরায় চেষ্টা করুন।');
+    }
+  }
+
+  // Setup guest view when not logged in
+  function setupGuestView() {
+    loadingView.style.display = 'none';
+    errorView.style.display = 'none';
+    mainCard.style.display = 'block';
+    updateConfigUI();
+
+    secCode.style.display = 'none';
+    secGuest.style.display = 'block';
+    secMyVerifyWrap.style.display = 'none';
+    secReferralsWrap.style.display = 'none';
+    secReferredByWrap.style.display = 'none';
+  }
+
+  // Execution
+  if (isDemo) {
+    loadDemoData();
+  } else {
+    updateConfigUI();
+    onAuthStateChanged(auth, user => {
+      if (user) {
+        loadLiveUserData(user);
+        retryBtn.onclick = () => loadLiveUserData(user);
+      } else {
+        setupGuestView();
+      }
+    });
+  }
+
+})();
+</script>
+</body>
+</html>

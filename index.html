@@ -8,8 +8,8 @@
 <meta property="og:title" content="Gamoro 2.0 — গেম খেলুন">
 <meta property="og:description" content="Gamoro — খেলুন, পয়েন্ট অর্জন করুন এবং মাসিক লিডারবোর্ডে এগিয়ে যান।">
 <meta property="og:type" content="website">
-<meta name="twitter:card" content="summary_large_image">
 <title>Gamoro 2.0 — গেম খেলুন</title>
+<link rel="icon" type="image/png" href="logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -26,7 +26,7 @@
 :root{color-scheme:light;--green:#0C4A34;--green-2:#176746;--gold:#E9A820;--coral:#D6403B;--bg:#F0F8F2;--surface:#fff;--surface2:#E4F1E8;--text:#17372B;--muted:#63796D;--line:#D5E5D9;--shadow:0 8px 25px rgba(12,74,52,.08);--focus:#D6403B;--ad:#F8FCF9}
 :root[data-theme=dark]{color-scheme:dark;--bg:#101B17;--surface:#182720;--surface2:#25382E;--text:#F1F7F3;--muted:#B3C5B9;--line:#354B3E;--shadow:0 8px 25px rgba(0,0,0,.23);--focus:#FFD16B;--ad:#14221B}
 *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--text);font-family:"Hind Siliguri",system-ui,sans-serif;min-height:100vh}button,input{font:inherit}button{cursor:pointer}button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid var(--focus);outline-offset:3px}.app{max-width:480px;width:100%;margin:auto;min-height:100vh;background:var(--bg);padding-bottom:calc(18px + env(safe-area-inset-bottom))}
-.topwrap{position:sticky;top:0;z-index:20}.header{display:flex;align-items:center;gap:11px;padding:calc(9px + env(safe-area-inset-top)) 15px 9px;background:var(--green);color:white;min-height:65px;box-shadow:0 4px 15px #062b1d25}.icon-button{display:grid;place-items:center;width:42px;height:42px;border:0;border-radius:13px;color:white;background:#ffffff18;flex:none}.icon-button svg{width:22px;height:22px}.brand{display:flex;align-items:center;gap:8px;font-weight:700;font-size:23px;letter-spacing:-.4px;white-space:nowrap}.brand-mark{display:grid;place-items:center;width:34px;height:34px;border-radius:11px;background:var(--gold);color:#17372B;font-weight:700;font-size:21px;box-shadow:inset 0 -3px #00000010}.points{display:flex;align-items:center;gap:6px;border:1px solid #e9a82080;background:#e9a82020;color:white;border-radius:99px;padding:7px 10px;font-size:13px;font-weight:600;white-space:nowrap}.coin{display:grid;place-items:center;width:19px;height:19px;background:var(--gold);color:#493200;border-radius:50%;font-size:12px}
+.topwrap{position:sticky;top:0;z-index:20}.header{display:flex;align-items:center;gap:11px;padding:calc(9px + env(safe-area-inset-top)) 15px 9px;background:var(--green);color:white;min-height:65px;box-shadow:0 4px 15px #062b1d25}.icon-button{display:grid;place-items:center;width:42px;height:42px;border:0;border-radius:13px;color:white;background:#ffffff18;flex:none}.icon-button svg{width:22px;height:22px}.brand{display:flex;align-items:center;gap:8px;font-weight:700;font-size:23px;letter-spacing:-.4px;white-space:nowrap}.brand-mark{display:block;width:34px;height:34px;border-radius:10px;object-fit:cover;flex:none}.points{display:flex;align-items:center;gap:6px;border:1px solid #e9a82080;background:#e9a82020;color:white;border-radius:99px;padding:7px 10px;font-size:13px;font-weight:600;white-space:nowrap}.coin{display:grid;place-items:center;width:19px;height:19px;background:var(--gold);color:#493200;border-radius:50%;font-size:12px}
 .notice{display:flex;align-items:center;gap:9px;padding:7px 8px 7px 15px;background:#FFF1CC;color:#4A3500;border-bottom:1px solid #E8C66E;font-size:13px;line-height:1.4}.notice p{margin:0;flex:1}.notice[hidden]{display:none}.notice-close{flex:none;width:32px;height:32px;border:0;border-radius:9px;background:transparent;color:inherit;font-size:22px;line-height:1}[data-theme=dark] .notice{background:#3A2E0F;color:#FFE6A5;border-color:#6B5518}
 .bell{position:relative;margin-left:auto}.badge{position:absolute;top:-4px;right:-4px;min-width:19px;height:19px;padding:0 4px;border-radius:99px;background:var(--coral);color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center;border:2px solid var(--green)}.badge[hidden]{display:none}
 .npanel{position:absolute;right:12px;top:calc(100% + 6px);width:min(330px,calc(100vw - 24px));background:var(--surface);color:var(--text);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);overflow:hidden}.npanel[hidden]{display:none}.nhead{display:flex;justify-content:space-between;align-items:center;padding:11px 14px;border-bottom:1px solid var(--line);font-size:14px}.ntext{border:0;background:none;color:var(--green-2);font-size:12px;font-weight:600;padding:4px}[data-theme=dark] .ntext{color:#9BD6B5}.nitem{display:flex;gap:10px;padding:12px 14px;font-size:13px;line-height:1.45}.nitem p{margin:0}.nitem small{color:var(--muted);font-size:11px}.nempty{padding:18px 14px;text-align:center;color:var(--muted);font-size:13px}.nitem[hidden],.nempty[hidden]{display:none}
@@ -52,11 +52,11 @@ footer{margin:22px 15px 0;padding:15px 4px 3px;border-top:1px solid var(--line);
 <div class="topwrap">
 <header class="header">
  <button class="icon-button" id="openMenu" aria-label="মেনু খুলুন" aria-controls="drawer" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
- <div class="brand"><span class="brand-mark">G</span><span>Gamoro</span></div>
+ <div class="brand"><img class="brand-mark" src="logo.png" alt="Gamoro" width="34" height="34"><span>Gamoro</span></div>
  <button class="icon-button bell" id="bellBtn" aria-label="নোটিফিকেশন" aria-expanded="false" aria-controls="npanel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0112 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9M10 20a2 2 0 004 0"/></svg><span class="badge" id="badge">১</span></button>
- <div class="points" aria-label="পয়েন্ট"><span class="coin">★</span><span id="points">০</span><span class="plabel">পয়েন্ট</span></div>
+  <div class="points" aria-label="পয়েন্ট"><span class="coin">★</span><span id="points">০</span><span class="plabel">পয়েন্ট</span></div>
 </header>
- <div class="npanel" id="npanel" hidden role="dialog" aria-label="নোটিফিকেশন"><div class="nhead"><strong>নোটিফিকেশন</strong><button class="ntext" id="markRead">সব পড়া হয়েছে</button></div><div class="nitem" id="nitem"><span aria-hidden="true">📣</span><div><p id="announcementText"></p><small>এইমাত্র</small></div></div><div class="nempty" id="nempty" hidden>কোনো নতুন নোটিফিকেশন নেই।</div></div>
+ <div class="npanel" id="npanel" hidden role="dialog" aria-label="নোটিফিকেশন"><div class="nhead"><strong>নোটিফিকেশন</strong><button class="ntext" id="markRead">সব পড়া হয়েছে</button></div><div class="nitem" id="emailVerifyNotice" style="display:none;cursor:pointer"><span aria-hidden="true">✉️</span><div><p style="font-weight:600">আপনার ইমেইল ভেরিফাই করুন</p><small style="color:var(--green-2)">উইথড্র পেজে যান →</small></div></div><div class="nitem" id="pinNotice" style="display:none;cursor:pointer"><span aria-hidden="true">🔒</span><div><p style="font-weight:600">টাকা তোলার পিন সেট করুন</p><small style="color:var(--green-2)">উইথড্র পেজে যান →</small></div></div><div class="nitem" id="nitem"><span aria-hidden="true">📣</span><div><p id="announcementText"></p><small>এইমাত্র</small></div></div><div class="nempty" id="nempty" hidden>কোনো নতুন নোটিফিকেশন নেই।</div></div>
 </div>
 <main>
  <section class="ad" aria-label="উপরের বিজ্ঞাপন"><strong class="ad-tag">বিজ্ঞাপন</strong><small>Ad slot · 320 × 90</small></section>
@@ -91,7 +91,7 @@ footer{margin:22px 15px 0;padding:15px 4px 3px;border-top:1px solid var(--line);
 </div>
 <div class="overlay" id="overlay" aria-hidden="true"></div>
 <aside class="drawer" id="drawer" aria-label="প্রধান মেনু" aria-hidden="true">
- <div class="drawer-head"><div class="brand"><span class="brand-mark">G</span><span>Gamoro</span></div><button class="close-btn" id="closeMenu" aria-label="মেনু বন্ধ করুন">×</button></div>
+ <div class="drawer-head"><div class="brand"><img class="brand-mark" src="logo.png" alt="Gamoro" width="37" height="37"><span>Gamoro</span></div><button class="close-btn" id="closeMenu" aria-label="মেনু বন্ধ করুন">×</button></div>
  <nav class="drawer-body">
   <button class="account-toggle" id="accountToggle" aria-expanded="false" aria-controls="accountSubmenu"><span class="nav-icon">👤</span><span id="accountLabel">অ্যাকাউন্ট</span><span class="chevron">⌄</span></button>
   <div class="submenu" id="accountSubmenu">
@@ -142,6 +142,18 @@ import { doc, getDoc } from "firebase/firestore";
      window.location.href = 'auth.html#forgot';
      return;
    }
+   if(act === 'লিডারবোর্ড'){
+     window.location.href = 'leaderboard.html';
+     return;
+   }
+   if(act === 'রেফারেল'){
+     window.location.href = 'referral.html';
+     return;
+   }
+   if(act === 'উইথড্রয়াল' || act === 'টাকা তোলা'){
+     window.location.href = 'withdraw.html';
+     return;
+   }
    if(act === 'লগআউট'){
      signOut(auth).then(()=>{
        showToast('সফলভাবে লগআউট হয়েছে');
@@ -169,7 +181,21 @@ import { doc, getDoc } from "firebase/firestore";
  bell.addEventListener('click',e=>{e.stopPropagation();setPanel(np.hidden)});
  document.addEventListener('click',e=>{if(!np.hidden&&!np.contains(e.target))setPanel(false)});
  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!np.hidden){setPanel(false);bell.focus()}});
- document.getElementById('markRead').addEventListener('click',()=>{document.getElementById('nitem').hidden=true;document.getElementById('nempty').hidden=false;badge.hidden=true});
+ const emailNotice = document.getElementById('emailVerifyNotice');
+ const pinNotice = document.getElementById('pinNotice');
+ if (emailNotice) {
+   emailNotice.addEventListener('click', () => { window.location.href = 'withdraw.html'; });
+ }
+ if (pinNotice) {
+   pinNotice.addEventListener('click', () => { window.location.href = 'withdraw.html'; });
+ }
+ document.getElementById('markRead').addEventListener('click', () => {
+   document.getElementById('nitem').hidden = true;
+   if (emailNotice) emailNotice.style.display = 'none';
+   if (pinNotice) pinNotice.style.display = 'none';
+   document.getElementById('nempty').hidden = false;
+   badge.hidden = true;
+ });
 
  // Firebase Auth state listener
  const menuLogin = document.getElementById('menuLogin');
@@ -185,6 +211,7 @@ import { doc, getDoc } from "firebase/firestore";
      menuSignup.style.display = 'none';
      menuForgot.style.display = 'none';
      menuLogout.style.display = 'block';
+     let pinSet = false;
      try {
        const userDocRef = doc(db, 'users', user.uid);
        const snap = await getDoc(userDocRef);
@@ -198,6 +225,7 @@ import { doc, getDoc } from "firebase/firestore";
          } else {
            pointsElem.textContent = '০';
          }
+         pinSet = data.pinSet === true;
        } else {
          if (user.displayName) {
            accountLabel.textContent = user.displayName;
@@ -208,6 +236,14 @@ import { doc, getDoc } from "firebase/firestore";
        console.log('Firebase user doc fetch error (rules or config):', e.message);
        pointsElem.textContent = '০';
      }
+
+     const needEmailVerify = user.emailVerified === false;
+     const needPinSet = !pinSet;
+     if (emailNotice) emailNotice.style.display = needEmailVerify ? 'flex' : 'none';
+     if (pinNotice) pinNotice.style.display = needPinSet ? 'flex' : 'none';
+     if (needEmailVerify || needPinSet) {
+       badge.hidden = false;
+     }
    } else {
      accountLabel.textContent = 'অ্যাকাউন্ট';
      pointsElem.textContent = '০';
@@ -215,6 +251,8 @@ import { doc, getDoc } from "firebase/firestore";
      menuSignup.style.display = 'block';
      menuForgot.style.display = 'block';
      menuLogout.style.display = 'none';
+     if (emailNotice) emailNotice.style.display = 'none';
+     if (pinNotice) pinNotice.style.display = 'none';
    }
  });
 })();

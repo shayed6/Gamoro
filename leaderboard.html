@@ -1,0 +1,910 @@
+<!-- সার্ভার নিয়ম (ভবিষ্যতে Netlify scheduled function): প্রতিদিন রাত ১২টায় (Asia/Dhaka) সেরা ১০ হিসাব করে leaderboards/{YYYY-MM}-এ লিখবে। গত ২৪ ঘণ্টায় যারা খেলেছে শুধু তাদের users/{uid}-এ rank, rankPoints, rankUpdatedAt নতুন করে লিখবে। বাকিদের পুরনো মান থাকবে। -->
+<!DOCTYPE html>
+<html lang="bn" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0C4A34">
+<meta name="description" content="Gamoro – মাসিক সেরা খেলোয়াড়দের লিডারবোর্ড">
+<title>Gamoro – লিডারবোর্ড</title>
+<link rel="icon" type="image/png" href="logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script type="importmap">
+{
+  "imports": {
+    "firebase/app": "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js",
+    "firebase/auth": "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js",
+    "firebase/firestore": "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"
+  }
+}
+</script>
+<style>
+:root{
+  color-scheme:light;
+  --green:#0C4A34;
+  --green-2:#176746;
+  --gold:#E9A820;
+  --coral:#D6403B;
+  --bg:#F0F8F2;
+  --surface:#fff;
+  --surface2:#E4F1E8;
+  --text:#17372B;
+  --muted:#63796D;
+  --line:#D5E5D9;
+  --shadow:0 8px 25px rgba(12,74,52,.08);
+  --focus:#D6403B;
+  --card-border:rgba(12,74,52,.12);
+  --podium-1:#FFE9AA;
+  --podium-2:#E4E9E6;
+  --podium-3:#FCE3D2;
+}
+:root[data-theme=dark]{
+  color-scheme:dark;
+  --bg:#101B17;
+  --surface:#182720;
+  --surface2:#25382E;
+  --text:#F1F7F3;
+  --muted:#B3C5B9;
+  --line:#354B3E;
+  --shadow:0 8px 25px rgba(0,0,0,.28);
+  --focus:#FFD16B;
+  --green-2:#9BD6B5;
+  --card-border:rgba(255,255,255,.08);
+  --podium-1:#3E3214;
+  --podium-2:#28352F;
+  --podium-3:#3A271C;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:"Hind Siliguri",system-ui,sans-serif;
+  min-height:100vh;
+}
+button,a{font:inherit;text-decoration:none}
+button{cursor:pointer}
+button:focus-visible,a:focus-visible{
+  outline:3px solid var(--focus);
+  outline-offset:2px;
+}
+.app{
+  max-width:480px;
+  width:100%;
+  margin:auto;
+  min-height:100vh;
+  background:var(--bg);
+  display:flex;
+  flex-direction:column;
+  position:relative;
+}
+
+/* Header */
+.top{
+  background:var(--green);
+  color:#fff;
+  padding:calc(12px + env(safe-area-inset-top)) 15px 14px;
+  position:sticky;
+  top:0;
+  z-index:30;
+  box-shadow:0 4px 15px rgba(6,43,29,.25);
+}
+.top-bar{
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+.back-btn{
+  width:40px;
+  height:40px;
+  border:0;
+  border-radius:12px;
+  background:rgba(255,255,255,.14);
+  color:#fff;
+  font-size:20px;
+  display:grid;
+  place-items:center;
+  flex:none;
+  transition:background .15s;
+}
+.back-btn:hover{background:rgba(255,255,255,.22)}
+.header-info{
+  flex:1;
+  min-width:0;
+}
+.header-title{
+  margin:0;
+  font-size:20px;
+  font-weight:700;
+  line-height:1.2;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.header-sub{
+  margin:2px 0 0;
+  font-size:13px;
+  color:rgba(255,255,255,.85);
+  font-weight:500;
+}
+.demo-badge{
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  background:#FFE6A5;
+  color:#4A3500;
+  font-size:11px;
+  font-weight:700;
+  padding:3px 8px;
+  border-radius:99px;
+  margin-left:auto;
+}
+
+/* Theme Toggle button */
+.theme-btn{
+  width:36px;
+  height:36px;
+  border:0;
+  border-radius:10px;
+  background:rgba(255,255,255,.14);
+  color:#fff;
+  display:grid;
+  place-items:center;
+  font-size:16px;
+  flex:none;
+}
+
+/* Main Content */
+main{
+  flex:1;
+  padding:16px 15px 160px;
+}
+
+/* Podium section */
+.podium-section{
+  margin-bottom:20px;
+}
+.podium-title{
+  font-size:15px;
+  font-weight:700;
+  margin:0 0 12px;
+  display:flex;
+  align-items:center;
+  gap:6px;
+  color:var(--text);
+}
+.podium{
+  display:grid;
+  grid-template-columns:1fr 1.12fr 1fr;
+  align-items:flex-end;
+  gap:8px;
+  margin-top:6px;
+}
+.podium-card{
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:16px;
+  padding:12px 6px 10px;
+  text-align:center;
+  box-shadow:var(--shadow);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  position:relative;
+  transition:transform .15s;
+}
+.podium-card.rank-1{
+  border-color:var(--gold);
+  background:linear-gradient(180deg, var(--podium-1) 0%, var(--surface) 55%);
+  padding-top:14px;
+  transform:translateY(-6px);
+}
+.podium-card.rank-2{
+  background:linear-gradient(180deg, var(--podium-2) 0%, var(--surface) 60%);
+}
+.podium-card.rank-3{
+  background:linear-gradient(180deg, var(--podium-3) 0%, var(--surface) 60%);
+}
+.crown{
+  font-size:20px;
+  line-height:1;
+  margin-bottom:2px;
+}
+.podium-avatar{
+  width:44px;
+  height:44px;
+  border-radius:50%;
+  background:var(--surface2);
+  display:grid;
+  place-items:center;
+  font-size:18px;
+  font-weight:700;
+  border:2.5px solid var(--line);
+  margin-bottom:6px;
+  color:var(--green);
+}
+.rank-1 .podium-avatar{
+  width:50px;
+  height:50px;
+  border-color:var(--gold);
+  font-size:21px;
+}
+.podium-badge{
+  font-size:11px;
+  font-weight:700;
+  padding:2px 7px;
+  border-radius:99px;
+  margin-bottom:4px;
+  line-height:1.2;
+}
+.rank-1 .podium-badge{background:var(--gold);color:#3A2700}
+.rank-2 .podium-badge{background:#8FA197;color:#fff}
+.rank-3 .podium-badge{background:#D17A46;color:#fff}
+.podium-name{
+  font-size:13px;
+  font-weight:700;
+  line-height:1.3;
+  margin:0 0 3px;
+  max-width:100%;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.podium-points{
+  font-size:12px;
+  font-weight:700;
+  color:var(--green-2);
+}
+
+/* List section (Ranks 4-10) */
+.list-section{
+  margin-top:16px;
+}
+.list-title{
+  font-size:14px;
+  font-weight:700;
+  color:var(--muted);
+  margin:0 0 10px;
+}
+.leader-list{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+.leader-row{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:11px 14px;
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:14px;
+  box-shadow:var(--shadow);
+}
+.rank-num{
+  width:32px;
+  height:32px;
+  border-radius:10px;
+  background:var(--surface2);
+  display:grid;
+  place-items:center;
+  font-size:13px;
+  font-weight:700;
+  color:var(--text);
+  flex:none;
+}
+.leader-row-name{
+  flex:1;
+  font-size:14px;
+  font-weight:600;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.leader-row-points{
+  font-size:13px;
+  font-weight:700;
+  color:var(--green-2);
+  flex:none;
+  white-space:nowrap;
+}
+
+/* Fixed Bottom "আপনার অবস্থান" Card */
+.sticky-footer{
+  position:fixed;
+  bottom:0;
+  left:0;
+  right:0;
+  z-index:40;
+  display:flex;
+  justify-content:center;
+  pointer-events:none;
+  padding:0 12px calc(10px + env(safe-area-inset-bottom));
+}
+.user-card{
+  pointer-events:auto;
+  width:100%;
+  max-width:480px;
+  background:var(--surface);
+  border:1.5px solid var(--green);
+  border-radius:18px;
+  padding:13px 15px 11px;
+  box-shadow:0 -6px 30px rgba(12,74,52,.18);
+  backdrop-filter:blur(8px);
+}
+.user-card-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+.user-card-title{
+  font-size:12px;
+  color:var(--muted);
+  font-weight:600;
+  margin:0;
+}
+.user-card-rank{
+  font-size:16px;
+  font-weight:700;
+  color:var(--green);
+  margin:2px 0 0;
+}
+[data-theme=dark] .user-card-rank{color:var(--green-2)}
+.user-card-sub{
+  font-size:11.5px;
+  color:var(--muted);
+  margin:4px 0 0;
+  line-height:1.4;
+}
+.login-btn{
+  background:var(--green);
+  color:#fff;
+  border:0;
+  border-radius:10px;
+  padding:8px 16px;
+  font-size:13px;
+  font-weight:700;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  white-space:nowrap;
+}
+.card-bottom-info{
+  margin-top:7px;
+  padding-top:7px;
+  border-top:1px dashed var(--line);
+  font-size:11px;
+  color:var(--muted);
+  line-height:1.4;
+  display:flex;
+  flex-direction:column;
+  gap:1px;
+}
+
+/* Skeleton Loading */
+.skeleton-box{
+  background:linear-gradient(90deg, var(--surface2) 25%, var(--line) 50%, var(--surface2) 75%);
+  background-size:200% 100%;
+  animation:skeleton-shimmer 1.4s infinite;
+  border-radius:8px;
+}
+@keyframes skeleton-shimmer{
+  0%{background-position:200% 0}
+  100%{background-position:-200% 0}
+}
+.podium-skeleton{
+  height:160px;
+  border-radius:16px;
+}
+.row-skeleton{
+  height:54px;
+  border-radius:14px;
+  margin-bottom:8px;
+}
+
+/* Empty / Error state */
+.state-box{
+  text-align:center;
+  padding:42px 18px;
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:18px;
+  box-shadow:var(--shadow);
+  margin:20px 0;
+}
+.state-icon{
+  font-size:42px;
+  margin-bottom:12px;
+  display:block;
+}
+.state-msg{
+  font-size:15px;
+  font-weight:600;
+  color:var(--text);
+  margin:0 0 14px;
+  line-height:1.5;
+}
+.retry-btn{
+  background:var(--green);
+  color:#fff;
+  border:0;
+  border-radius:12px;
+  padding:10px 20px;
+  font-weight:700;
+  font-size:14px;
+}
+
+@media(min-width:481px){
+  body{padding:20px 0}
+  .app{
+    min-height:calc(100vh - 40px);
+    border-radius:22px;
+    overflow:clip;
+    box-shadow:0 15px 50px rgba(12,74,52,.15);
+  }
+  .top{border-radius:22px 22px 0 0}
+}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{
+    scroll-behavior:auto!important;
+    transition:none!important;
+    animation:none!important;
+  }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="top-bar">
+      <button class="back-btn" id="backBtn" aria-label="ফিরে যান">←</button>
+      <div class="header-info">
+        <h1 class="header-title">লিডারবোর্ড <span id="demoBadge" class="demo-badge" hidden>ডেমো ডেটা</span></h1>
+        <p class="header-sub" id="currentMonthLabel">চলতি মাস</p>
+      </div>
+      <button class="theme-btn" id="themeBtn" aria-label="থিম পরিবর্তন" title="থিম পরিবর্তন">🌙</button>
+    </div>
+  </header>
+
+  <main id="mainContainer">
+    <!-- Dynamic Content injected by JS (Skeleton, Content, Empty, Error) -->
+    <div id="loadingSkeleton">
+      <div class="podium-section">
+        <div class="skeleton-box podium-skeleton"></div>
+      </div>
+      <div class="list-section">
+        <div class="skeleton-box row-skeleton"></div>
+        <div class="skeleton-box row-skeleton"></div>
+        <div class="skeleton-box row-skeleton"></div>
+        <div class="skeleton-box row-skeleton"></div>
+        <div class="skeleton-box row-skeleton"></div>
+      </div>
+    </div>
+
+    <div id="contentArea" style="display:none">
+      <!-- Podium Top 3 -->
+      <section class="podium-section" aria-label="সেরা ৩ খেলোয়াড়">
+        <div class="podium" id="podiumArea">
+          <!-- Rank 2 -->
+          <div class="podium-card rank-2" id="cardRank2">
+            <div class="crown">🥈</div>
+            <div class="podium-avatar" id="avatarRank2">২</div>
+            <span class="podium-badge">২য় স্থান</span>
+            <div class="podium-name" id="nameRank2">---</div>
+            <div class="podium-points" id="pointsRank2">০ পয়েন্ট</div>
+          </div>
+          <!-- Rank 1 -->
+          <div class="podium-card rank-1" id="cardRank1">
+            <div class="crown">👑</div>
+            <div class="podium-avatar" id="avatarRank1">১</div>
+            <span class="podium-badge">১ম স্থান</span>
+            <div class="podium-name" id="nameRank1">---</div>
+            <div class="podium-points" id="pointsRank1">০ পয়েন্ট</div>
+          </div>
+          <!-- Rank 3 -->
+          <div class="podium-card rank-3" id="cardRank3">
+            <div class="crown">🥉</div>
+            <div class="podium-avatar" id="avatarRank3">৩</div>
+            <span class="podium-badge">৩য় স্থান</span>
+            <div class="podium-name" id="nameRank3">---</div>
+            <div class="podium-points" id="pointsRank3">০ পয়েন্ট</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Ranks 4 to 10 -->
+      <section class="list-section" id="ranksListSection" aria-label="অন্যান্য সেরা খেলোয়াড়">
+        <div class="list-title">সেরা ৪ থেকে ১০</div>
+        <div class="leader-list" id="ranksList"></div>
+      </section>
+    </div>
+
+    <!-- Empty State -->
+    <div id="emptyArea" class="state-box" style="display:none">
+      <span class="state-icon">🏆</span>
+      <p class="state-msg">এই মাসের লিডারবোর্ড এখনো শুরু হয়নি।</p>
+    </div>
+
+    <!-- Error State -->
+    <div id="errorArea" class="state-box" style="display:none">
+      <span class="state-icon">⚠️</span>
+      <p class="state-msg" id="errorMsg">লিডারবোর্ড লোড করতে সমস্যা হয়েছে। অনুগ্রহ করে ইন্টারনেট সংযোগ চেক করুন।</p>
+      <button class="retry-btn" id="retryBtn">পুনরায় চেষ্টা করুন</button>
+    </div>
+  </main>
+
+  <!-- Sticky Bottom "আপনার অবস্থান" Card -->
+  <footer class="sticky-footer">
+    <div class="user-card" id="userCard">
+      <div class="user-card-head">
+        <div>
+          <p class="user-card-title">আপনার অবস্থান</p>
+          <div class="user-card-rank" id="userRankText">লোড হচ্ছে...</div>
+        </div>
+        <div id="userActionArea"></div>
+      </div>
+      <div class="user-card-sub" id="userRankSubText" style="display:none"></div>
+      <div class="card-bottom-info">
+        <span>লিডারবোর্ড প্রতিদিন রাত ১২টায় আপডেট হয়।</span>
+        <span id="lastUpdatedLabel"></span>
+      </div>
+    </div>
+  </footer>
+</div>
+
+<script type="module">
+import { auth, db } from "./firebase-config.js";
+import { onAuthStateChanged } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
+
+(() => {
+  const root = document.documentElement;
+  const backBtn = document.getElementById('backBtn');
+  const themeBtn = document.getElementById('themeBtn');
+  const demoBadge = document.getElementById('demoBadge');
+  const currentMonthLabel = document.getElementById('currentMonthLabel');
+  
+  const loadingSkeleton = document.getElementById('loadingSkeleton');
+  const contentArea = document.getElementById('contentArea');
+  const emptyArea = document.getElementById('emptyArea');
+  const errorArea = document.getElementById('errorArea');
+  const errorMsg = document.getElementById('errorMsg');
+  const retryBtn = document.getElementById('retryBtn');
+
+  const cardRank1 = document.getElementById('cardRank1');
+  const cardRank2 = document.getElementById('cardRank2');
+  const cardRank3 = document.getElementById('cardRank3');
+  const ranksListSection = document.getElementById('ranksListSection');
+  const ranksList = document.getElementById('ranksList');
+
+  const userRankText = document.getElementById('userRankText');
+  const userRankSubText = document.getElementById('userRankSubText');
+  const userActionArea = document.getElementById('userActionArea');
+  const lastUpdatedLabel = document.getElementById('lastUpdatedLabel');
+
+  // Check URL demo param (?demo=1 or #demo=1)
+  const urlParams = new URLSearchParams(window.location.search);
+  const isDemo = urlParams.get('demo') === '1' || window.location.hash.includes('demo=1');
+
+  // Theme setup
+  const savedTheme = localStorage.getItem('gamoro_theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  root.setAttribute('data-theme', savedTheme);
+  themeBtn.textContent = savedTheme === 'dark' ? '☀️' : '🌙';
+
+  themeBtn.addEventListener('click', () => {
+    const isDark = root.getAttribute('data-theme') === 'dark';
+    const newTheme = isDark ? 'light' : 'dark';
+    root.setAttribute('data-theme', newTheme);
+    localStorage.setItem('gamoro_theme', newTheme);
+    themeBtn.textContent = newTheme === 'dark' ? '☀️' : '🌙';
+    const metaTheme = document.querySelector('meta[name="theme-color"]');
+    if (metaTheme) metaTheme.content = newTheme === 'dark' ? '#101B17' : '#0C4A34';
+  });
+
+  // Back button navigation
+  backBtn.addEventListener('click', () => {
+    if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      window.location.href = 'index.html';
+    }
+  });
+
+  // Current Month in Asia/Dhaka
+  function getDhakaMonthFormatted() {
+    try {
+      const now = new Date();
+      return new Intl.DateTimeFormat('bn-BD', {
+        timeZone: 'Asia/Dhaka',
+        month: 'long',
+        year: 'numeric'
+      }).format(now);
+    } catch (_) {
+      return 'চলতি মাস';
+    }
+  }
+  currentMonthLabel.textContent = getDhakaMonthFormatted();
+
+  // Period key (YYYY-MM) in Asia/Dhaka
+  function getDhakaPeriodKey() {
+    const now = new Date();
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Asia/Dhaka',
+      year: 'numeric',
+      month: '2-digit'
+    }).formatToParts(now);
+    const y = parts.find(p => p.type === 'year')?.value;
+    const m = parts.find(p => p.type === 'month')?.value;
+    return `${y}-${m}`;
+  }
+
+  // Format date and time in Asia/Dhaka
+  function formatDhakaDate(dateVal) {
+    if (!dateVal) return '';
+    const d = dateVal.toDate ? dateVal.toDate() : new Date(dateVal);
+    return new Intl.DateTimeFormat('bn-BD', {
+      timeZone: 'Asia/Dhaka',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    }).format(d);
+  }
+
+  function formatDhakaDateTime(dateVal) {
+    if (!dateVal) return '';
+    const d = dateVal.toDate ? dateVal.toDate() : new Date(dateVal);
+    return new Intl.DateTimeFormat('bn-BD', {
+      timeZone: 'Asia/Dhaka',
+      day: 'numeric',
+      month: 'long',
+      hour: 'numeric',
+      minute: 'numeric',
+      hour12: true
+    }).format(d);
+  }
+
+  function isTodayInDhaka(dateVal) {
+    if (!dateVal) return false;
+    const d = dateVal.toDate ? dateVal.toDate() : new Date(dateVal);
+    const fmt = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Dhaka' });
+    return fmt.format(d) === fmt.format(new Date());
+  }
+
+  function bnNum(num) {
+    return Number(num || 0).toLocaleString('bn-BD');
+  }
+
+  // Render Top 10 Leaderboard
+  function renderLeaderboard(data) {
+    const top = Array.isArray(data?.top) ? data.top : [];
+    
+    if (top.length === 0) {
+      loadingSkeleton.style.display = 'none';
+      contentArea.style.display = 'none';
+      emptyArea.style.display = 'block';
+      errorArea.style.display = 'none';
+      return;
+    }
+
+    loadingSkeleton.style.display = 'none';
+    emptyArea.style.display = 'none';
+    errorArea.style.display = 'none';
+    contentArea.style.display = 'block';
+
+    // Top 3 Podium
+    const p1 = top[0];
+    const p2 = top[1];
+    const p3 = top[2];
+
+    if (p1) {
+      cardRank1.style.visibility = 'visible';
+      document.getElementById('nameRank1').textContent = p1.name || 'খেলোয়াড়';
+      document.getElementById('pointsRank1').textContent = `${bnNum(p1.points)} পয়েন্ট`;
+      document.getElementById('avatarRank1').textContent = (p1.name ? p1.name.trim()[0] : '১');
+    } else {
+      cardRank1.style.visibility = 'hidden';
+    }
+
+    if (p2) {
+      cardRank2.style.visibility = 'visible';
+      document.getElementById('nameRank2').textContent = p2.name || 'খেলোয়াড়';
+      document.getElementById('pointsRank2').textContent = `${bnNum(p2.points)} পয়েন্ট`;
+      document.getElementById('avatarRank2').textContent = (p2.name ? p2.name.trim()[0] : '২');
+    } else {
+      cardRank2.style.visibility = 'hidden';
+    }
+
+    if (p3) {
+      cardRank3.style.visibility = 'visible';
+      document.getElementById('nameRank3').textContent = p3.name || 'খেলোয়াড়';
+      document.getElementById('pointsRank3').textContent = `${bnNum(p3.points)} পয়েন্ট`;
+      document.getElementById('avatarRank3').textContent = (p3.name ? p3.name.trim()[0] : '৩');
+    } else {
+      cardRank3.style.visibility = 'hidden';
+    }
+
+    // Positions 4 to 10
+    const rest = top.slice(3, 10);
+    ranksList.innerHTML = '';
+    if (rest.length > 0) {
+      ranksListSection.style.display = 'block';
+      rest.forEach((item, idx) => {
+        const rank = idx + 4;
+        const row = document.createElement('div');
+        row.className = 'leader-row';
+        row.innerHTML = `
+          <div class="rank-num">#${bnNum(rank)}</div>
+          <div class="leader-row-name">${escapeHtml(item.name || 'খেলোয়াড়')}</div>
+          <div class="leader-row-points">${bnNum(item.points)} পয়েন্ট</div>
+        `;
+        ranksList.appendChild(row);
+      });
+    } else {
+      ranksListSection.style.display = 'none';
+    }
+
+    // Last updated info
+    if (data.updatedAt) {
+      lastUpdatedLabel.textContent = `শেষ আপডেট: ${formatDhakaDateTime(data.updatedAt)}`;
+    } else {
+      lastUpdatedLabel.textContent = '';
+    }
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  // Demo Data Generator
+  function runDemoMode() {
+    demoBadge.hidden = false;
+    const demoData = {
+      updatedAt: new Date(),
+      top: [
+        { uid: 'u1', name: 'আরিফুল ইসলাম', points: 4520 },
+        { uid: 'u2', name: 'তানভীর আহমেদ', points: 3890 },
+        { uid: 'u3', name: 'নাজমুল হাসান', points: 3410 },
+        { uid: 'u4', name: 'সাইদুল ইসলাম', points: 2950 },
+        { uid: 'u5', name: 'রফিকুল ইসলাম', points: 2720 },
+        { uid: 'u6', name: 'মেহরাব হোসেন', points: 2400 },
+        { uid: 'u7', name: 'মাহমুদুল হাসান', points: 2150 },
+        { uid: 'u8', name: 'সাব্বির রহমান', points: 1980 },
+        { uid: 'u9', name: 'ফাহিম ফয়সাল', points: 1750 },
+        { uid: 'u10', name: 'আল-আমিন হোসাইন', points: 1520 }
+      ]
+    };
+
+    renderLeaderboard(demoData);
+
+    // User rank demo: "আপনার র্যাঙ্ক #২৭ · ৮৪০ পয়েন্ট"
+    userRankText.textContent = `আপনার র্যাঙ্ক #${bnNum(27)} · ${bnNum(840)} পয়েন্ট`;
+    userRankSubText.style.display = 'block';
+    userRankSubText.textContent = 'ডেমো অ্যাকাউন্ট ভিউ — লিডারবোর্ড সক্রিয়';
+    userActionArea.innerHTML = '';
+  }
+
+  // Load Leaderboard from Cache or Firestore
+  const CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
+
+  async function loadLeaderboard() {
+    if (isDemo) {
+      runDemoMode();
+      return;
+    }
+
+    const periodKey = getDhakaPeriodKey();
+    const cacheStorageKey = `gamoro_leaderboard_${periodKey}`;
+
+    // 1. Check sessionStorage cache
+    try {
+      const cached = sessionStorage.getItem(cacheStorageKey);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed?.timestamp && (Date.now() - parsed.timestamp < CACHE_TTL_MS) && parsed.data) {
+          renderLeaderboard(parsed.data);
+          setupUserRankTracker();
+          return;
+        }
+      }
+    } catch (_) {}
+
+    // 2. Fetch from Firestore
+    loadingSkeleton.style.display = 'block';
+    contentArea.style.display = 'none';
+    emptyArea.style.display = 'none';
+    errorArea.style.display = 'none';
+
+    try {
+      const docRef = doc(db, 'leaderboards', periodKey);
+      const snap = await getDoc(docRef);
+
+      if (snap.exists()) {
+        const data = snap.data();
+        try {
+          sessionStorage.setItem(cacheStorageKey, JSON.stringify({
+            timestamp: Date.now(),
+            data: data
+          }));
+        } catch (_) {}
+        renderLeaderboard(data);
+      } else {
+        renderLeaderboard({ top: [], updatedAt: null });
+      }
+      setupUserRankTracker();
+    } catch (err) {
+      console.error('Leaderboard Fetch Error:', err);
+      loadingSkeleton.style.display = 'none';
+      contentArea.style.display = 'none';
+      emptyArea.style.display = 'none';
+      errorArea.style.display = 'block';
+      errorMsg.textContent = 'লিডারবোর্ড লোড করতে সমস্যা হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।';
+    }
+  }
+
+  // Setup User Rank Card
+  function setupUserRankTracker() {
+    if (isDemo) return;
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        // Not logged in
+        userRankText.textContent = 'লগইন করা নেই';
+        userRankSubText.style.display = 'block';
+        userRankSubText.textContent = 'আপনার অবস্থান ও পয়েন্ট দেখতে সাইন ইন করুন।';
+        userActionArea.innerHTML = `<a href="auth.html#login" class="login-btn">লগইন করুন</a>`;
+        return;
+      }
+
+      // Logged in: Fetch user's profile from users/{uid}
+      userActionArea.innerHTML = '';
+      try {
+        const userDocRef = doc(db, 'users', user.uid);
+        const userSnap = await getDoc(userDocRef);
+
+        if (userSnap.exists()) {
+          const userData = userSnap.data();
+          const rank = userData.rank;
+          const rankPoints = userData.rankPoints !== undefined ? userData.rankPoints : (userData.points || 0);
+          const rankUpdatedAt = userData.rankUpdatedAt;
+
+          if (rank) {
+            userRankText.textContent = `আপনার র্যাঙ্ক #${bnNum(rank)} · ${bnNum(rankPoints)} পয়েন্ট`;
+            
+            // Check if rankUpdatedAt is today in Asia/Dhaka
+            if (rankUpdatedAt && !isTodayInDhaka(rankUpdatedAt)) {
+              userRankSubText.style.display = 'block';
+              userRankSubText.textContent = `র্যাঙ্ক শেষ আপডেট: ${formatDhakaDate(rankUpdatedAt)}। খেললে পরের আপডেটে র্যাঙ্ক নতুন হবে।`;
+            } else {
+              userRankSubText.style.display = 'none';
+            }
+          } else {
+            // Rank field missing
+            userRankText.textContent = 'র্যাঙ্ক পেতে খেলা শুরু করুন';
+            userRankSubText.style.display = 'none';
+          }
+        } else {
+          userRankText.textContent = 'র্যাঙ্ক পেতে খেলা শুরু করুন';
+          userRankSubText.style.display = 'none';
+        }
+      } catch (err) {
+        console.warn('Could not read user rank doc:', err.message);
+        userRankText.textContent = 'র্যাঙ্ক পেতে খেলা শুরু করুন';
+        userRankSubText.style.display = 'none';
+      }
+    });
+  }
+
+  retryBtn.addEventListener('click', loadLeaderboard);
+
+  // Initial load
+  loadLeaderboard();
+})();
+</script>
+</body>
+</html>

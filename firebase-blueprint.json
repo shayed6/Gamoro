@@ -2,7 +2,7 @@
   "entities": {
     "UserProfile": {
       "title": "UserProfile",
-      "description": "User profile data stored at /users/{uid}. Created on signup.",
+      "description": "User profile data stored at /users/{uid}. Created on signup or profile completion.",
       "type": "object",
       "properties": {
         "name": {
@@ -11,9 +11,14 @@
           "minLength": 1,
           "maxLength": 100
         },
+        "country": {
+          "type": "string",
+          "description": "Country of the user ('BD' or 'INTL')",
+          "enum": ["BD", "INTL"]
+        },
         "mobile": {
           "type": "string",
-          "description": "Mobile phone number with +88 prefix",
+          "description": "Mobile phone number with +88 prefix (only for BD)",
           "pattern": "^\\+8801[3-9]\\d{8}$",
           "maxLength": 20
         },
@@ -28,18 +33,137 @@
           "description": "Optional referral code provided during registration",
           "maxLength": 50
         },
+        "verified": {
+          "type": "boolean",
+          "description": "Whether the user account is verified (server-side only)"
+        },
+        "verifyMethod": {
+          "type": "string",
+          "description": "Method of verification ('mobile' or 'telegram', server-side only)"
+        },
         "createdAt": {
           "type": "string",
           "description": "Server timestamp when the user profile was created"
+        },
+        "rank": {
+          "type": "number",
+          "description": "Server-calculated rank of the user"
+        },
+        "rankPoints": {
+          "type": "number",
+          "description": "Points evaluated during server leaderboard run"
+        },
+        "rankUpdatedAt": {
+          "type": "string",
+          "description": "Server timestamp when the user rank was updated"
+        },
+        "ownCode": {
+          "type": "string",
+          "description": "Unique referral code generated server-side for the user"
+        },
+        "referredByMasked": {
+          "type": "string",
+          "description": "Masked name of the referrer who invited this user"
+        },
+        "totalActiveMinutes": {
+          "type": "number",
+          "description": "Total active playtime in minutes tracked server-side"
         }
       },
-      "required": ["name", "mobile", "email", "createdAt"]
+      "required": ["name", "email", "country", "createdAt"]
+    },
+    "ReferralItem": {
+      "title": "ReferralItem",
+      "description": "Invitee referral tracking doc at /users/{uid}/referrals/{inviteeId}",
+      "type": "object",
+      "properties": {
+        "maskedName": { "type": "string" },
+        "verified": { "type": "boolean" },
+        "playedMinutes": { "type": "number" },
+        "status": { "type": "string", "enum": ["pending", "qualified"] },
+        "referrerReward": { "type": "number" },
+        "createdAt": { "type": "string" }
+      }
+    },
+    "ReferralConfig": {
+      "title": "ReferralConfig",
+      "description": "Platform referral bonus configuration at /config/referral",
+      "type": "object",
+      "properties": {
+        "totalBonus": { "type": "number" },
+        "referrerPercent": { "type": "number" },
+        "inviteePercent": { "type": "number" },
+        "requiredHours": { "type": "number" }
+      }
+    },
+    "Leaderboard": {
+      "title": "Leaderboard",
+      "description": "Monthly leaderboard document stored at /leaderboards/{period}",
+      "type": "object",
+      "properties": {
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the leaderboard was calculated"
+        },
+        "top": {
+          "type": "array",
+          "description": "Top 10 leaderboard entries sorted by points descending"
+        }
+      },
+      "required": ["updatedAt", "top"]
+    },
+    "WithdrawConfig": {
+      "title": "WithdrawConfig",
+      "description": "Platform withdrawal parameters stored at /config/withdraw",
+      "type": "object",
+      "properties": {
+        "usdToBdt": { "type": "number" },
+        "carryBelowUsd": { "type": "number" },
+        "mobileRechargeMin": { "type": "number" },
+        "mobileRechargeMaxExclusive": { "type": "number" },
+        "bankWalletMin": { "type": "number" },
+        "binanceMin": { "type": "number" }
+      }
+    },
+    "PayoutItem": {
+      "title": "PayoutItem",
+      "description": "User payout withdrawal record at /users/{uid}/payouts/{payoutId}",
+      "type": "object",
+      "properties": {
+        "method": { "type": "string" },
+        "accountDetails": { "type": "string" },
+        "amountUsd": { "type": "number" },
+        "amountBdt": { "type": "number" },
+        "status": { "type": "string", "enum": ["pending", "paid", "rejected"] },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["method", "amountUsd", "amountBdt", "status", "createdAt"]
     }
   },
   "firestore": {
     "/users/{uid}": {
       "schema": "UserProfile",
-      "description": "Stores user account details. Strictly enforces that points, sessions, and payouts cannot be written from client SDK."
+      "description": "Stores user account details. Strictly enforces that points, sessions, payouts, balance, verified, verifyMethod, and rank fields cannot be written from client SDK."
+    },
+    "/users/{uid}/referrals/{inviteeId}": {
+      "schema": "ReferralItem",
+      "description": "Invited user status maintained server-side, read-only for owner."
+    },
+    "/users/{uid}/payouts/{payoutId}": {
+      "schema": "PayoutItem",
+      "description": "Payout record maintained server-side, read-only for user."
+    },
+    "/config/referral": {
+      "schema": "ReferralConfig",
+      "description": "Referral program settings, read-only for all."
+    },
+    "/config/withdraw": {
+      "schema": "WithdrawConfig",
+      "description": "Platform withdrawal settings, read-only for all."
+    },
+    "/leaderboards/{period}": {
+      "schema": "Leaderboard",
+      "description": "Read-only monthly leaderboard calculated server-side."
     }
   }
 }

@@ -6,6 +6,7 @@
 <meta name="theme-color" content="#0C4A34">
 <meta name="description" content="Gamoro – লগইন ও সাইন আপ">
 <title>Gamoro – লগইন ও সাইন আপ</title>
+<link rel="icon" type="image/png" href="logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -23,26 +24,34 @@
 @media(prefers-color-scheme:dark){:root:not([data-theme=light]){color-scheme:dark;--bg:#101B17;--surface:#182720;--surface2:#25382E;--text:#F1F7F3;--muted:#B3C5B9;--line:#354B3E;--focus:#FFD16B;--green-2:#9BD6B5;--coral:#FF7A74}}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--text);font-family:"Hind Siliguri",system-ui,sans-serif;min-height:100vh}
-button,input{font:inherit}button{cursor:pointer}
+button,input,select{font:inherit}button{cursor:pointer}
 :focus-visible{outline:3px solid var(--focus);outline-offset:2px}
 .app{max-width:480px;margin:auto;min-height:100vh;padding-bottom:calc(24px + env(safe-area-inset-bottom))}
 .top{background:var(--green);color:#fff;padding:calc(14px + env(safe-area-inset-top)) 16px 54px;display:flex;align-items:center;gap:10px}
-.back{width:40px;height:40px;border:0;border-radius:12px;background:#ffffff1c;color:#fff;font-size:20px}
+.back{width:40px;height:40px;border:0;border-radius:12px;background:#ffffff1c;color:#fff;font-size:20px;display:grid;place-items:center}
 .brand{display:flex;align-items:center;gap:8px;font-weight:700;font-size:22px}
-.mark{display:grid;place-items:center;width:34px;height:34px;border-radius:11px;background:var(--gold);color:#17372B;font-size:21px}
+.mark{display:block;width:34px;height:34px;border-radius:10px;object-fit:cover;flex:none}
 .card{margin:-34px 14px 0;background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:20px 16px;box-shadow:0 8px 25px #0c4a3414}
 h1{margin:0 0 4px;font-size:22px}
 .sub{margin:0 0 16px;color:var(--muted);font-size:14px;line-height:1.5}
 .tabs{display:grid;grid-template-columns:1fr 1fr;gap:4px;background:var(--surface2);padding:4px;border-radius:13px;margin-bottom:18px}
 .tab{border:0;background:transparent;color:var(--muted);padding:9px;border-radius:10px;font-weight:600;font-size:14px}
 .tab[aria-selected=true]{background:var(--green);color:#fff}
+
+/* Google Sign-in button & divider */
+.google-btn{width:100%;display:flex;align-items:center;justify-content:center;gap:10px;padding:12px;border:1.5px solid var(--line);border-radius:13px;background:var(--surface);color:var(--text);font-weight:600;font-size:14.5px;transition:background .15s,border-color .15s;margin-bottom:12px}
+.google-btn:hover{background:var(--surface2);border-color:var(--green-2)}
+.divider{display:flex;align-items:center;margin:12px 0 16px;color:var(--muted);font-size:13px}
+.divider::before,.divider::after{content:"";flex:1;height:1px;background:var(--line)}
+.divider span{padding:0 10px}
+
 .field{margin-bottom:13px}
 label{display:block;font-size:13px;font-weight:600;margin-bottom:5px}
 label small{font-weight:400;color:var(--muted)}
 .inp{display:flex;align-items:center;border:1.5px solid var(--line);border-radius:12px;background:var(--bg);padding:0 12px}
 .inp:focus-within{border-color:var(--green-2)}
 .inp.bad{border-color:var(--coral)}
-.inp input{flex:1;min-width:0;border:0;outline:0;background:transparent;color:var(--text);padding:12px 0;font-size:15px}
+.inp input,.inp select{flex:1;min-width:0;border:0;outline:0;background:transparent;color:var(--text);padding:12px 0;font-size:15px}
 .pre{color:var(--muted);font-size:14px;padding-right:8px;margin-right:8px;border-right:1px solid var(--line)}
 .eye{border:0;background:none;color:var(--muted);font-size:13px;padding:6px 0 6px 8px}
 .err{display:none;color:var(--coral);font-size:12px;margin-top:4px}
@@ -64,12 +73,20 @@ label small{font-weight:400;color:var(--muted)}
 </head>
 <body>
 <div class="app">
- <header class="top"><button class="back" id="back" aria-label="ফিরে যান">←</button><div class="brand"><span class="mark">G</span>Gamoro</div></header>
+ <header class="top"><button class="back" id="back" aria-label="ফিরে যান">←</button><div class="brand"><img class="mark" src="logo.png" alt="Gamoro" width="34" height="34">Gamoro</div></header>
  <main class="card">
 
+  <!-- LOGIN VIEW -->
   <section class="view on" id="v-login" aria-labelledby="t-login">
    <h1 id="t-login">স্বাগতম</h1><p class="sub">খেলতে ও পয়েন্ট জমাতে লগইন করুন।</p>
    <div class="tabs" role="tablist"><button class="tab" role="tab" aria-selected="true" data-go="login">লগইন</button><button class="tab" role="tab" aria-selected="false" data-go="signup">সাইন আপ</button></div>
+   
+   <button type="button" class="google-btn" data-google-btn>
+     <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
+     <span>Google দিয়ে চালিয়ে যান</span>
+   </button>
+   <div class="divider"><span>অথবা</span></div>
+
    <form data-form="login" novalidate>
     <div class="field"><label for="l-email">ইমেইল</label><div class="inp"><input id="l-email" type="email" autocomplete="email" inputmode="email" placeholder="you@example.com"></div><div class="err">সঠিক ইমেইল লিখুন।</div></div>
     <div class="field"><label for="l-pass">পাসওয়ার্ড</label><div class="inp"><input id="l-pass" type="password" autocomplete="current-password" placeholder="পাসওয়ার্ড"><button type="button" class="eye" data-eye="l-pass">দেখুন</button></div><div class="err">পাসওয়ার্ড লিখুন।</div></div>
@@ -78,12 +95,36 @@ label small{font-weight:400;color:var(--muted)}
    </form>
   </section>
 
+  <!-- SIGNUP VIEW -->
   <section class="view" id="v-signup" aria-labelledby="t-signup">
    <h1 id="t-signup">নতুন অ্যাকাউন্ট</h1><p class="sub">তথ্য দিয়ে বিনামূল্যে অ্যাকাউন্ট খুলুন।</p>
    <div class="tabs" role="tablist"><button class="tab" role="tab" aria-selected="false" data-go="login">লগইন</button><button class="tab" role="tab" aria-selected="true" data-go="signup">সাইন আপ</button></div>
+   
+   <button type="button" class="google-btn" data-google-btn>
+     <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
+     <span>Google দিয়ে চালিয়ে যান</span>
+   </button>
+   <div class="divider"><span>অথবা</span></div>
+
    <form data-form="signup" novalidate>
     <div class="field"><label for="s-name">পুরো নাম</label><div class="inp"><input id="s-name" autocomplete="name" placeholder="আপনার নাম"></div><div class="err">নাম লিখুন।</div></div>
-    <div class="field"><label for="s-mob">মোবাইল নম্বর</label><div class="inp"><span class="pre">+৮৮</span><input id="s-mob" type="tel" inputmode="numeric" maxlength="11" autocomplete="tel-national" placeholder="01XXXXXXXXX"></div><div class="err">১১ ডিজিটের সঠিক নম্বর দিন (01 দিয়ে শুরু)।</div></div>
+    
+    <div class="field">
+      <label for="s-country">দেশ</label>
+      <div class="inp">
+        <select id="s-country">
+          <option value="BD">বাংলাদেশ</option>
+          <option value="INTL">অন্যান্য দেশ</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field" id="s-mob-wrap">
+      <label for="s-mob">মোবাইল নম্বর</label>
+      <div class="inp"><span class="pre">+৮৮</span><input id="s-mob" type="tel" inputmode="numeric" maxlength="11" autocomplete="tel-national" placeholder="01XXXXXXXXX"></div>
+      <div class="err">১১ ডিজিটের সঠিক নম্বর দিন (01 দিয়ে শুরু)।</div>
+    </div>
+
     <div class="field"><label for="s-email">ইমেইল</label><div class="inp"><input id="s-email" type="email" autocomplete="email" inputmode="email" placeholder="you@example.com"></div><div class="err">সঠিক ইমেইল লিখুন।</div></div>
     <div class="field"><label for="s-pass">পাসওয়ার্ড <small>(কমপক্ষে ৮ অক্ষর)</small></label><div class="inp"><input id="s-pass" type="password" autocomplete="new-password" placeholder="পাসওয়ার্ড"><button type="button" class="eye" data-eye="s-pass">দেখুন</button></div><div class="err">কমপক্ষে ৮ অক্ষর দিন।</div></div>
     <div class="field"><label for="s-pass2">পাসওয়ার্ড আবার লিখুন</label><div class="inp"><input id="s-pass2" type="password" autocomplete="new-password" placeholder="আবার লিখুন"></div><div class="err">দুটি পাসওয়ার্ড মেলেনি।</div></div>
@@ -93,6 +134,37 @@ label small{font-weight:400;color:var(--muted)}
    </form>
   </section>
 
+  <!-- COMPLETE PROFILE VIEW (Google login fresh users) -->
+  <section class="view" id="v-complete" aria-labelledby="t-complete">
+   <h1 id="t-complete">প্রোফাইল সম্পূর্ণ করুন</h1>
+   <p class="sub">Gamoro-তে খেলা শুরু করতে আপনার তথ্য নিশ্চিত করুন।</p>
+   <form data-form="complete" novalidate>
+    <div class="field"><label for="c-name">পুরো নাম</label><div class="inp"><input id="c-name" autocomplete="name" placeholder="আপনার নাম"></div><div class="err">নাম লিখুন।</div></div>
+    
+    <div class="field">
+      <label for="c-country">দেশ</label>
+      <div class="inp">
+        <select id="c-country">
+          <option value="BD">বাংলাদেশ</option>
+          <option value="INTL">অন্যান্য দেশ</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field" id="c-mob-wrap">
+      <label for="c-mob">মোবাইল নম্বর</label>
+      <div class="inp"><span class="pre">+৮৮</span><input id="c-mob" type="tel" inputmode="numeric" maxlength="11" autocomplete="tel-national" placeholder="01XXXXXXXXX"></div>
+      <div class="err">১১ ডিজিটের সঠিক নম্বর দিন (01 দিয়ে শুরু)।</div>
+    </div>
+
+    <div class="field"><label for="c-ref">রেফারেল কোড <small>(ঐচ্ছিক)</small></label><div class="inp"><input id="c-ref" autocapitalize="characters" placeholder="বন্ধুর কোড থাকলে দিন"></div></div>
+    
+    <div class="field"><label class="check"><input type="checkbox" id="c-terms"><span>আমি <button type="button" class="link" data-toast="শর্তাবলী পেজ (ডেমো)">শর্তাবলী</button> ও <button type="button" class="link" data-toast="প্রাইভেসি পলিসি পেজ (ডেমো)">প্রাইভেসি পলিসি</button> মেনে নিচ্ছি।</span></label><div class="inp" style="display:none"></div><div class="err" id="e-c-terms" style="margin-top:-8px">চালিয়ে যেতে সম্মতি দিন।</div></div>
+    <button class="btn" id="c-submit" type="submit">সংরক্ষণ করুন ও শুরু করুন</button>
+   </form>
+  </section>
+
+  <!-- FORGOT PASSWORD VIEW -->
   <section class="view" id="v-forgot" aria-labelledby="t-forgot">
    <h1 id="t-forgot">পাসওয়ার্ড রিসেট</h1><p class="sub">Telegram বট থেকে কোড নিয়ে নতুন পাসওয়ার্ড দিন।</p>
    <div class="note"><b>মনে রাখুন:</b> আগে Telegram ভেরিফাই করা অ্যাকাউন্টেই রিসেট করা যাবে।</div>
@@ -121,9 +193,14 @@ import {
   createUserWithEmailAndPassword, 
   updateProfile,
   sendPasswordResetEmail,
-  deleteUser
+  sendEmailVerification,
+  deleteUser,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult
 } from "firebase/auth";
-import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 
 (()=>{
  const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
@@ -149,19 +226,81 @@ import { doc, setDoc, serverTimestamp } from "firebase/firestore";
    }
  });
 
+ // Country toggles for mobile field
+ const sCountry = $('#s-country');
+ const sMobWrap = $('#s-mob-wrap');
+ sCountry.addEventListener('change', () => {
+   sMobWrap.style.display = sCountry.value === 'BD' ? 'block' : 'none';
+ });
+
+ const cCountry = $('#c-country');
+ const cMobWrap = $('#c-mob-wrap');
+ cCountry.addEventListener('change', () => {
+   cMobWrap.style.display = cCountry.value === 'BD' ? 'block' : 'none';
+ });
+
+ // Prefill referral code if present in URL
+ const urlParams = new URLSearchParams(window.location.search);
+ const refCodeFromUrl = urlParams.get('ref');
+ if (refCodeFromUrl) {
+   const cleanRef = refCodeFromUrl.trim().slice(0, 50).toUpperCase();
+   $('#s-ref').value = cleanRef;
+   $('#c-ref').value = cleanRef;
+ }
+
  const rx={email:/^[^\s@]+@[^\s@]+\.[^\s@]+$/,mob:/^01[3-9]\d{8}$/};
  function mark(id,ok){const w=document.getElementById(id).closest('.inp');w.classList.toggle('bad',!ok);return ok}
+ 
  function val(f){
   if(f==='login')return [mark('l-email',rx.email.test($('#l-email').value.trim())),mark('l-pass',!!$('#l-pass').value)].every(Boolean);
-  if(f==='signup'){const t=$('#s-terms').checked;$('#e-terms').style.display=t?'none':'block';
-   return [mark('s-name',!!$('#s-name').value.trim()),mark('s-mob',rx.mob.test($('#s-mob').value)),mark('s-email',rx.email.test($('#s-email').value.trim())),mark('s-pass',$('#s-pass').value.length>=8),mark('s-pass2',$('#s-pass2').value===$('#s-pass').value&&!!$('#s-pass2').value),t].every(Boolean)}
-  if(f==='forgot'){if($('#f2').hidden)return mark('f-email',rx.email.test($('#f-email').value.trim()));return [mark('f-code',/^\d{6}$/.test($('#f-code').value)),mark('f-pass',$('#f-pass').value.length>=8)].every(Boolean)}
+  
+  if(f==='signup'){
+    const t=$('#s-terms').checked;
+    $('#e-terms').style.display=t?'none':'block';
+    const isBD = sCountry.value === 'BD';
+    const checks = [
+      mark('s-name',!!$('#s-name').value.trim()),
+      mark('s-email',rx.email.test($('#s-email').value.trim())),
+      mark('s-pass',$('#s-pass').value.length>=8),
+      mark('s-pass2',$('#s-pass2').value===$('#s-pass').value&&!!$('#s-pass2').value),
+      t
+    ];
+    if (isBD) {
+      checks.push(mark('s-mob',rx.mob.test($('#s-mob').value)));
+    }
+    return checks.every(Boolean);
+  }
+
+  if(f==='complete'){
+    const t=$('#c-terms').checked;
+    $('#e-c-terms').style.display=t?'none':'block';
+    const isBD = cCountry.value === 'BD';
+    const checks = [
+      mark('c-name',!!$('#c-name').value.trim()),
+      t
+    ];
+    if (isBD) {
+      checks.push(mark('c-mob',rx.mob.test($('#c-mob').value)));
+    }
+    return checks.every(Boolean);
+  }
+
+  if(f==='forgot'){
+    if($('#f2').hidden)return mark('f-email',rx.email.test($('#f-email').value.trim()));
+    return [mark('f-code',/^\d{6}$/.test($('#f-code').value)),mark('f-pass',$('#f-pass').value.length>=8)].every(Boolean);
+  }
  }
 
  // Firebase friendly Bengali error mapper
  function mapAuthError(err) {
    const code = err?.code || '';
    const msg = err?.message || '';
+   if (code === 'auth/popup-closed-by-user') {
+     return 'গুগল সাইন-ইন উইন্ডো বন্ধ করা হয়েছে।';
+   }
+   if (code === 'auth/cancelled-popup-request') {
+     return 'অনুরোধটি বাতিল করা হয়েছে।';
+   }
    if (code === 'auth/invalid-credential' || code === 'auth/user-not-found' || code === 'auth/wrong-password') {
      return 'ইমেইল বা পাসওয়ার্ড সঠিক নয়।';
    }
@@ -189,6 +328,68 @@ import { doc, setDoc, serverTimestamp } from "firebase/firestore";
    return 'ত্রুটি: ' + (err.message || 'আবার চেষ্টা করুন।');
  }
 
+ let pendingAuthUser = null;
+
+ // Handles post-login check for profile completion
+ async function handleUserPostAuth(user) {
+   if (!user) return;
+   try {
+     const userDocRef = doc(db, 'users', user.uid);
+     const snap = await getDoc(userDocRef);
+     if (snap.exists()) {
+       say('লগইন সফল হয়েছে!');
+       setTimeout(() => {
+         window.location.href = 'index.html';
+       }, 1000);
+     } else {
+       // Need to complete profile
+       pendingAuthUser = user;
+       if (user.displayName) {
+         $('#c-name').value = user.displayName;
+       }
+       go('complete');
+     }
+   } catch (err) {
+     console.error('Check user profile error:', err);
+     say(mapAuthError(err));
+   }
+ }
+
+ // Google Sign-in flow
+ const googleProvider = new GoogleAuthProvider();
+ async function startGoogleSignIn() {
+   try {
+     const result = await signInWithPopup(auth, googleProvider);
+     if (result?.user) {
+       await handleUserPostAuth(result.user);
+     }
+   } catch (err) {
+     if (err?.code === 'auth/popup-blocked') {
+       try {
+         await signInWithRedirect(auth, googleProvider);
+         return;
+       } catch (rErr) {
+         say(mapAuthError(rErr));
+         return;
+       }
+     }
+     console.error('Google Sign-In Error:', err);
+     say(mapAuthError(err));
+   }
+ }
+
+ $$('[data-google-btn]').forEach(btn => btn.addEventListener('click', startGoogleSignIn));
+
+ // Handle redirect result if user came from redirect flow
+ getRedirectResult(auth).then(async (result) => {
+   if (result?.user) {
+     await handleUserPostAuth(result.user);
+   }
+ }).catch(err => {
+   console.error('Redirect Result Error:', err);
+   say(mapAuthError(err));
+ });
+
  $$('form').forEach(fm=>fm.addEventListener('submit', async (e)=>{
   e.preventDefault();
   const f=fm.dataset.form;
@@ -208,11 +409,8 @@ import { doc, setDoc, serverTimestamp } from "firebase/firestore";
     submitBtn.textContent = 'লগইন হচ্ছে...';
 
     try {
-      await signInWithEmailAndPassword(auth, email, pass);
-      say('লগইন সফল হয়েছে!');
-      setTimeout(() => {
-        window.location.href = 'index.html';
-      }, 1200);
+      const cred = await signInWithEmailAndPassword(auth, email, pass);
+      await handleUserPostAuth(cred.user);
     } catch(err) {
       console.error('Firebase Login Error:', err);
       say(mapAuthError(err));
@@ -225,6 +423,7 @@ import { doc, setDoc, serverTimestamp } from "firebase/firestore";
   // SIGNUP FLOW
   if(f==='signup'){
     const name = $('#s-name').value.trim();
+    const country = sCountry.value;
     const mob = $('#s-mob').value.trim();
     const email = $('#s-email').value.trim();
     const pass = $('#s-pass').value;
@@ -244,16 +443,19 @@ import { doc, setDoc, serverTimestamp } from "firebase/firestore";
         await updateProfile(user, { displayName: name });
       } catch(_) {}
 
-      // 2. Save strictly name, mobile, email, referralCode in users/{uid}
-      // CRITICAL RULE: points, sessions, payouts NEVER written from client!
+      // 2. Save strictly permitted fields in users/{uid}
+      // CRITICAL: points, sessions, payouts, verified, balance NEVER written from client!
       const userDocRef = doc(db, 'users', user.uid);
       const userData = {
         name: name,
-        mobile: '+88' + mob,
+        country: country,
         email: email,
         referralCode: ref ? ref : null,
         createdAt: serverTimestamp()
       };
+      if (country === 'BD') {
+        userData.mobile = '+88' + mob;
+      }
 
       try {
         await setDoc(userDocRef, userData);
@@ -272,10 +474,17 @@ import { doc, setDoc, serverTimestamp } from "firebase/firestore";
         throw new Error('PROFILE_CREATION_FAILED');
       }
 
-      say('অ্যাকাউন্ট সফলভাবে তৈরি হয়েছে!');
+      // ইমেইল ভেরিফিকেশন পাঠানো
+      try {
+        await sendEmailVerification(user);
+      } catch (emErr) {
+        console.warn('sendEmailVerification error:', emErr);
+      }
+
+      say('আপনার ইমেইলে ভেরিফাই লিংক পাঠানো হয়েছে।');
       setTimeout(() => {
         window.location.href = 'index.html';
-      }, 1200);
+      }, 1500);
 
     } catch(err) {
       console.error('Firebase Signup Error:', err);
@@ -284,6 +493,58 @@ import { doc, setDoc, serverTimestamp } from "firebase/firestore";
       } else {
         say(mapAuthError(err));
       }
+      submitBtn.disabled = false;
+      submitBtn.textContent = originalText;
+    }
+    return;
+  }
+
+  // COMPLETE PROFILE FLOW (After Google Login)
+  if(f==='complete'){
+    if (!pendingAuthUser) {
+      say('সেশন পাওয়া যায়নি। অনুগ্রহ করে পুনরায় লগইন করুন।');
+      go('login');
+      return;
+    }
+
+    const name = $('#c-name').value.trim();
+    const country = cCountry.value;
+    const mob = $('#c-mob').value.trim();
+    const ref = $('#c-ref').value.trim();
+    const submitBtn = $('#c-submit');
+    const originalText = submitBtn.textContent;
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'সংরক্ষণ হচ্ছে...';
+
+    try {
+      const userDocRef = doc(db, 'users', pendingAuthUser.uid);
+      const userData = {
+        name: name,
+        country: country,
+        email: pendingAuthUser.email || '',
+        referralCode: ref ? ref : null,
+        createdAt: serverTimestamp()
+      };
+      if (country === 'BD') {
+        userData.mobile = '+88' + mob;
+      }
+
+      try {
+        await setDoc(userDocRef, userData);
+      } catch (dbErr) {
+        handleFirestoreError(dbErr, 'create', 'users/' + pendingAuthUser.uid);
+        throw dbErr;
+      }
+
+      say('প্রোফাইল সম্পন্ন হয়েছে!');
+      setTimeout(() => {
+        window.location.href = 'index.html';
+      }, 1000);
+
+    } catch (err) {
+      console.error('Complete Profile Error:', err);
+      say('প্রোফাইল সংরক্ষণ করা যায়নি: ' + (err.message || 'আবার চেষ্টা করুন।'));
       submitBtn.disabled = false;
       submitBtn.textContent = originalText;
     }
@@ -320,8 +581,14 @@ import { doc, setDoc, serverTimestamp } from "firebase/firestore";
  }));
 
  $('#s-mob').addEventListener('input',e=>e.target.value=e.target.value.replace(/\D/g,''));
+ $('#c-mob').addEventListener('input',e=>e.target.value=e.target.value.replace(/\D/g,''));
  $('#f-code').addEventListener('input',e=>e.target.value=e.target.value.replace(/\D/g,''));
- const h=location.hash.slice(1);if(['login','signup','forgot'].includes(h))go(h);
+ const h=location.hash.slice(1);
+ if(refCodeFromUrl){
+   go('signup');
+ }else if(['login','signup','forgot','complete'].includes(h)){
+   go(h);
+ }
 })();
 </script>
 </body>

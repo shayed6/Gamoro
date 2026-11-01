@@ -1,0 +1,1801 @@
+<!--
+সার্ভার নিয়ম (ভবিষ্যতে Netlify Function): (ক) আবেদনে verified, country, ন্যূনতম সীমা ও balanceUsd সার্ভারে যাচাই; (খ) Binance Pay শুধু country == INTL, বাংলাদেশি পদ্ধতি শুধু BD; (গ) মোবাইল রিচার্জ শুধু প্রোফাইলের নিজের নম্বরে; (ঘ) আবেদনের সময় balanceUsd একটি ট্রানজ্যাকশনে কমিয়ে payouts/{id} তৈরি; (ঙ) ১ ডলারের কম ব্যালেন্স আগামী মাসে থাকবে; (চ) অটো উইথড্র চালু থাকলে মাসের হিসাব শেষে আবেদন নিজে তৈরি, পেমেন্ট অ্যাডমিন ম্যানুয়ালি করবে; (ছ) ডলার রেট config/withdraw থেকে।
+-->
+<!DOCTYPE html>
+<html lang="bn" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0C4A34">
+<meta name="description" content="Gamoro – টাকা তোলা ও উইথড্রয়াল">
+<title>Gamoro – টাকা তোলা</title>
+<link rel="icon" type="image/png" href="logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script type="importmap">
+{
+  "imports": {
+    "firebase/app": "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js",
+    "firebase/auth": "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js",
+    "firebase/firestore": "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"
+  }
+}
+</script>
+<style>
+:root{
+  color-scheme:light;
+  --green:#0C4A34;
+  --green-2:#176746;
+  --gold:#E9A820;
+  --coral:#D6403B;
+  --bg:#F0F8F2;
+  --surface:#ffffff;
+  --surface2:#E4F1E8;
+  --text:#17372B;
+  --muted:#63796D;
+  --line:#D5E5D9;
+  --shadow:0 8px 25px rgba(12,74,52,.08);
+  --focus:#D6403B;
+}
+:root[data-theme=dark]{
+  color-scheme:dark;
+  --bg:#101B17;
+  --surface:#182720;
+  --surface2:#25382E;
+  --text:#F1F7F3;
+  --muted:#B3C5B9;
+  --line:#354B3E;
+  --shadow:0 8px 25px rgba(0,0,0,.28);
+  --focus:#FFD16B;
+  --green-2:#9BD6B5;
+  --coral:#FF7A74;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:"Hind Siliguri",system-ui,sans-serif;
+  min-height:100vh;
+}
+button,input,select,textarea,a{font:inherit}
+button{cursor:pointer}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{
+  outline:3px solid var(--focus);
+  outline-offset:2px;
+}
+.app{
+  max-width:480px;
+  margin:auto;
+  min-height:100vh;
+  padding-bottom:calc(32px + env(safe-area-inset-bottom));
+  display:flex;
+  flex-direction:column;
+}
+
+/* Header */
+.top{
+  background:var(--green);
+  color:#fff;
+  padding:calc(12px + env(safe-area-inset-top)) 16px 14px;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  position:sticky;
+  top:0;
+  z-index:30;
+  box-shadow:0 4px 15px rgba(6,43,29,.25);
+}
+.back{
+  width:40px;
+  height:40px;
+  border:0;
+  border-radius:12px;
+  background:#ffffff1c;
+  color:#fff;
+  font-size:20px;
+  display:grid;
+  place-items:center;
+  flex:none;
+  transition:background .15s;
+}
+.back:hover{background:#ffffff2a}
+.top-title{
+  margin:0;
+  font-size:20px;
+  font-weight:700;
+  flex:1;
+}
+.demo-badge{
+  background:#FFE6A5;
+  color:#4A3500;
+  font-size:11px;
+  font-weight:700;
+  padding:3px 9px;
+  border-radius:99px;
+  flex:none;
+}
+.theme-btn{
+  width:36px;
+  height:36px;
+  border:0;
+  border-radius:10px;
+  background:#ffffff1c;
+  color:#fff;
+  font-size:16px;
+  display:grid;
+  place-items:center;
+  flex:none;
+}
+
+/* Test Scenarios Bar */
+.test-bar{
+  background:var(--surface2);
+  padding:8px 16px;
+  font-size:12px;
+  border-bottom:1px solid var(--line);
+}
+.test-bar-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:6px;
+}
+.test-bar-title{
+  font-weight:700;
+  color:var(--green-2);
+}
+.test-btns{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+}
+.test-btn{
+  border:1px solid var(--line);
+  background:var(--surface);
+  color:var(--text);
+  font-size:11px;
+  padding:4px 9px;
+  border-radius:6px;
+  transition:all .15s;
+}
+.test-btn:hover{
+  border-color:var(--green-2);
+}
+.test-btn.active{
+  background:var(--green);
+  color:#fff;
+  border-color:var(--green);
+}
+
+/* Main Content */
+.content{
+  padding:16px;
+  display:flex;
+  flex-direction:column;
+  gap:18px;
+}
+
+/* Balance Card */
+.balance-card{
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:16px;
+  padding:20px;
+  text-align:center;
+  box-shadow:var(--shadow);
+}
+.bal-label{
+  font-size:14px;
+  color:var(--muted);
+  margin-bottom:4px;
+}
+.bal-main{
+  display:flex;
+  align-items:baseline;
+  justify-content:center;
+  gap:8px;
+  flex-wrap:wrap;
+}
+.bal-usd{
+  font-size:32px;
+  font-weight:700;
+  color:var(--green);
+}
+:root[data-theme=dark] .bal-usd{
+  color:var(--green-2);
+}
+.bal-bdt{
+  font-size:18px;
+  font-weight:600;
+  color:var(--text);
+}
+.bal-sub{
+  font-size:13px;
+  color:var(--muted);
+  margin-top:6px;
+}
+
+/* Warning & Notice Boxes */
+.verify-warning{
+  background:rgba(233,168,32,0.12);
+  border:1px solid var(--gold);
+  border-radius:12px;
+  padding:14px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
+.verify-text{
+  font-size:14px;
+  color:var(--text);
+  font-weight:500;
+  line-height:1.4;
+}
+.verify-action{
+  flex:none;
+  background:var(--gold);
+  color:#1c1402;
+  font-weight:700;
+  font-size:13px;
+  padding:8px 14px;
+  border-radius:8px;
+  text-decoration:none;
+  transition:opacity .15s;
+}
+.verify-action:hover{opacity:.9}
+
+.pin-card{
+  background:var(--surface);
+  border:1.5px solid var(--line);
+  border-radius:14px;
+  padding:16px;
+  box-shadow:var(--shadow);
+}
+.action-btn-sm{
+  background:var(--green);
+  color:#fff;
+  border:0;
+  border-radius:8px;
+  padding:8px 14px;
+  font-size:13px;
+  font-weight:600;
+  cursor:pointer;
+  transition:all .15s;
+}
+.action-btn-sm:hover{
+  filter:brightness(1.08);
+}
+.action-btn-sm.secondary{
+  background:var(--surface2);
+  color:var(--text);
+  border:1px solid var(--line);
+}
+
+.threshold-notice{
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:20px;
+  text-align:center;
+}
+.threshold-title{
+  font-size:15px;
+  font-weight:600;
+  color:var(--text);
+  margin-bottom:6px;
+}
+.threshold-sub{
+  font-size:13px;
+  color:var(--muted);
+  line-height:1.5;
+}
+
+/* Form Container */
+.withdraw-form{
+  display:flex;
+  flex-direction:column;
+  gap:16px;
+  transition:filter .2s, opacity .2s;
+}
+.withdraw-form.gated{
+  filter:blur(2px);
+  opacity:0.4;
+  pointer-events:none;
+  user-select:none;
+}
+
+/* Section Header */
+.sec-title{
+  font-size:15px;
+  font-weight:700;
+  color:var(--text);
+  margin:0 0 10px 0;
+}
+
+/* Methods Grid */
+.methods-grid{
+  display:grid;
+  grid-template-columns:repeat(2, 1fr);
+  gap:10px;
+}
+.method-card{
+  background:var(--surface);
+  border:1.5px solid var(--line);
+  border-radius:12px;
+  padding:12px;
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  cursor:pointer;
+  transition:all .15s;
+  text-align:left;
+}
+.method-card:hover:not(.disabled){
+  border-color:var(--green-2);
+}
+.method-card.selected{
+  border-color:var(--green);
+  background:var(--surface2);
+}
+.method-name{
+  font-size:14px;
+  font-weight:600;
+  color:var(--text);
+}
+.method-note{
+  font-size:11px;
+  color:var(--muted);
+  line-height:1.3;
+}
+.method-card.disabled{
+  cursor:not-allowed;
+  opacity:0.6;
+  background:var(--bg);
+}
+.method-card.disabled .method-name{
+  color:var(--muted);
+}
+.method-card.disabled .method-note{
+  color:var(--coral);
+}
+
+/* Field Groups */
+.field-group{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+.field-label{
+  font-size:13px;
+  font-weight:600;
+  color:var(--text);
+}
+.field-input, .field-select{
+  width:100%;
+  padding:11px 14px;
+  border:1.5px solid var(--line);
+  border-radius:10px;
+  background:var(--surface);
+  color:var(--text);
+  font-size:15px;
+  transition:border-color .15s;
+}
+.field-input:focus, .field-select:focus{
+  border-color:var(--green);
+}
+.field-input[readonly]{
+  background:var(--surface2);
+  color:var(--muted);
+  cursor:default;
+}
+.field-hint{
+  font-size:12px;
+  color:var(--muted);
+}
+
+/* Pill options */
+.pill-group{
+  display:flex;
+  gap:8px;
+}
+.pill-btn{
+  flex:1;
+  padding:9px;
+  border:1.5px solid var(--line);
+  border-radius:8px;
+  background:var(--surface);
+  color:var(--text);
+  font-size:13px;
+  font-weight:600;
+  text-align:center;
+  transition:all .15s;
+}
+.pill-btn.selected{
+  border-color:var(--green);
+  background:var(--surface2);
+  color:var(--green);
+}
+:root[data-theme=dark] .pill-btn.selected{
+  color:var(--green-2);
+}
+
+/* Amount Input Box */
+.amount-wrapper{
+  position:relative;
+  display:flex;
+  align-items:center;
+}
+.amount-prefix{
+  position:absolute;
+  left:14px;
+  font-size:17px;
+  font-weight:700;
+  color:var(--muted);
+  pointer-events:none;
+}
+.amount-input{
+  padding-left:32px;
+  padding-right:60px;
+}
+.amount-max-btn{
+  position:absolute;
+  right:8px;
+  background:var(--surface2);
+  border:1px solid var(--line);
+  color:var(--green);
+  font-size:12px;
+  font-weight:700;
+  padding:5px 10px;
+  border-radius:6px;
+  transition:background .15s;
+}
+:root[data-theme=dark] .amount-max-btn{
+  color:var(--green-2);
+}
+.amount-max-btn:hover{
+  background:var(--line);
+}
+.amount-bdt-preview{
+  font-size:14px;
+  font-weight:600;
+  color:var(--green-2);
+  margin-top:2px;
+}
+
+/* Auto withdraw toggle */
+.auto-withdraw-box{
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:14px;
+}
+.checkbox-row{
+  display:flex;
+  align-items:flex-start;
+  gap:10px;
+  cursor:pointer;
+}
+.checkbox-row input[type=checkbox]{
+  width:18px;
+  height:18px;
+  margin-top:2px;
+  accent-color:var(--green);
+  cursor:pointer;
+  flex:none;
+}
+.checkbox-label{
+  font-size:13px;
+  font-weight:500;
+  color:var(--text);
+  line-height:1.4;
+}
+.auto-subnote{
+  font-size:12px;
+  color:var(--muted);
+  margin-top:4px;
+  margin-left:28px;
+}
+.auto-checked-notice{
+  margin-top:8px;
+  margin-left:28px;
+  font-size:12px;
+  color:var(--green-2);
+  font-weight:600;
+}
+
+/* Submit Button */
+.submit-btn{
+  width:100%;
+  padding:14px;
+  background:var(--green);
+  color:#fff;
+  border:0;
+  border-radius:12px;
+  font-size:16px;
+  font-weight:700;
+  box-shadow:0 4px 14px rgba(12,74,52,.2);
+  transition:all .15s;
+}
+.submit-btn:hover:not(:disabled){
+  filter:brightness(1.08);
+}
+.submit-btn:disabled{
+  opacity:0.5;
+  cursor:not-allowed;
+  box-shadow:none;
+}
+
+/* Divider */
+.divider{
+  border:0;
+  border-top:1px solid var(--line);
+  margin:8px 0;
+}
+
+/* Payout History */
+.history-section{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+.payout-list{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+.payout-card{
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:14px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
+.payout-info{
+  display:flex;
+  flex-direction:column;
+  gap:3px;
+}
+.payout-method{
+  font-size:14px;
+  font-weight:600;
+  color:var(--text);
+}
+.payout-date{
+  font-size:12px;
+  color:var(--muted);
+}
+.payout-meta{
+  text-align:right;
+  display:flex;
+  flex-direction:column;
+  align-items:flex-end;
+  gap:4px;
+}
+.payout-amount{
+  font-size:14px;
+  font-weight:700;
+  color:var(--text);
+}
+.payout-badge{
+  font-size:11px;
+  font-weight:700;
+  padding:3px 8px;
+  border-radius:6px;
+}
+.badge-pending{
+  background:rgba(233,168,32,0.18);
+  color:#9B6800;
+}
+:root[data-theme=dark] .badge-pending{
+  background:rgba(233,168,32,0.22);
+  color:#FFD16B;
+}
+.badge-paid{
+  background:rgba(23,103,70,0.15);
+  color:var(--green-2);
+}
+.badge-rejected{
+  background:rgba(214,64,59,0.15);
+  color:var(--coral);
+}
+.history-empty{
+  text-align:center;
+  padding:24px 16px;
+  color:var(--muted);
+  font-size:14px;
+  background:var(--surface);
+  border:1px dashed var(--line);
+  border-radius:12px;
+}
+
+/* Bottom Rules Note */
+.rules-note{
+  font-size:13px;
+  color:var(--muted);
+  line-height:1.6;
+  text-align:center;
+  padding:4px 8px;
+}
+
+/* Confirmation Modal */
+.modal-overlay{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.6);
+  z-index:90;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .2s;
+}
+.modal-overlay.open{
+  opacity:1;
+  pointer-events:auto;
+}
+.modal-card{
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:16px;
+  width:100%;
+  max-width:400px;
+  padding:20px;
+  box-shadow:var(--shadow);
+  display:flex;
+  flex-direction:column;
+  gap:16px;
+}
+.modal-title{
+  margin:0;
+  font-size:18px;
+  font-weight:700;
+  color:var(--text);
+}
+.modal-rows{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  background:var(--surface2);
+  padding:12px 14px;
+  border-radius:10px;
+}
+.modal-row{
+  display:flex;
+  justify-content:space-between;
+  gap:8px;
+  font-size:13px;
+}
+.modal-row-label{
+  color:var(--muted);
+}
+.modal-row-val{
+  font-weight:600;
+  color:var(--text);
+  text-align:right;
+  word-break:break-all;
+}
+.modal-actions{
+  display:flex;
+  gap:10px;
+}
+.modal-btn{
+  flex:1;
+  padding:11px;
+  border-radius:10px;
+  font-size:14px;
+  font-weight:700;
+}
+.modal-cancel{
+  background:transparent;
+  border:1.5px solid var(--line);
+  color:var(--text);
+}
+.modal-confirm{
+  background:var(--green);
+  border:0;
+  color:#fff;
+}
+
+/* Toast */
+.toast{
+  position:fixed;
+  bottom:calc(24px + env(safe-area-inset-bottom));
+  left:50%;
+  transform:translateX(-50%) translateY(20px);
+  background:#17372B;
+  color:#fff;
+  padding:10px 18px;
+  border-radius:99px;
+  font-size:14px;
+  font-weight:500;
+  box-shadow:0 6px 20px rgba(0,0,0,.25);
+  opacity:0;
+  pointer-events:none;
+  transition:all .25s ease;
+  z-index:99;
+  text-align:center;
+  white-space:nowrap;
+  max-width:90%;
+}
+.toast.show{
+  opacity:1;
+  transform:translateX(-50%) translateY(0);
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- Header -->
+  <header class="top">
+    <button class="back" id="backBtn" aria-label="ফিরে যান">←</button>
+    <h1 class="top-title">টাকা তোলা</h1>
+    <span class="demo-badge" id="demoBadge" style="display:none">ডেমো ডেটা</span>
+    <button class="theme-btn" id="themeBtn" aria-label="থিম পরিবর্তন">🌙</button>
+  </header>
+
+  <!-- TEMP: প্রোডাকশনের আগে মুছতে হবে -->
+  <div class="test-bar" id="testBar">
+    <div class="test-bar-head">
+      <span class="test-bar-title">সিমুলেশন ও টেস্ট মোড</span>
+      <button class="test-btn" id="realDataBtn">আসল ডেটা</button>
+    </div>
+    <div class="test-btns">
+      <button class="test-btn" data-scenario="bd_8">বাংলাদেশি $৮</button>
+      <button class="test-btn" data-scenario="bd_25">বাংলাদেশি $২৫</button>
+      <button class="test-btn" data-scenario="intl_12">বিদেশি $১২</button>
+      <button class="test-btn" data-scenario="intl_6">বিদেশি $৬</button>
+      <button class="test-btn" data-scenario="low_bal">ব্যালেন্স $০.৫০</button>
+      <button class="test-btn" data-scenario="unverified_email">ইমেইল ভেরিফাই নেই</button>
+      <button class="test-btn" data-scenario="unpin">পিন সেট নেই</button>
+    </div>
+  </div>
+
+  <main class="content">
+    <!-- Balance Card -->
+    <section class="balance-card">
+      <div class="bal-label">আপনার ব্যালেন্স</div>
+      <div class="bal-main">
+        <span class="bal-usd" id="balanceUsdText">$০.০০</span>
+        <span class="bal-bdt" id="balanceBdtText">≈ ৳০</span>
+      </div>
+    </section>
+
+    <!-- Email Verification Card (when emailVerified !== true) -->
+    <div class="verify-warning" id="emailWarning" style="display:none; flex-direction:column; align-items:stretch; gap:10px;">
+      <div>
+        <div class="verify-text" style="font-weight:700">আপনার ইমেইল ভেরিফাই করুন</div>
+        <div style="font-size:13px;color:var(--muted);margin-top:2px">টাকা তোলার জন্য ইমেইল ভেরিফিকেশন বাধ্যতামূলক।</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button type="button" class="action-btn-sm" id="resendEmailBtn">ভেরিফাই ইমেইল আবার পাঠান</button>
+        <button type="button" class="action-btn-sm secondary" id="reloadEmailBtn">ভেরিফাই করেছি, দেখুন</button>
+      </div>
+    </div>
+
+    <!-- PIN Setup Card (when pinSet !== true) -->
+    <div class="pin-card" id="pinSetupCard" style="display:none">
+      <div class="verify-text" style="font-weight:700">টাকা তোলার পিন সেট করুন</div>
+      <div style="font-size:13px;color:var(--muted);margin-top:2px;margin-bottom:12px">টাকা তোলার নিরাপত্তা নিশ্চিত করতে ৬ ডিজিটের পিন সেট করুন।</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div>
+          <label class="field-label" for="newPinInput">৬ ডিজিটের পিন</label>
+          <input type="password" inputmode="numeric" maxlength="6" class="field-input" id="newPinInput" placeholder="••••••">
+        </div>
+        <div>
+          <label class="field-label" for="confirmPinInput">পিন পুনরায় লিখুন</label>
+          <input type="password" inputmode="numeric" maxlength="6" class="field-input" id="confirmPinInput" placeholder="••••••">
+        </div>
+        <button type="button" class="submit-btn" style="padding:10px 14px;font-size:14.5px" id="savePinBtn">পিন সেট করুন</button>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">এই পিন কাউকে জানাবেন না। ভুলে গেলে অ্যাডমিনের সাথে যোগাযোগ করতে হবে।</div>
+      </div>
+    </div>
+
+    <!-- Threshold Notice (when balance is below withdraw threshold) -->
+    <div class="threshold-notice" id="thresholdNotice" style="display:none">
+      <div class="threshold-title">আপনার ব্যালেন্স তোলার ন্যূনতম সীমার কম।</div>
+      <div class="threshold-sub" id="thresholdSubText">এটি আগামী মাসে জমা থাকবে।</div>
+    </div>
+
+    <!-- Withdraw Form -->
+    <div class="withdraw-form" id="withdrawForm">
+      <!-- Payment Methods -->
+      <section>
+        <h2 class="sec-title">পেমেন্ট পদ্ধতি নির্বাচন করুন</h2>
+        <div class="methods-grid" id="methodsGrid">
+          <!-- Dynamically populated based on country & balance -->
+        </div>
+      </section>
+
+      <!-- Method Details Form (dynamic) -->
+      <section id="methodFieldsSection">
+        <h2 class="sec-title" id="methodFieldsTitle">পেমেন্টের বিবরণ</h2>
+
+        <!-- Fields: Mobile Recharge -->
+        <div id="fieldsRecharge" style="display:none; flex-direction:column; gap:12px;">
+          <div class="field-group">
+            <label class="field-label" for="rechargeOperator">মোবাইল অপারেটর</label>
+            <select class="field-select" id="rechargeOperator">
+              <option value="গ্রামীণফোন">গ্রামীণফোন (Grameenphone)</option>
+              <option value="রবি">রবি (Robi)</option>
+              <option value="বাংলালিংক">বাংলালিংক (Banglalink)</option>
+              <option value="এয়ারটেল">এয়ারটেল (Airtel)</option>
+              <option value="টেলিটক">টেলিটক (Teletalk)</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="rechargeNumber">মোবাইল নম্বর</label>
+            <input type="text" class="field-input" id="rechargeNumber" readonly value="+8801XXXXXXXXX">
+            <span class="field-hint">রিচার্জ শুধু আপনার ভেরিফাইড নম্বরে হবে।</span>
+          </div>
+        </div>
+
+        <!-- Fields: MFS (bKash / Rocket / Nagad) -->
+        <div id="fieldsMfs" style="display:none; flex-direction:column; gap:12px;">
+          <div class="field-group">
+            <label class="field-label" for="mfsNumber">অ্যাকাউন্ট নম্বর (১১ ডিজিট)</label>
+            <input type="tel" class="field-input" id="mfsNumber" placeholder="01XXXXXXXXX" maxlength="11">
+            <span class="field-hint">০১ দিয়ে শুরু হওয়া ১১ ডিজিটের মোবাইল ব্যাংকিং নম্বর দিন।</span>
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="mfsType">অ্যাকাউন্টের ধরন</label>
+            <input type="text" class="field-input" id="mfsType" readonly value="পার্সোনাল">
+          </div>
+        </div>
+
+        <!-- Fields: Bank -->
+        <div id="fieldsBank" style="display:none; flex-direction:column; gap:12px;">
+          <div class="field-group">
+            <label class="field-label" for="bankName">ব্যাংকের নাম</label>
+            <input type="text" class="field-input" id="bankName" placeholder="যেমন: ডাচ-বাংলা ব্যাংক">
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="bankBranch">শাখা (Branch)</label>
+            <input type="text" class="field-input" id="bankBranch" placeholder="যেমন: ধানমন্ডি শাখা">
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="bankAccName">হিসাবধারীর নাম (Account Name)</label>
+            <input type="text" class="field-input" id="bankAccName" placeholder="ব্যাংক অ্যাকাউন্টের পুরো নাম">
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="bankAccNumber">অ্যাকাউন্ট নম্বর</label>
+            <input type="text" class="field-input" id="bankAccNumber" placeholder="অ্যাকাউন্ট নম্বর লিখুন">
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="bankRouting">রাউটিং নম্বর (ঐচ্ছিক)</label>
+            <input type="text" class="field-input" id="bankRouting" placeholder="৯ ডিজিটের রাউটিং নম্বর">
+          </div>
+        </div>
+
+        <!-- Fields: Binance Pay -->
+        <div id="fieldsBinance" style="display:none; flex-direction:column; gap:12px;">
+          <div class="field-group">
+            <label class="field-label" for="binanceId">Binance Pay ID / UID</label>
+            <input type="text" class="field-input" id="binanceId" placeholder="আপনার Binance Pay ID লিখুন">
+            <span class="field-hint">নাম ও আইডি দুবার মিলিয়ে নিন, ভুল আইডিতে পাঠানো টাকা ফেরত পাওয়া যায় না।</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Amount Section -->
+      <section>
+        <h2 class="sec-title">টাকার পরিমাণ</h2>
+        <div class="field-group">
+          <label class="field-label" for="amountUsdInput">পরিমাণ (USD)</label>
+          <div class="amount-wrapper">
+            <span class="amount-prefix">$</span>
+            <input type="number" step="any" min="1" class="field-input amount-input" id="amountUsdInput" placeholder="0.00">
+            <button type="button" class="amount-max-btn" id="maxBtn">সব</button>
+          </div>
+          <div class="amount-bdt-preview" id="amountBdtPreview">≈ ৳০</div>
+          <span class="field-hint" id="amountRuleHint">ন্যূনতম সীমা অনুযায়ী পরিমাণ লিখুন।</span>
+        </div>
+      </section>
+
+      <!-- Auto-withdraw Checkbox -->
+      <div class="auto-withdraw-box">
+        <label class="checkbox-row">
+          <input type="checkbox" id="autoWithdrawCheck">
+          <span class="checkbox-label">
+            <strong>অটো উইথড্র:</strong> প্রতি মাসের হিসাব শেষে আমার যোগ্য ব্যালেন্সের আবেদন স্বয়ংক্রিয়ভাবে জমা হবে।
+          </span>
+        </label>
+        <div class="auto-checked-notice" id="autoCheckedNotice" style="display:none">
+          নির্বাচিত পদ্ধতি ও তথ্য ডিফল্ট হিসেবে সংরক্ষিত হবে।
+        </div>
+      </div>
+
+      <!-- Submit Button -->
+      <button type="button" class="submit-btn" id="submitBtn">আবেদন জমা দিন</button>
+    </div>
+
+    <hr class="divider">
+
+    <!-- Payout History -->
+    <section class="history-section">
+      <h2 class="sec-title">উইথড্রয়াল ইতিহাস</h2>
+      <div class="payout-list" id="payoutList">
+        <div class="history-empty">এখনো কোনো আবেদন নেই।</div>
+      </div>
+    </section>
+
+    <hr class="divider">
+
+    <!-- Bottom Rules Note -->
+    <div class="rules-note">
+      1$ কম ব্যালেন্স পরবর্তী মাসে যোগ হবে । মাস শেষে পেমেন্ট করা হবে। প্রথমবার টাকা তোলার আবেদন যাচাই করে পাঠাতে বেশি সময় লাগতে পারে।
+    </div>
+  </main>
+</div>
+
+<!-- Confirmation Modal -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal-card">
+    <h3 class="modal-title">আবেদনের বিবরণ যাচাই করুন</h3>
+    <div class="modal-rows">
+      <div class="modal-row">
+        <span class="modal-row-label">পেমেন্ট পদ্ধতি:</span>
+        <span class="modal-row-val" id="modalMethodVal">-</span>
+      </div>
+      <div class="modal-row">
+        <span class="modal-row-label">হিসাব বিবরণ:</span>
+        <span class="modal-row-val" id="modalDetailsVal">-</span>
+      </div>
+      <div class="modal-row">
+        <span class="modal-row-label">ডলারে পরিমাণ:</span>
+        <span class="modal-row-val" id="modalUsdVal">-</span>
+      </div>
+      <div class="modal-row">
+        <span class="modal-row-label">টাকায় পরিমাণ:</span>
+        <span class="modal-row-val" id="modalBdtVal">-</span>
+      </div>
+      <div class="modal-row" style="flex-direction:column;align-items:flex-start;gap:6px;border-top:1px dashed var(--line);padding-top:10px;margin-top:6px">
+        <label class="modal-row-label" for="modalPinInput" style="font-weight:600">টাকা তোলার পিন (৬ ডিজিট):</label>
+        <input type="password" inputmode="numeric" maxlength="6" class="field-input" id="modalPinInput" placeholder="••••••" style="width:100%">
+        <span style="font-size:11.5px;color:var(--muted)">আবেদন নিশ্চিত করতে আপনার ৬ ডিজিটের পিন দিন।</span>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="modal-btn modal-cancel" id="modalCancelBtn">বাতিল</button>
+      <button type="button" class="modal-btn modal-confirm" id="modalConfirmBtn">নিশ্চিত করুন</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script type="module">
+import { auth, db } from "./firebase-config.js";
+import { WITHDRAW_URL, SET_PIN_URL } from "./api-config.js";
+import { onAuthStateChanged, sendEmailVerification } from "firebase/auth";
+import { doc, getDoc, collection, query, orderBy, limit, getDocs } from "firebase/firestore";
+
+/* Bengali Number Helper */
+function toBn(num){
+  if(num === null || num === undefined || isNaN(num)) return '০';
+  return Number(num).toLocaleString('bn-BD', { maximumFractionDigits: 2 });
+}
+
+/* State & Defaults */
+let config = {
+  usdToBdt: 110,
+  carryBelowUsd: 1,
+  mobileRechargeMin: 1,
+  mobileRechargeMaxExclusive: 20,
+  bankWalletMin: 20,
+  binanceMin: 10
+};
+
+let userState = {
+  uid: null,
+  name: '',
+  email: '',
+  country: 'BD',
+  mobile: '',
+  emailVerified: false,
+  pinSet: false,
+  balanceUsd: 0
+};
+
+let selectedMethod = '';
+let selectedMfsType = 'পার্সোনাল';
+let isDemoMode = false;
+
+/* Theme Toggle */
+const root = document.documentElement;
+const themeBtn = document.getElementById('themeBtn');
+function applyTheme(theme){
+  root.setAttribute('data-theme', theme);
+  localStorage.setItem('gamoro-theme', theme);
+  themeBtn.textContent = theme === 'dark' ? '☀️' : '🌙';
+}
+const savedTheme = localStorage.getItem('gamoro-theme') || 'light';
+applyTheme(savedTheme);
+themeBtn.addEventListener('click', () => {
+  const cur = root.getAttribute('data-theme');
+  applyTheme(cur === 'dark' ? 'light' : 'dark');
+});
+
+/* Back Button */
+document.getElementById('backBtn').addEventListener('click', () => {
+  if (window.history.length > 1) {
+    window.history.back();
+  } else {
+    window.location.href = 'index.html';
+  }
+});
+
+/* Toast Notification */
+const toast = document.getElementById('toast');
+let toastTimer = null;
+function showToast(msg){
+  clearTimeout(toastTimer);
+  toast.textContent = msg;
+  toast.classList.add('show');
+  toastTimer = setTimeout(() => toast.classList.remove('show'), 3000);
+}
+
+/* Auto-withdraw notice toggle */
+const autoWithdrawCheck = document.getElementById('autoWithdrawCheck');
+const autoCheckedNotice = document.getElementById('autoCheckedNotice');
+autoWithdrawCheck.addEventListener('change', () => {
+  autoCheckedNotice.style.display = autoWithdrawCheck.checked ? 'block' : 'none';
+});
+
+/* Amount input dynamic calculation */
+const amountUsdInput = document.getElementById('amountUsdInput');
+const amountBdtPreview = document.getElementById('amountBdtPreview');
+const maxBtn = document.getElementById('maxBtn');
+
+function updateBdtPreview(){
+  const val = parseFloat(amountUsdInput.value) || 0;
+  const bdt = val * config.usdToBdt;
+  amountBdtPreview.textContent = '≈ ৳' + toBn(Math.round(bdt));
+}
+amountUsdInput.addEventListener('input', updateBdtPreview);
+
+maxBtn.addEventListener('click', () => {
+  if(userState.balanceUsd <= 0){
+    amountUsdInput.value = '0';
+    updateBdtPreview();
+    return;
+  }
+  let maxUsd = userState.balanceUsd;
+  if(userState.country === 'BD' && selectedMethod === 'মোবাইল রিচার্জ'){
+    maxUsd = Math.min(userState.balanceUsd, 19.99);
+  }
+  amountUsdInput.value = maxUsd.toFixed(2);
+  updateBdtPreview();
+});
+
+/* Load Configuration from Firestore config/withdraw */
+async function loadConfig(){
+  try{
+    const snap = await getDoc(doc(db, 'config', 'withdraw'));
+    if(snap.exists()){
+      const d = snap.data();
+      if(d.usdToBdt) config.usdToBdt = Number(d.usdToBdt);
+      if(d.carryBelowUsd !== undefined) config.carryBelowUsd = Number(d.carryBelowUsd);
+      if(d.mobileRechargeMin !== undefined) config.mobileRechargeMin = Number(d.mobileRechargeMin);
+      if(d.mobileRechargeMaxExclusive !== undefined) config.mobileRechargeMaxExclusive = Number(d.mobileRechargeMaxExclusive);
+      if(d.bankWalletMin !== undefined) config.bankWalletMin = Number(d.bankWalletMin);
+      if(d.binanceMin !== undefined) config.binanceMin = Number(d.binanceMin);
+    }
+  }catch(err){
+    // default config remains intact
+  }
+}
+
+/* UI Rendering based on userState & config */
+function renderUI(){
+  // 1. Balance Header
+  document.getElementById('balanceUsdText').textContent = '$' + toBn(userState.balanceUsd.toFixed(2));
+  document.getElementById('balanceBdtText').textContent = '≈ ৳' + toBn(Math.round(userState.balanceUsd * config.usdToBdt));
+
+  const emailWarning = document.getElementById('emailWarning');
+  const pinSetupCard = document.getElementById('pinSetupCard');
+  const thresholdNotice = document.getElementById('thresholdNotice');
+  const thresholdSubText = document.getElementById('thresholdSubText');
+  const withdrawForm = document.getElementById('withdrawForm');
+
+  // 2. Verification Gating (Requires BOTH emailVerified AND pinSet)
+  const isEmailOk = userState.emailVerified === true;
+  const isPinOk = userState.pinSet === true;
+  const isFullyGated = !isEmailOk || !isPinOk;
+
+  emailWarning.style.display = !isEmailOk ? 'flex' : 'none';
+  pinSetupCard.style.display = !isPinOk ? 'block' : 'none';
+
+  if(isFullyGated){
+    thresholdNotice.style.display = 'none';
+    withdrawForm.style.display = 'flex';
+    withdrawForm.classList.add('gated');
+    renderMethods();
+    return;
+  }
+
+  // 3. Balance Threshold Gating
+  const isBd = userState.country === 'BD';
+  const minThreshold = isBd ? config.carryBelowUsd : config.binanceMin;
+
+  if(userState.balanceUsd < minThreshold){
+    thresholdNotice.style.display = 'block';
+    if(isBd){
+      thresholdSubText.innerHTML = 'ন্যূনতম সীমা: $' + toBn(config.mobileRechargeMin) + ' (মোবাইল রিচার্জ) বা $' + toBn(config.bankWalletMin) + ' (বিকাশ/নগদ/রকেট/ব্যাংক)। এটি আগামী মাসে জমা থাকবে।';
+    } else {
+      thresholdSubText.innerHTML = 'ন্যূনতম সীমা: $' + toBn(config.binanceMin) + ' (Binance Pay)। এটি আগামী মাসে জমা থাকবে।';
+    }
+    withdrawForm.style.display = 'none';
+    return;
+  }
+
+  // 4. Eligible User
+  thresholdNotice.style.display = 'none';
+  withdrawForm.style.display = 'flex';
+  withdrawForm.classList.remove('gated');
+  renderMethods();
+}
+
+/* Email Verification Action Listeners */
+document.getElementById('resendEmailBtn').addEventListener('click', async () => {
+  if (isDemoMode) {
+    showToast('আপনার ইমেইলে ভেরিফাই লিংক পাঠানো হয়েছে।');
+    return;
+  }
+  if (!auth.currentUser) {
+    showToast('অনুগ্রহ করে লগইন করুন।');
+    return;
+  }
+  try {
+    await sendEmailVerification(auth.currentUser);
+    showToast('আপনার ইমেইলে ভেরিফাই লিংক পাঠানো হয়েছে।');
+  } catch (err) {
+    showToast('ত্রুটি: ' + (err.message || 'আবার চেষ্টা করুন'));
+  }
+});
+
+document.getElementById('reloadEmailBtn').addEventListener('click', async () => {
+  if (isDemoMode) {
+    userState.emailVerified = true;
+    showToast('ইমেইল সফলভাবে ভেরিফাই হয়েছে!');
+    renderUI();
+    return;
+  }
+  if (!auth.currentUser) {
+    showToast('অনুগ্রহ করে লগইন করুন।');
+    return;
+  }
+  try {
+    await auth.currentUser.reload();
+    if (auth.currentUser.emailVerified) {
+      userState.emailVerified = true;
+      showToast('ইমেইল সফলভাবে ভেরিফাই হয়েছে!');
+    } else {
+      showToast('ইমেইল এখনও ভেরিফাই হয়নি। লিংকে ক্লিক করেছেন কি?');
+    }
+    renderUI();
+  } catch (err) {
+    showToast('ত্রুটি: ' + (err.message || 'রিলোড করা যায়নি'));
+  }
+});
+
+/* PIN Setup Action Listener */
+document.getElementById('savePinBtn').addEventListener('click', async () => {
+  const p1 = document.getElementById('newPinInput').value.trim();
+  const p2 = document.getElementById('confirmPinInput').value.trim();
+
+  if (!/^\d{6}$/.test(p1)) {
+    showToast('পিন অবশ্যই ৬ সংখ্যার হতে হবে।');
+    return;
+  }
+  if (p1 !== p2) {
+    showToast('দুটি পিন মিলছে না।');
+    return;
+  }
+
+  if (!SET_PIN_URL || SET_PIN_URL.trim() === '') {
+    showToast('শীঘ্রই চালু হবে।');
+    return;
+  }
+
+  try {
+    const saveBtn = document.getElementById('savePinBtn');
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'সংরক্ষণ হচ্ছে...';
+    const token = auth.currentUser ? await auth.currentUser.getIdToken() : '';
+    const res = await fetch(SET_PIN_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + token
+      },
+      body: JSON.stringify({ pin: p1 })
+    });
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.message || 'পিন সেট ব্যর্থ হয়েছে');
+    }
+    userState.pinSet = true;
+    showToast('পিন সফলভাবে সেট করা হয়েছে!');
+    document.getElementById('newPinInput').value = '';
+    document.getElementById('confirmPinInput').value = '';
+    renderUI();
+  } catch (err) {
+    showToast('ত্রুটি: ' + err.message);
+  } finally {
+    const saveBtn = document.getElementById('savePinBtn');
+    saveBtn.disabled = false;
+    saveBtn.textContent = 'পিন সেট করুন';
+  }
+});
+
+/* Render Payment Methods Grid */
+function renderMethods(){
+  const grid = document.getElementById('methodsGrid');
+  grid.innerHTML = '';
+  const isBd = userState.country === 'BD';
+  const bal = userState.balanceUsd;
+
+  let methods = [];
+
+  if(isBd){
+    // BD Methods: Mobile Recharge, bKash, Rocket, Nagad, Bank
+    const rechargeActive = bal >= config.mobileRechargeMin && bal < config.mobileRechargeMaxExclusive;
+    const largeActive = bal >= config.bankWalletMin;
+
+    methods = [
+      {
+        id: 'recharge',
+        name: 'মোবাইল রিচার্জ',
+        active: rechargeActive,
+        note: rechargeActive ? '$' + toBn(config.mobileRechargeMin) + ' – $' + toBn(config.mobileRechargeMaxExclusive) : (bal >= config.mobileRechargeMaxExclusive ? 'শুধু ২০ ডলারের কম ব্যালেন্সে' : 'ন্যূনতম $১ লাগবে')
+      },
+      {
+        id: 'bkash',
+        name: 'বিকাশ (bKash)',
+        active: largeActive,
+        note: largeActive ? 'ন্যূনতম $' + toBn(config.bankWalletMin) : '২০ ডলার বা বেশি হলে চালু হবে'
+      },
+      {
+        id: 'nagad',
+        name: 'নগদ (Nagad)',
+        active: largeActive,
+        note: largeActive ? 'ন্যূনতম $' + toBn(config.bankWalletMin) : '২০ ডলার বা বেশি হলে চালু হবে'
+      },
+      {
+        id: 'rocket',
+        name: 'রকেট (Rocket)',
+        active: largeActive,
+        note: largeActive ? 'ন্যূনতম $' + toBn(config.bankWalletMin) : '২০ ডলার বা বেশি হলে চালু হবে'
+      },
+      {
+        id: 'bank',
+        name: 'ব্যাংক (Bank)',
+        active: largeActive,
+        note: largeActive ? 'ন্যূনতম $' + toBn(config.bankWalletMin) : '২০ ডলার বা বেশি হলে চালু হবে'
+      }
+    ];
+  } else {
+    // INTL Method: ONLY Binance Pay
+    const binanceActive = bal >= config.binanceMin;
+    methods = [
+      {
+        id: 'binance',
+        name: 'Binance Pay',
+        active: binanceActive,
+        note: binanceActive ? 'ন্যূনতম $' + toBn(config.binanceMin) : 'ন্যূনতম $১০ প্রয়োজন'
+      }
+    ];
+  }
+
+  // Determine selected method
+  const availableMethods = methods.filter(m => m.active);
+  if(!selectedMethod || !methods.some(m => m.id === selectedMethod && m.active)){
+    selectedMethod = availableMethods.length > 0 ? availableMethods[0].id : '';
+  }
+
+  methods.forEach(m => {
+    const card = document.createElement('button');
+    card.type = 'button';
+    card.className = 'method-card' + (m.active ? '' : ' disabled') + (m.id === selectedMethod ? ' selected' : '');
+    card.innerHTML = `
+      <div class="method-name">${m.name}</div>
+      <div class="method-note">${m.note}</div>
+    `;
+    if(m.active){
+      card.addEventListener('click', () => {
+        selectedMethod = m.id;
+        document.querySelectorAll('.method-card').forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+        updateMethodFields();
+      });
+    }
+    grid.appendChild(card);
+  });
+
+  updateMethodFields();
+}
+
+/* Toggle Form Fields based on Selected Method */
+function updateMethodFields(){
+  const sec = document.getElementById('methodFieldsSection');
+  const fRecharge = document.getElementById('fieldsRecharge');
+  const fMfs = document.getElementById('fieldsMfs');
+  const fBank = document.getElementById('fieldsBank');
+  const fBinance = document.getElementById('fieldsBinance');
+  const hint = document.getElementById('amountRuleHint');
+
+  fRecharge.style.display = 'none';
+  fMfs.style.display = 'none';
+  fBank.style.display = 'none';
+  fBinance.style.display = 'none';
+
+  if(!selectedMethod){
+    sec.style.display = 'none';
+    return;
+  }
+  sec.style.display = 'block';
+
+  if(selectedMethod === 'recharge'){
+    fRecharge.style.display = 'flex';
+    document.getElementById('rechargeNumber').value = userState.mobile || '+8801XXXXXXXXX';
+    hint.textContent = 'মোবাইল রিচার্জ: $' + toBn(config.mobileRechargeMin) + ' থেকে $' + toBn(config.mobileRechargeMaxExclusive - 0.01) + ' পর্যন্ত।';
+  } else if(selectedMethod === 'bkash' || selectedMethod === 'nagad' || selectedMethod === 'rocket'){
+    fMfs.style.display = 'flex';
+    hint.textContent = 'ন্যূনতম উত্তোলন $' + toBn(config.bankWalletMin) + ' (≈ ৳' + toBn(config.bankWalletMin * config.usdToBdt) + ')।';
+  } else if(selectedMethod === 'bank'){
+    fBank.style.display = 'flex';
+    hint.textContent = 'ব্যাংক উত্তোলন: ন্যূনতম $' + toBn(config.bankWalletMin) + ' (≈ ৳' + toBn(config.bankWalletMin * config.usdToBdt) + ')।';
+  } else if(selectedMethod === 'binance'){
+    fBinance.style.display = 'flex';
+    hint.textContent = 'Binance Pay: ন্যূনতম উত্তোলন $' + toBn(config.binanceMin) + '।';
+  }
+}
+
+/* History rendering */
+function renderPayoutHistory(payouts){
+  const list = document.getElementById('payoutList');
+  list.innerHTML = '';
+  if(!payouts || payouts.length === 0){
+    list.innerHTML = '<div class="history-empty">এখনো কোনো আবেদন নেই।</div>';
+    return;
+  }
+
+  payouts.forEach(p => {
+    const card = document.createElement('div');
+    card.className = 'payout-card';
+
+    let badgeClass = 'badge-pending';
+    let badgeLabel = 'অপেক্ষমাণ';
+    if(p.status === 'paid'){
+      badgeClass = 'badge-paid';
+      badgeLabel = 'পরিশোধিত ✓';
+    } else if(p.status === 'rejected'){
+      badgeClass = 'badge-rejected';
+      badgeLabel = 'বাতিল ✗';
+    }
+
+    // Format date in Bengali
+    let dateStr = 'সম্প্রতি';
+    if(p.createdAt){
+      try{
+        const d = p.createdAt.toDate ? p.createdAt.toDate() : new Date(p.createdAt);
+        dateStr = d.toLocaleDateString('bn-BD', { day: 'numeric', month: 'short', year: 'numeric' }) + ' ' +
+                  d.toLocaleTimeString('bn-BD', { hour: '2-digit', minute: '2-digit' });
+      }catch(e){}
+    }
+
+    card.innerHTML = `
+      <div class="payout-info">
+        <div class="payout-method">${p.method || 'উইথড্রয়াল'} ${p.accountDetails ? `<span style="font-weight:400;font-size:12px;color:var(--muted)">(${p.accountDetails})</span>` : ''}</div>
+        <div class="payout-date">${dateStr}</div>
+      </div>
+      <div class="payout-meta">
+        <div class="payout-amount">$${toBn(p.amountUsd)} <span style="font-weight:400;font-size:12px;color:var(--muted)">(৳${toBn(p.amountBdt)})</span></div>
+        <span class="payout-badge ${badgeClass}">${badgeLabel}</span>
+      </div>
+    `;
+    list.appendChild(card);
+  });
+}
+
+/* Real History from Firestore */
+async function loadPayoutHistory(uid){
+  try{
+    const q = query(collection(db, 'users', uid, 'payouts'), orderBy('createdAt', 'desc'), limit(50));
+    const snap = await getDocs(q);
+    const payouts = [];
+    snap.forEach(d => payouts.push({ id: d.id, ...d.data() }));
+    renderPayoutHistory(payouts);
+  }catch(err){
+    renderPayoutHistory([]);
+  }
+}
+
+/* Validation & Modal Confirmation */
+const confirmModal = document.getElementById('confirmModal');
+const modalCancelBtn = document.getElementById('modalCancelBtn');
+const modalConfirmBtn = document.getElementById('modalConfirmBtn');
+const submitBtn = document.getElementById('submitBtn');
+
+let pendingSubmission = null;
+
+function validateAndOpenModal(){
+  if(!userState.emailVerified || !userState.pinSet){
+    showToast('টাকা তোলার জন্য ইমেইল ভেরিফাই ও পিন সেট থাকতে হবে।');
+    return;
+  }
+  if(!selectedMethod){
+    showToast('দয়া করে একটি পেমেন্ট পদ্ধতি নির্বাচন করুন।');
+    return;
+  }
+
+  const amt = parseFloat(amountUsdInput.value);
+  if(!amt || isNaN(amt) || amt <= 0){
+    showToast('সঠিক টাকার পরিমাণ লিখুন।');
+    return;
+  }
+  if(amt > userState.balanceUsd){
+    showToast('আপনার ব্যালেন্সের চেয়ে বেশি পরিমাণ তুলতে পারবেন না।');
+    return;
+  }
+
+  let methodDisplayName = '';
+  let detailsText = '';
+
+  if(selectedMethod === 'recharge'){
+    if(amt < config.mobileRechargeMin || amt >= config.mobileRechargeMaxExclusive){
+      showToast('মোবাইল রিচার্জ $' + toBn(config.mobileRechargeMin) + ' থেকে $' + toBn(config.mobileRechargeMaxExclusive - 0.01) + ' পর্যন্ত প্রযোজ্য।');
+      return;
+    }
+    const op = document.getElementById('rechargeOperator').value;
+    const num = userState.mobile;
+    methodDisplayName = 'মোবাইল রিচার্জ';
+    detailsText = op + ' (' + num + ')';
+  } else if(selectedMethod === 'bkash' || selectedMethod === 'nagad' || selectedMethod === 'rocket'){
+    if(amt < config.bankWalletMin){
+      showToast('ন্যূনতম উত্তোলন $' + toBn(config.bankWalletMin) + ' হতে হবে।');
+      return;
+    }
+    const num = document.getElementById('mfsNumber').value.trim();
+    if(!/^01[3-9]\d{8}$/.test(num)){
+      showToast('সঠিক ১১ ডিজিটের মোবাইল অ্যাকাউন্ট নম্বর দিন (০১XXXXXXXXX)।');
+      return;
+    }
+    const mNames = { bkash: 'বিকাশ', nagad: 'নগদ', rocket: 'রকেট' };
+    methodDisplayName = mNames[selectedMethod];
+    detailsText = num + ' (' + selectedMfsType + ')';
+  } else if(selectedMethod === 'bank'){
+    if(amt < config.bankWalletMin){
+      showToast('ব্যাংক উত্তোলনে ন্যূনতম $' + toBn(config.bankWalletMin) + ' হতে হবে।');
+      return;
+    }
+    const bName = document.getElementById('bankName').value.trim();
+    const bBranch = document.getElementById('bankBranch').value.trim();
+    const bAccName = document.getElementById('bankAccName').value.trim();
+    const bAccNum = document.getElementById('bankAccNumber').value.trim();
+    const bRouting = document.getElementById('bankRouting').value.trim();
+
+    if(!bName || !bBranch || !bAccName || !bAccNum){
+      showToast('ব্যাংকের সকল প্রয়োজনীয় ঘর পূরণ করুন।');
+      return;
+    }
+    methodDisplayName = 'ব্যাংক ট্রান্সফার';
+    detailsText = bName + ', ' + bBranch + ' (হি: ' + bAccNum + ')';
+  } else if(selectedMethod === 'binance'){
+    if(amt < config.binanceMin){
+      showToast('Binance Pay-এ ন্যূনতম উত্তোলন $' + toBn(config.binanceMin) + ' হতে হবে।');
+      return;
+    }
+    const bId = document.getElementById('binanceId').value.trim();
+    if(!bId){
+      showToast('আপনার Binance Pay ID / UID লিখুন।');
+      return;
+    }
+    methodDisplayName = 'Binance Pay';
+    detailsText = 'Pay ID: ' + bId;
+  }
+
+  const amtBdt = Math.round(amt * config.usdToBdt);
+
+  pendingSubmission = {
+    method: methodDisplayName,
+    details: detailsText,
+    amountUsd: amt,
+    amountBdt: amtBdt,
+    autoWithdraw: autoWithdrawCheck.checked
+  };
+
+  document.getElementById('modalMethodVal').textContent = methodDisplayName;
+  document.getElementById('modalDetailsVal').textContent = detailsText;
+  document.getElementById('modalUsdVal').textContent = '$' + toBn(amt.toFixed(2));
+  document.getElementById('modalBdtVal').textContent = '≈ ৳' + toBn(amtBdt);
+  const mPin = document.getElementById('modalPinInput');
+  if(mPin) mPin.value = '';
+
+  confirmModal.classList.add('open');
+}
+
+submitBtn.addEventListener('click', validateAndOpenModal);
+modalCancelBtn.addEventListener('click', () => {
+  confirmModal.classList.remove('open');
+  pendingSubmission = null;
+});
+
+modalConfirmBtn.addEventListener('click', async () => {
+  const pinInput = document.getElementById('modalPinInput');
+  const pinVal = pinInput ? pinInput.value.trim() : '';
+
+  if(!/^\d{6}$/.test(pinVal)){
+    showToast('সঠিক ৬ সংখ্যার পিন লিখুন।');
+    return;
+  }
+
+  confirmModal.classList.remove('open');
+  if(pinInput) pinInput.value = '';
+
+  // Check WITHDRAW_URL from api-config.js
+  if(!WITHDRAW_URL || WITHDRAW_URL.trim() === ''){
+    showToast('শীঘ্রই চালু হবে।');
+    return;
+  }
+
+  // If WITHDRAW_URL is configured, dispatch via POST
+  try{
+    modalConfirmBtn.disabled = true;
+    showToast('আবেদন প্রক্রিয়াধীন...');
+    const token = auth.currentUser ? await auth.currentUser.getIdToken() : '';
+    const res = await fetch(WITHDRAW_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + token
+      },
+      body: JSON.stringify({ ...pendingSubmission, pin: pinVal })
+    });
+    if(!res.ok){
+      const errData = await res.json().catch(() => ({}));
+      const code = errData.error || errData.code || '';
+      if(code === 'wrong_pin'){
+        showToast('পিন ভুল');
+      } else if(code === 'pin_locked'){
+        showToast('১ ঘণ্টা পরে চেষ্টা করুন');
+      } else if(code === 'account_used'){
+        showToast('এই পেমেন্ট নম্বর/আইডি আগেই অন্য অ্যাকাউন্টে ব্যবহার হয়েছে।');
+      } else if(code === 'email_not_verified'){
+        showToast('ইমেইল ভেরিফাই করুন।');
+      } else if(code === 'below_min'){
+        showToast('ন্যূনতম সীমার কম ব্যালেন্স।');
+      } else {
+        showToast('ত্রুটি: ' + (errData.message || 'উইথড্রয়াল ব্যর্থ হয়েছে'));
+      }
+      return;
+    }
+    showToast('উইথড্রয়াল আবেদন সফলভাবে জমা হয়েছে!');
+    amountUsdInput.value = '';
+    updateBdtPreview();
+    if(auth.currentUser) loadPayoutHistory(auth.currentUser.uid);
+  }catch(err){
+    showToast('ত্রুটি: ' + err.message);
+  }finally{
+    modalConfirmBtn.disabled = false;
+    pendingSubmission = null;
+  }
+});
+
+/* Demo Scenarios */
+const demoBadge = document.getElementById('demoBadge');
+const demoPayoutsSample = [
+  {
+    method: 'বিকাশ',
+    accountDetails: '01712345678 (পার্সোনাল)',
+    amountUsd: 10,
+    amountBdt: 1100,
+    status: 'pending',
+    createdAt: new Date(Date.now() - 2 * 3600 * 1000)
+  },
+  {
+    method: 'ব্যাংক ট্রান্সফার',
+    accountDetails: 'ডাচ-বাংলা ব্যাংক (হি: ১২৩.৪৫৬)',
+    amountUsd: 35,
+    amountBdt: 3850,
+    status: 'paid',
+    createdAt: new Date(Date.now() - 3 * 86400 * 1000)
+  },
+  {
+    method: 'মোবাইল রিচার্জ',
+    accountDetails: 'গ্রামীণফোন (+8801712345678)',
+    amountUsd: 5,
+    amountBdt: 550,
+    status: 'rejected',
+    createdAt: new Date(Date.now() - 7 * 86400 * 1000)
+  }
+];
+
+function applyScenario(sc){
+  isDemoMode = true;
+  demoBadge.style.display = 'block';
+  document.querySelectorAll('.test-btn').forEach(b => b.classList.remove('active'));
+
+  const btn = document.querySelector(`[data-scenario="${sc}"]`);
+  if(btn) btn.classList.add('active');
+
+  if(sc === 'bd_8'){
+    userState = {
+      uid: 'demo_bd_8',
+      name: 'আরিফুল ইসলাম',
+      country: 'BD',
+      mobile: '+8801712345678',
+      emailVerified: true,
+      pinSet: true,
+      balanceUsd: 8.00
+    };
+  } else if(sc === 'bd_25'){
+    userState = {
+      uid: 'demo_bd_25',
+      name: 'মাহমুদুল হাসান',
+      country: 'BD',
+      mobile: '+8801712345678',
+      emailVerified: true,
+      pinSet: true,
+      balanceUsd: 25.00
+    };
+  } else if(sc === 'intl_12'){
+    userState = {
+      uid: 'demo_intl_12',
+      name: 'Alexandre Costa',
+      country: 'INTL',
+      mobile: '',
+      emailVerified: true,
+      pinSet: true,
+      balanceUsd: 12.00
+    };
+  } else if(sc === 'intl_6'){
+    userState = {
+      uid: 'demo_intl_6',
+      name: 'Sarah Connor',
+      country: 'INTL',
+      mobile: '',
+      emailVerified: true,
+      pinSet: true,
+      balanceUsd: 6.00
+    };
+  } else if(sc === 'low_bal'){
+    userState = {
+      uid: 'demo_low',
+      name: 'তানভীর আহমেদ',
+      country: 'BD',
+      mobile: '+8801712345678',
+      emailVerified: true,
+      pinSet: true,
+      balanceUsd: 0.50
+    };
+  } else if(sc === 'unverified_email'){
+    userState = {
+      uid: 'demo_unv_email',
+      name: 'ইমরান খান',
+      country: 'BD',
+      mobile: '+8801712345678',
+      emailVerified: false,
+      pinSet: true,
+      balanceUsd: 15.00
+    };
+  } else if(sc === 'unpin'){
+    userState = {
+      uid: 'demo_unpin',
+      name: 'রাশেদ চৌধুরী',
+      country: 'BD',
+      mobile: '+8801712345678',
+      emailVerified: true,
+      pinSet: false,
+      balanceUsd: 15.00
+    };
+  }
+
+  selectedMethod = '';
+  amountUsdInput.value = '';
+  updateBdtPreview();
+  renderUI();
+  renderPayoutHistory(demoPayoutsSample);
+}
+
+document.querySelectorAll('[data-scenario]').forEach(b => {
+  b.addEventListener('click', () => applyScenario(b.dataset.scenario));
+});
+
+/* Reset to Real Data */
+document.getElementById('realDataBtn').addEventListener('click', async () => {
+  isDemoMode = false;
+  demoBadge.style.display = 'none';
+  document.querySelectorAll('.test-btn').forEach(b => b.classList.remove('active'));
+
+  if(auth.currentUser){
+    await loadUserData(auth.currentUser);
+  } else {
+    // Default guest state
+    userState = {
+      uid: null,
+      name: '',
+      country: 'BD',
+      mobile: '',
+      emailVerified: false,
+      pinSet: false,
+      balanceUsd: 0
+    };
+    renderUI();
+    renderPayoutHistory([]);
+  }
+});
+
+/* Load Real User Data from Firestore */
+async function loadUserData(user){
+  try{
+    const snap = await getDoc(doc(db, 'users', user.uid));
+    if(snap.exists()){
+      const d = snap.data();
+      userState = {
+        uid: user.uid,
+        name: d.name || '',
+        email: d.email || user.email || '',
+        country: d.country || 'BD',
+        mobile: d.mobile || '',
+        emailVerified: user.emailVerified === true,
+        pinSet: d.pinSet === true,
+        balanceUsd: typeof d.balanceUsd === 'number' ? d.balanceUsd : (typeof d.balance === 'number' ? d.balance : 0)
+      };
+    } else {
+      userState = {
+        uid: user.uid,
+        name: user.displayName || '',
+        email: user.email || '',
+        country: 'BD',
+        mobile: '',
+        emailVerified: user.emailVerified === true,
+        pinSet: false,
+        balanceUsd: 0
+      };
+    }
+  }catch(e){
+    userState = {
+      uid: user.uid,
+      name: user.displayName || '',
+      email: user.email || '',
+      country: 'BD',
+      mobile: '',
+      emailVerified: user ? user.emailVerified === true : false,
+      pinSet: false,
+      balanceUsd: 0
+    };
+  }
+
+  renderUI();
+  loadPayoutHistory(user.uid);
+}
+
+/* Initialization */
+async function init(){
+  await loadConfig();
+
+  onAuthStateChanged(auth, async (user) => {
+    if(isDemoMode) return;
+    if(user){
+      await loadUserData(user);
+    } else {
+      // By default for quick preview when not logged in, activate scenario bd_8
+      applyScenario('bd_8');
+    }
+  });
+}
+
+init();
+</script>
+</body>
+</html>

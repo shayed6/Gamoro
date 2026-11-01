@@ -1,0 +1,645 @@
+<!-- SHELVED: এখন ব্যবহার হচ্ছে না। ভবিষ্যতে SMS/Telegram ভেরিফিকেশনের জন্য। -->
+<!DOCTYPE html>
+<html lang="bn" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0C4A34">
+<meta name="description" content="Gamoro – অ্যাকাউন্ট ভেরিফিকেশন">
+<title>Gamoro – ভেরিফিকেশন</title>
+<link rel="icon" type="image/png" href="logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script type="importmap">
+{
+  "imports": {
+    "firebase/app": "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js",
+    "firebase/auth": "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js",
+    "firebase/firestore": "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"
+  }
+}
+</script>
+<style>
+:root{
+  color-scheme:light;
+  --green:#0C4A34;
+  --green-2:#176746;
+  --gold:#E9A820;
+  --coral:#D6403B;
+  --bg:#F0F8F2;
+  --surface:#fff;
+  --surface2:#E4F1E8;
+  --text:#17372B;
+  --muted:#63796D;
+  --line:#D5E5D9;
+  --shadow:0 8px 25px rgba(12,74,52,.08);
+  --focus:#D6403B;
+}
+:root[data-theme=dark]{
+  color-scheme:dark;
+  --bg:#101B17;
+  --surface:#182720;
+  --surface2:#25382E;
+  --text:#F1F7F3;
+  --muted:#B3C5B9;
+  --line:#354B3E;
+  --shadow:0 8px 25px rgba(0,0,0,.28);
+  --focus:#FFD16B;
+  --green-2:#9BD6B5;
+  --coral:#FF7A74;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:"Hind Siliguri",system-ui,sans-serif;
+  min-height:100vh;
+}
+button,input,a{font:inherit}button{cursor:pointer}
+button:focus-visible,input:focus-visible,a:focus-visible{
+  outline:3px solid var(--focus);
+  outline-offset:2px;
+}
+.app{
+  max-width:480px;
+  margin:auto;
+  min-height:100vh;
+  padding-bottom:calc(24px + env(safe-area-inset-bottom));
+}
+.top{
+  background:var(--green);
+  color:#fff;
+  padding:calc(14px + env(safe-area-inset-top)) 16px 54px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.back{
+  width:40px;
+  height:40px;
+  border:0;
+  border-radius:12px;
+  background:#ffffff1c;
+  color:#fff;
+  font-size:20px;
+  display:grid;
+  place-items:center;
+  flex:none;
+}
+.brand{display:flex;align-items:center;gap:8px;font-weight:700;font-size:22px}
+.mark{display:block;width:34px;height:34px;border-radius:10px;object-fit:cover;flex:none}
+.theme-btn{
+  margin-left:auto;
+  width:36px;
+  height:36px;
+  border:0;
+  border-radius:10px;
+  background:#ffffff1c;
+  color:#fff;
+  font-size:16px;
+  display:grid;
+  place-items:center;
+}
+.card{
+  margin:-34px 14px 0;
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:20px;
+  padding:20px 16px;
+  box-shadow:0 8px 25px rgba(12,74,52,.08);
+}
+h1{margin:0 0 6px;font-size:22px}
+.sub{margin:0 0 16px;color:var(--muted);font-size:14px;line-height:1.5}
+
+/* Notice box */
+.info-box{
+  background:#FFF1CC;
+  color:#4A3500;
+  border:1px solid #E8C66E;
+  border-radius:13px;
+  padding:12px 14px;
+  font-size:13px;
+  line-height:1.5;
+  margin-bottom:18px;
+  display:flex;
+  align-items:flex-start;
+  gap:9px;
+}
+[data-theme=dark] .info-box{
+  background:#3A2E0F;
+  color:#FFE6A5;
+  border-color:#6B5518;
+}
+
+.field{margin-bottom:14px}
+label{display:block;font-size:13px;font-weight:600;margin-bottom:5px}
+.inp{
+  display:flex;
+  align-items:center;
+  border:1.5px solid var(--line);
+  border-radius:12px;
+  background:var(--bg);
+  padding:0 12px;
+}
+.inp:focus-within{border-color:var(--green-2)}
+.inp.bad{border-color:var(--coral)}
+.inp input{
+  flex:1;
+  min-width:0;
+  border:0;
+  outline:0;
+  background:transparent;
+  color:var(--text);
+  padding:12px 0;
+  font-size:15px;
+}
+.inp input[readonly]{
+  color:var(--muted);
+  cursor:default;
+}
+.pre{color:var(--muted);font-size:14px;padding-right:8px;margin-right:8px;border-right:1px solid var(--line)}
+
+.btn{
+  width:100%;
+  border:0;
+  border-radius:13px;
+  background:var(--green);
+  color:#fff;
+  font-weight:700;
+  font-size:15.5px;
+  padding:13px;
+  transition:opacity .15s,transform .1s;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+}
+.btn:active{transform:scale(.99)}
+.btn:disabled{opacity:.6;cursor:not-allowed}
+.btn-outline{
+  background:transparent;
+  border:1.5px solid var(--line);
+  color:var(--text);
+}
+.btn-outline:hover{
+  background:var(--surface2);
+  border-color:var(--green-2);
+}
+
+/* Telegram steps */
+.steps{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  margin:14px 0 18px;
+}
+.step-item{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:10px 12px;
+  background:var(--surface2);
+  border-radius:12px;
+  font-size:13.5px;
+  line-height:1.4;
+}
+.step-num{
+  width:26px;
+  height:26px;
+  border-radius:50%;
+  background:var(--green);
+  color:#fff;
+  font-size:12px;
+  font-weight:700;
+  display:grid;
+  place-items:center;
+  flex:none;
+}
+
+/* Verified state card */
+.verified-box{
+  text-align:center;
+  padding:24px 10px;
+}
+.verified-icon{
+  width:64px;
+  height:64px;
+  border-radius:50%;
+  background:var(--surface2);
+  color:var(--green);
+  border:3px solid var(--green);
+  display:grid;
+  place-items:center;
+  font-size:32px;
+  font-weight:700;
+  margin:0 auto 14px;
+}
+.verified-title{
+  font-size:20px;
+  font-weight:700;
+  color:var(--green);
+  margin:0 0 6px;
+}
+[data-theme=dark] .verified-title{color:var(--green-2)}
+.verified-desc{
+  font-size:13.5px;
+  color:var(--muted);
+  line-height:1.5;
+  margin:0 0 20px;
+}
+
+/* Skeleton & States */
+.skeleton{
+  background:linear-gradient(90deg, var(--surface2) 25%, var(--line) 50%, var(--surface2) 75%);
+  background-size:200% 100%;
+  animation:skel 1.4s infinite;
+  border-radius:10px;
+}
+@keyframes skel{
+  0%{background-position:200% 0}
+  100%{background-position:-200% 0}
+}
+.skel-h{height:28px;margin-bottom:12px}
+.skel-b{height:46px;margin-bottom:12px}
+
+/* Demo test bar */
+.demo-bar{
+  margin-top:20px;
+  padding-top:14px;
+  border-top:1px dashed var(--line);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+}
+.demo-btn{
+  flex:1;
+  padding:6px 8px;
+  font-size:11.5px;
+  border-radius:8px;
+  border:1px solid var(--line);
+  background:var(--surface2);
+  color:var(--muted);
+  font-weight:600;
+}
+
+.toast{
+  position:fixed;
+  left:50%;
+  bottom:calc(22px + env(safe-area-inset-bottom));
+  transform:translate(-50%,16px);
+  opacity:0;
+  pointer-events:none;
+  background:var(--green);
+  color:#fff;
+  padding:11px 16px;
+  border-radius:12px;
+  font-size:13px;
+  max-width:calc(100vw - 28px);
+  transition:opacity .2s,transform .2s;
+  z-index:99;
+}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+ <header class="top">
+   <button class="back" id="back" aria-label="ফিরে যান">←</button>
+   <div class="brand"><img class="mark" src="logo.png" alt="Gamoro" width="34" height="34">Gamoro</div>
+   <button class="theme-btn" id="themeBtn" aria-label="থিম পরিবর্তন">🌙</button>
+ </header>
+
+ <main class="card">
+   <!-- Optional Verification Info Banner -->
+   <div class="info-box" role="status">
+     <span>ℹ️</span>
+     <div>খেলতে ভেরিফাই লাগে না। টাকা তোলা ও রেফারেল বোনাস পেতে ভেরিফাই করতে হবে।</div>
+   </div>
+
+   <!-- Loading Skeleton -->
+   <div id="skelView">
+     <div class="skeleton skel-h" style="width:50%"></div>
+     <div class="skeleton skel-b"></div>
+     <div class="skeleton skel-b"></div>
+     <div class="skeleton skel-b" style="height:48px"></div>
+   </div>
+
+   <!-- NOT LOGGED IN VIEW -->
+   <div id="notLoggedInView" style="display:none;text-align:center;padding:20px 6px">
+     <h1>লগইন প্রয়োজন</h1>
+     <p class="sub">অ্যাকাউন্ট ভেরিফাই করার জন্য প্রথমে আপনার অ্যাকাউন্টে লগইন করুন।</p>
+     <a href="auth.html#login" class="btn" style="text-decoration:none">লগইন করুন</a>
+   </div>
+
+   <!-- ALREADY VERIFIED VIEW -->
+   <div id="verifiedView" style="display:none">
+     <div class="verified-box">
+       <div class="verified-icon">✓</div>
+       <h2 class="verified-title">আপনার অ্যাকাউন্ট ভেরিফাইড</h2>
+       <p class="verified-desc">আপনার অ্যাকাউন্ট ইতিমধ্যে সফলভাবে ভেরিফাই করা আছে। এখন আপনি টাকা উত্তোলন এবং রেফারেল বোনাস সুবিধা গ্রহণ করতে পারবেন।</p>
+       <a href="index.html" class="btn" style="text-decoration:none">হোমে যান</a>
+     </div>
+   </div>
+
+   <!-- BANGLADESH MOBILE VERIFY VIEW -->
+   <div id="bdVerifyView" style="display:none">
+     <h1>মোবাইল ভেরিফাই</h1>
+     <p class="sub">নিরাপত্তার স্বার্থে আপনার মোবাইল নম্বরে ওটিপি কোড পাঠিয়ে ভেরিফাই করুন।</p>
+
+     <div class="field">
+       <label for="bd-phone">মোবাইল নম্বর</label>
+       <div class="inp">
+         <span class="pre">+৮৮</span>
+         <input id="bd-phone" type="text" readonly placeholder="01XXXXXXXXX">
+       </div>
+     </div>
+
+     <div class="field">
+       <button class="btn btn-outline" id="sendOtpBtn" type="button">OTP পাঠান</button>
+     </div>
+
+     <div class="field" id="otpInputArea" style="margin-top:18px">
+       <label for="otpCode">৬ ঘরের ওটিপি কোড</label>
+       <div class="inp">
+         <input id="otpCode" type="text" inputmode="numeric" maxlength="6" placeholder="------">
+       </div>
+     </div>
+
+     <div class="field" style="margin-top:16px">
+       <button class="btn" id="verifyOtpBtn" type="button">যাচাই করুন</button>
+     </div>
+   </div>
+
+   <!-- INTERNATIONAL TELEGRAM VERIFY VIEW -->
+   <div id="intlVerifyView" style="display:none">
+     <h1>টেলিগ্রাম ভেরিফাই</h1>
+     <p class="sub">আন্তর্জাতিক খেলোয়াড়দের জন্য টেলিগ্রাম বটের মাধ্যমে দ্রুত অ্যাকাউন্ট যাচাইকরণ।</p>
+
+     <div class="steps">
+       <div class="step-item">
+         <div class="step-num">১</div>
+         <div>নিচের <b>"Telegram বট খুলুন"</b> বাটনে চাপ দিন।</div>
+       </div>
+       <div class="step-item">
+         <div class="step-num">২</div>
+         <div>Telegram অ্যাপে বট চালু হলে <b>Start</b> চাপুন।</div>
+       </div>
+       <div class="step-item">
+         <div class="step-num">৩</div>
+         <div>এখানে ফিরে এসে <b>"যাচাই হয়েছে কি দেখুন"</b> চাপুন।</div>
+       </div>
+     </div>
+
+     <div class="field">
+       <button class="btn btn-outline" id="openTelegramBtn" type="button">
+         <span>Telegram বট খুলুন</span>
+       </button>
+     </div>
+
+     <div class="field" style="margin-top:14px">
+       <button class="btn" id="checkTelegramBtn" type="button">যাচাই হয়েছে কি দেখুন</button>
+     </div>
+   </div>
+
+   <!-- TEMP: প্রোডাকশনের আগে মুছতে হবে -->
+   <div class="demo-bar">
+     <span style="font-size:11px;color:var(--muted)">প্রিভিউ টেস্ট:</span>
+     <button class="demo-btn" id="demoBdBtn" type="button">ডেমো: বাংলাদেশি</button>
+     <button class="demo-btn" id="demoIntlBtn" type="button">ডেমো: বিদেশি</button>
+   </div>
+ </main>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script type="module">
+import { auth, db } from "./firebase-config.js";
+import { onAuthStateChanged } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
+import { SEND_OTP_URL, VERIFY_OTP_URL, TELEGRAM_CODE_URL, TELEGRAM_BOT_LINK } from "./api-config.js";
+
+(()=>{
+  const root = document.documentElement;
+  const back = document.getElementById('back');
+  const themeBtn = document.getElementById('themeBtn');
+  const toast = document.getElementById('toast');
+  let toastTimer;
+
+  function say(m){
+    toast.textContent = m;
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('show'), 2800);
+  }
+
+  // Theme setup
+  const savedTheme = localStorage.getItem('gamoro_theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  root.setAttribute('data-theme', savedTheme);
+  themeBtn.textContent = savedTheme === 'dark' ? '☀️' : '🌙';
+
+  themeBtn.addEventListener('click', () => {
+    const isDark = root.getAttribute('data-theme') === 'dark';
+    const newTheme = isDark ? 'light' : 'dark';
+    root.setAttribute('data-theme', newTheme);
+    localStorage.setItem('gamoro_theme', newTheme);
+    themeBtn.textContent = newTheme === 'dark' ? '☀️' : '🌙';
+  });
+
+  back.addEventListener('click', () => {
+    if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      window.location.href = 'index.html';
+    }
+  });
+
+  const skelView = document.getElementById('skelView');
+  const notLoggedInView = document.getElementById('notLoggedInView');
+  const verifiedView = document.getElementById('verifiedView');
+  const bdVerifyView = document.getElementById('bdVerifyView');
+  const intlVerifyView = document.getElementById('intlVerifyView');
+
+  const bdPhoneInput = document.getElementById('bd-phone');
+  const sendOtpBtn = document.getElementById('sendOtpBtn');
+  const otpCodeInput = document.getElementById('otpCode');
+  const verifyOtpBtn = document.getElementById('verifyOtpBtn');
+
+  const openTelegramBtn = document.getElementById('openTelegramBtn');
+  const checkTelegramBtn = document.getElementById('checkTelegramBtn');
+
+  let currentUser = null;
+  let currentUserData = null;
+  let resendTimer = null;
+
+  function showSection(name){
+    skelView.style.display = 'none';
+    notLoggedInView.style.display = name === 'notLoggedIn' ? 'block' : 'none';
+    verifiedView.style.display = name === 'verified' ? 'block' : 'none';
+    bdVerifyView.style.display = name === 'bd' ? 'block' : 'none';
+    intlVerifyView.style.display = name === 'intl' ? 'block' : 'none';
+  }
+
+  // Mobile OTP Countdown
+  function startOtpTimer(seconds = 60){
+    let remaining = seconds;
+    sendOtpBtn.disabled = true;
+    clearInterval(resendTimer);
+    sendOtpBtn.textContent = `আবার কোড পাঠান (${remaining} সেকেন্ড)`;
+    resendTimer = setInterval(() => {
+      remaining--;
+      if (remaining <= 0) {
+        clearInterval(resendTimer);
+        sendOtpBtn.disabled = false;
+        sendOtpBtn.textContent = 'আবার কোড পাঠান';
+      } else {
+        sendOtpBtn.textContent = `আবার কোড পাঠান (${remaining} সেকেন্ড)`;
+      }
+    }, 1000);
+  }
+
+  // Action: Send OTP
+  sendOtpBtn.addEventListener('click', async () => {
+    if (!SEND_OTP_URL) {
+      say('ভেরিফিকেশন শীঘ্রই চালু হবে।');
+      return;
+    }
+    sendOtpBtn.disabled = true;
+    sendOtpBtn.textContent = 'পাঠানো হচ্ছে...';
+    try {
+      const res = await fetch(SEND_OTP_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ uid: currentUser?.uid, mobile: currentUserData?.mobile })
+      });
+      if (res.ok) {
+        say('আপনার মোবাইলে OTP পাঠানো হয়েছে।');
+        startOtpTimer(60);
+      } else {
+        say('OTP পাঠানো যায়নি। আবার চেষ্টা করুন।');
+        sendOtpBtn.disabled = false;
+        sendOtpBtn.textContent = 'OTP পাঠান';
+      }
+    } catch (_) {
+      say('ইন্টারনেট বা সার্ভার সমস্যা। আবার চেষ্টা করুন।');
+      sendOtpBtn.disabled = false;
+      sendOtpBtn.textContent = 'OTP পাঠান';
+    }
+  });
+
+  // Action: Verify OTP
+  verifyOtpBtn.addEventListener('click', async () => {
+    const code = otpCodeInput.value.trim();
+    if (!/^\d{6}$/.test(code)) {
+      say('সঠিক ৬ ডিজিটের OTP কোড লিখুন।');
+      return;
+    }
+    if (!VERIFY_OTP_URL) {
+      say('ভেরিফিকেশন শীঘ্রই চালু হবে।');
+      return;
+    }
+    verifyOtpBtn.disabled = true;
+    verifyOtpBtn.textContent = 'যাচাই হচ্ছে...';
+    try {
+      const res = await fetch(VERIFY_OTP_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ uid: currentUser?.uid, code })
+      });
+      const data = await res.json();
+      if (data?.verified) {
+        say('অভিনন্দন! আপনার অ্যাকাউন্ট ভেরিফাইড হয়েছে।');
+        showSection('verified');
+      } else {
+        say(data?.error || 'ভুল বা মেয়াদোত্তীর্ণ কোড।');
+        verifyOtpBtn.disabled = false;
+        verifyOtpBtn.textContent = 'যাচাই করুন';
+      }
+    } catch (_) {
+      say('যাচাই করা যায়নি। কিছুক্ষণ পর চেষ্টা করুন।');
+      verifyOtpBtn.disabled = false;
+      verifyOtpBtn.textContent = 'যাচাই করুন';
+    }
+  });
+
+  // Action: Open Telegram Bot
+  openTelegramBtn.addEventListener('click', () => {
+    if (!TELEGRAM_BOT_LINK) {
+      say('ভেরিফিকেশন শীঘ্রই চালু হবে।');
+      return;
+    }
+    const link = TELEGRAM_BOT_LINK + (TELEGRAM_BOT_LINK.includes('?') ? '&' : '?') + 'start=' + encodeURIComponent(currentUser?.uid || '');
+    window.open(link, '_blank');
+  });
+
+  // Action: Check Telegram Verification Status
+  checkTelegramBtn.addEventListener('click', async () => {
+    if (!currentUser) return;
+    checkTelegramBtn.disabled = true;
+    checkTelegramBtn.textContent = 'চেক করা হচ্ছে...';
+    try {
+      const snap = await getDoc(doc(db, 'users', currentUser.uid));
+      if (snap.exists() && snap.data()?.verified) {
+        say('অভিনন্দন! আপনার অ্যাকাউন্ট ভেরিফাইড হয়েছে।');
+        showSection('verified');
+      } else {
+        say('এখনো ভেরিফিকেশন সম্পন্ন হয়নি। Telegram বটে Start চেপেছেন কি?');
+      }
+    } catch (_) {
+      say('স্ট্যাটাস চেক করতে সমস্যা হয়েছে। আবার চাপুন।');
+    }
+    checkTelegramBtn.disabled = false;
+    checkTelegramBtn.textContent = 'যাচাই হয়েছে কি দেখুন';
+  });
+
+  // Demo preview buttons
+  document.getElementById('demoBdBtn').addEventListener('click', () => {
+    bdPhoneInput.value = '01712345678';
+    showSection('bd');
+    say('বাংলাদেশি ভেরিফিকেশন ডেমো প্রিভিউ');
+  });
+
+  document.getElementById('demoIntlBtn').addEventListener('click', () => {
+    showSection('intl');
+    say('আন্তর্জাতিক টেলিগ্রাম ভেরিফিকেশন ডেমো প্রিভিউ');
+  });
+
+  // Listen to Auth state and load Firestore user doc
+  onAuthStateChanged(auth, async (user) => {
+    currentUser = user;
+    if (!user) {
+      showSection('notLoggedIn');
+      return;
+    }
+
+    try {
+      const snap = await getDoc(doc(db, 'users', user.uid));
+      if (snap.exists()) {
+        currentUserData = snap.data();
+        if (currentUserData.verified === true) {
+          showSection('verified');
+        } else if (currentUserData.country === 'INTL') {
+          showSection('intl');
+        } else {
+          // Default BD
+          const mob = currentUserData.mobile || '';
+          bdPhoneInput.value = mob.startsWith('+88') ? mob.slice(3) : mob;
+          showSection('bd');
+        }
+      } else {
+        // Doc not yet created
+        showSection('bd');
+      }
+    } catch (err) {
+      console.warn('Error reading user profile in verify:', err.message);
+      showSection('bd');
+    }
+  });
+
+  otpCodeInput.addEventListener('input', e => e.target.value = e.target.value.replace(/\D/g, ''));
+})();
+</script>
+</body>
+</html>
