@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="bn" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0C4A34">
+<meta name="description" content="Gamoro – গেম খেলুন ও পয়েন্ট অর্জন করুন">
+<title>Gamoro – গেম</title>
+<link rel="icon" type="image/png" href="logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script type="importmap">
+{
+  "imports": {
+    "firebase/app": "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js",
+    "firebase/auth": "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js",
+    "firebase/firestore": "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"
+  }
+}
+</script>
+<style>
+:root {
+  color-scheme: light;
+  --green: #0C4A34;
+  --green-2: #176746;
+  --gold: #E9A820;
+  --coral: #D6403B;
+  --bg: #F0F8F2;
+  --surface: #ffffff;
+  --surface2: #E4F1E8;
+  --text: #17372B;
+  --muted: #63796D;
+  --line: #D5E5D9;
+  --shadow: 0 4px 20px rgba(12,74,52,.08);
+  --focus: #D6403B;
+}
+:root[data-theme=dark] {
+  color-scheme: dark;
+  --bg: #101B17;
+  --surface: #182720;
+  --surface2: #25382E;
+  --text: #F1F7F3;
+  --muted: #B3C5B9;
+  --line: #354B3E;
+  --shadow: 0 4px 20px rgba(0,0,0,.35);
+  --focus: #FFD16B;
+  --green-2: #9BD6B5;
+  --coral: #FF7A74;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Hind Siliguri", system-ui, sans-serif;
+  height: 100vh;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+button, input, a { font: inherit; }
+button { cursor: pointer; }
+button:focus-visible, a:focus-visible, input:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
+
+/* Header */
+.top-nav {
+  background: var(--green);
+  color: #fff;
+  padding: calc(8px + env(safe-area-inset-top)) 12px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex: none;
+  z-index: 40;
+  box-shadow: 0 2px 10px rgba(6,43,29,.2);
+}
+.nav-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+.back-btn {
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.14);
+  color: #fff;
+  font-size: 18px;
+  display: grid;
+  place-items: center;
+  flex: none;
+  transition: background .15s;
+}
+.back-btn:hover { background: rgba(255,255,255,0.22); }
+.game-title {
+  font-size: 17px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0;
+}
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+.points-chip {
+  background: rgba(233,168,32,0.22);
+  border: 1px solid var(--gold);
+  color: #FFE6A5;
+  font-weight: 700;
+  font-size: 13.5px;
+  padding: 4px 10px;
+  border-radius: 99px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.theme-btn {
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.14);
+  color: #fff;
+  font-size: 15px;
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+
+/* Simulation Test Bar */
+.test-bar {
+  background: var(--surface2);
+  border-bottom: 1px solid var(--line);
+  padding: 6px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  flex-wrap: wrap;
+  flex: none;
+  font-size: 11.5px;
+}
+.test-label {
+  font-weight: 700;
+  color: var(--green-2);
+}
+.test-btn-group {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.test-btn {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  transition: all .15s;
+}
+.test-btn:hover {
+  border-color: var(--green-2);
+}
+
+/* Thin Ad Slot */
+.ad-slot-wrapper {
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  padding: 4px 8px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex: none;
+  min-height: 58px;
+}
+/* আসল বিজ্ঞাপনের স্ক্রিপ্ট লোড সফল হলে এই div-এ data-loaded='true' বসাতে হবে। */
+#gamoro-ad {
+  width: 100%;
+  max-width: 320px;
+  height: 50px;
+  border: 1.5px dashed var(--line);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface2);
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  transition: border-color .2s;
+}
+#gamoro-ad[data-loaded="true"] {
+  border-color: var(--green-2);
+  color: var(--green-2);
+}
+
+/* Status Line */
+.status-bar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  padding: 5px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  flex: none;
+}
+.status-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text);
+}
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: none;
+}
+.dot-green { background: #1DB954; box-shadow: 0 0 6px rgba(29,185,84,0.6); }
+.dot-gray { background: #8E9993; }
+.dot-orange { background: #E9A820; box-shadow: 0 0 6px rgba(233,168,32,0.6); }
+
+.status-login-btn {
+  background: var(--green);
+  color: #fff;
+  border: 0;
+  border-radius: 6px;
+  padding: 3px 9px;
+  font-size: 11.5px;
+  font-weight: 700;
+  text-decoration: none;
+  display: inline-block;
+}
+
+/* Ads Blocked Polite Warning */
+.blocked-notice {
+  background: rgba(214,64,59,0.12);
+  border-bottom: 1px solid rgba(214,64,59,0.3);
+  color: var(--coral);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 14px;
+  text-align: center;
+  flex: none;
+}
+
+/* Main Game Area */
+.game-container {
+  flex: 1;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.game-frame {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  flex: 1;
+  display: block;
+  background: var(--bg);
+}
+
+/* Error / Not Found Screen */
+.not-found-screen {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 30px 20px;
+  text-align: center;
+  gap: 14px;
+}
+.not-found-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0;
+}
+.not-found-btn {
+  background: var(--green);
+  color: #fff;
+  padding: 10px 22px;
+  border-radius: 10px;
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 15px;
+}
+
+/* Challenge Modal */
+.ch-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.72);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  backdrop-filter: blur(3px);
+}
+.ch-card {
+  background: var(--surface);
+  border: 1.5px solid var(--line);
+  border-radius: 18px;
+  width: 100%;
+  max-width: 360px;
+  padding: 22px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.4);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  text-align: center;
+}
+.ch-title {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--text);
+}
+.ch-question {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--green);
+  padding: 12px;
+  background: var(--surface2);
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  letter-spacing: 1px;
+}
+:root[data-theme=dark] .ch-question {
+  color: var(--green-2);
+}
+.ch-input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 20px;
+  text-align: center;
+  font-weight: 700;
+}
+.ch-input:focus {
+  border-color: var(--green);
+}
+.ch-error {
+  color: var(--coral);
+  font-size: 13px;
+  font-weight: 600;
+  margin-top: -6px;
+}
+.ch-submit-btn {
+  background: var(--green);
+  color: #fff;
+  border: 0;
+  border-radius: 10px;
+  padding: 12px;
+  font-size: 16px;
+  font-weight: 700;
+  transition: opacity .15s;
+}
+.ch-submit-btn:hover {
+  opacity: .92;
+}
+.ch-subnote {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+/* Toast */
+.toast {
+  position: fixed;
+  bottom: calc(20px + env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: #17372B;
+  color: #fff;
+  padding: 9px 18px;
+  border-radius: 99px;
+  font-size: 13.5px;
+  font-weight: 600;
+  box-shadow: 0 4px 18px rgba(0,0,0,.25);
+  opacity: 0;
+  pointer-events: none;
+  transition: all .25s ease;
+  z-index: 120;
+  text-align: center;
+  white-space: nowrap;
+}
+.toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+</style>
+</head>
+<body>
+
+  <!-- Top Navigation Header -->
+  <header class="top-nav">
+    <div class="nav-left">
+      <a href="index.html" class="back-btn" id="backBtn" aria-label="হোমে ফিরে যান">←</a>
+      <h1 class="game-title" id="gameTitle">গেম খেলুন</h1>
+    </div>
+    <div class="nav-right">
+      <div class="points-chip" id="pointsChip" title="আপনার চলতি মাসের পয়েন্ট">
+        ★ <span id="pointsValue">০</span>
+      </div>
+      <button class="theme-btn" id="themeBtn" aria-label="থিম পরিবর্তন">🌙</button>
+    </div>
+  </header>
+
+  <!-- TEMP: প্রোডাকশনের আগে মুছতে হবে -->
+  <div class="test-bar" id="testBar">
+    <span class="test-label">সিমুলেশন ও টেস্ট মোড</span>
+    <div class="test-btn-group">
+      <button type="button" class="test-btn" id="demoQuestionBtn">ডেমো: প্রশ্ন</button>
+      <button type="button" class="test-btn" id="demoAdBlockBtn">ডেমো: বিজ্ঞাপন ব্লক</button>
+      <button type="button" class="test-btn" id="demoActiveToggleBtn">ডেমো: সক্রিয়/নিষ্ক্রিয়</button>
+      <button type="button" class="test-btn" id="demoAdToggleBtn">ডেমো: বিজ্ঞাপন অন/অফ</button>
+    </div>
+  </div>
+
+  <!-- Thin Ad Slot -->
+  <!-- আসল বিজ্ঞাপনের স্ক্রিপ্ট লোড সফল হলে এই div-এ data-loaded="true" বসাতে হবে। -->
+  <div class="ad-slot-wrapper">
+    <div id="gamoro-ad" data-loaded="false">
+      বিজ্ঞাপন (320 × 50)
+    </div>
+  </div>
+
+  <!-- Status Line -->
+  <div class="status-bar" id="statusBar">
+    <div class="status-left">
+      <span class="status-dot dot-gray" id="statusDot"></span>
+      <span id="statusText">নিষ্ক্রিয়, খেলা শুরু করুন</span>
+    </div>
+    <a href="auth.html#login" class="status-login-btn" id="statusLoginBtn" style="display:none">লগইন করুন</a>
+  </div>
+
+  <!-- Ads Blocked Warning -->
+  <div id="adsBlockedNotice" class="blocked-notice" style="display:none">
+    বিজ্ঞাপন ব্লক থাকলে পয়েন্ট জমে না। ব্লকার বন্ধ করে পেজ রিলোড করুন।
+  </div>
+
+  <!-- Main Game Container / Iframe -->
+  <main class="game-container" id="gameContainer">
+    <iframe id="gameFrame" class="game-frame" sandbox="allow-scripts allow-same-origin" title="গেম ফ্রেম" allow="autoplay"></iframe>
+    <div class="not-found-screen" id="notFoundScreen" style="display:none">
+      <h2 class="not-found-title">গেমটি পাওয়া যায়নি</h2>
+      <a href="index.html" class="not-found-btn">হোমে ফিরে যান</a>
+    </div>
+  </main>
+
+  <!-- Challenge Modal -->
+  <div class="ch-overlay" id="challengeOverlay" role="dialog" aria-modal="true" aria-labelledby="chModalTitle" style="display:none">
+    <div class="ch-card" id="challengeCard">
+      <h2 class="ch-title" id="chModalTitle">আপনি কি এখনো আছেন?</h2>
+      <div class="ch-question" id="chQuestion">৫ + ৭ = ?</div>
+      <input type="text" inputmode="numeric" class="ch-input" id="chInput" placeholder="উত্তর লিখুন" autocomplete="off">
+      <div class="ch-error" id="chError" style="display:none">ভুল উত্তর</div>
+      <button type="button" class="ch-submit-btn" id="chSubmitBtn">নিশ্চিত করুন</button>
+      <div class="ch-subnote">উত্তর না দেওয়া পর্যন্ত পয়েন্ট জমবে না।</div>
+    </div>
+  </div>
+
+  <!-- Toast Element -->
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script type="module">
+import { auth, db } from "./firebase-config.js";
+import { SESSION_URL } from "./api-config.js";
+import { startGamoroSession } from "./gamoro-session.js";
+import { GAMES, getGameById } from "./games.js";
+import { onAuthStateChanged } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
+
+/* Bengali Number Helper */
+function toBn(num) {
+  if (num === null || num === undefined || isNaN(Number(num))) return '০';
+  return Number(num).toLocaleString('bn-BD');
+}
+
+/* Theme Toggle */
+const root = document.documentElement;
+const themeBtn = document.getElementById('themeBtn');
+function applyTheme(theme) {
+  root.setAttribute('data-theme', theme);
+  localStorage.setItem('gamoro-theme', theme);
+  themeBtn.textContent = theme === 'dark' ? '☀️' : '🌙';
+  const metaColor = document.querySelector('meta[name="theme-color"]');
+  if (metaColor) metaColor.content = theme === 'dark' ? '#101B17' : '#0C4A34';
+}
+const savedTheme = localStorage.getItem('gamoro-theme') || 'light';
+applyTheme(savedTheme);
+themeBtn.addEventListener('click', () => {
+  const cur = root.getAttribute('data-theme');
+  applyTheme(cur === 'dark' ? 'light' : 'dark');
+});
+
+/* Toast Notification */
+const toast = document.getElementById('toast');
+let toastTimer = null;
+function showToast(msg) {
+  clearTimeout(toastTimer);
+  toast.textContent = msg;
+  toast.classList.add('show');
+  toastTimer = setTimeout(() => toast.classList.remove('show'), 2600);
+}
+
+/* URL Params & Game Selection */
+const urlParams = new URLSearchParams(window.location.search);
+const gameIdParam = urlParams.get('game');
+const isDemoParam = urlParams.get('demo') === '1';
+
+const matchedGame = gameIdParam ? getGameById(gameIdParam) : null;
+const gameTitleElem = document.getElementById('gameTitle');
+const gameFrame = document.getElementById('gameFrame');
+const notFoundScreen = document.getElementById('notFoundScreen');
+
+if (!matchedGame) {
+  gameTitleElem.textContent = 'গেম পাওয়া যায়নি';
+  gameFrame.style.display = 'none';
+  notFoundScreen.style.display = 'flex';
+} else {
+  gameTitleElem.textContent = matchedGame.name;
+  gameFrame.src = matchedGame.path;
+  document.title = `Gamoro – ${matchedGame.name}`;
+}
+
+/* Ad Element & Demo Simulation */
+const adEl = document.getElementById('gamoro-ad');
+
+// TEMP: প্রোডাকশনের আগে মুছতে হবে
+const DEMO_AD_LOADED = true;
+if (DEMO_AD_LOADED) {
+  setTimeout(() => {
+    if (adEl) {
+      adEl.dataset.loaded = "true";
+      updateStatusLine();
+    }
+  }, 1500);
+}
+
+/* Activity Tracking */
+let lastUserActivity = Date.now();
+let isSimulatedInactive = false;
+
+function markActivity() {
+  if (isSimulatedInactive) isSimulatedInactive = false;
+  lastUserActivity = Date.now();
+  updateStatusLine();
+}
+
+['pointerdown', 'pointermove', 'keydown', 'touchstart', 'wheel', 'scroll'].forEach((ev) =>
+  window.addEventListener(ev, markActivity, { passive: true, capture: true }));
+
+window.addEventListener('message', (e) => {
+  if (e.origin === location.origin && e.data && e.data.type === 'gamoro-activity') {
+    markActivity();
+  }
+});
+
+/* Points & Auth State */
+let currentUser = null;
+let currentPoints = isDemoParam ? 1250 : 0;
+const pointsValue = document.getElementById('pointsValue');
+
+function updatePointsDisplay(pts) {
+  pointsValue.textContent = toBn(pts);
+}
+updatePointsDisplay(currentPoints);
+
+/* Get Asia/Dhaka Current Period (YYYY-MM) */
+function getDhakaPeriod() {
+  try {
+    const formatter = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Dhaka',
+      year: 'numeric',
+      month: '2-digit'
+    });
+    return formatter.format(new Date());
+  } catch (e) {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  }
+}
+
+/* Status Line Logic */
+const statusDot = document.getElementById('statusDot');
+const statusText = document.getElementById('statusText');
+const statusLoginBtn = document.getElementById('statusLoginBtn');
+
+function updateStatusLine() {
+  if (!currentUser && !isDemoParam) {
+    statusDot.className = 'status-dot dot-gray';
+    statusText.textContent = 'লগইন ছাড়া পয়েন্ট জমবে না';
+    statusLoginBtn.style.display = 'inline-block';
+    return;
+  }
+
+  statusLoginBtn.style.display = 'none';
+
+  const isAdLoaded = adEl && adEl.dataset.loaded === 'true';
+  if (!isAdLoaded) {
+    statusDot.className = 'status-dot dot-orange';
+    statusText.textContent = 'বিজ্ঞাপন লোড হয়নি, পয়েন্ট জমছে না';
+    return;
+  }
+
+  const isRecentlyActive = !isSimulatedInactive && (Date.now() - lastUserActivity <= 60000);
+  if (isRecentlyActive) {
+    statusDot.className = 'status-dot dot-green';
+    statusText.textContent = 'সক্রিয়, পয়েন্ট জমছে';
+  } else {
+    statusDot.className = 'status-dot dot-gray';
+    statusText.textContent = 'নিষ্ক্রিয়, খেলা শুরু করুন';
+  }
+}
+
+setInterval(updateStatusLine, 1000);
+
+/* Challenge Modal Handling */
+const challengeOverlay = document.getElementById('challengeOverlay');
+const challengeCard = document.getElementById('challengeCard');
+const chQuestion = document.getElementById('chQuestion');
+const chInput = document.getElementById('chInput');
+const chError = document.getElementById('chError');
+const chSubmitBtn = document.getElementById('chSubmitBtn');
+
+let activeChallengeSubmit = null;
+
+function showChallengeModal(ch, submitFn) {
+  activeChallengeSubmit = submitFn;
+  chQuestion.textContent = ch.q || '';
+  chInput.value = '';
+  chError.style.display = 'none';
+  challengeOverlay.style.display = 'flex';
+  chInput.focus();
+}
+
+async function submitChallengeAnswer() {
+  if (!activeChallengeSubmit) return;
+  const answer = chInput.value.trim();
+  chSubmitBtn.disabled = true;
+  try {
+    const res = await activeChallengeSubmit(answer);
+    if (res && res.ok === true) {
+      challengeOverlay.style.display = 'none';
+      activeChallengeSubmit = null;
+      chError.style.display = 'none';
+      markActivity();
+    } else {
+      chError.style.display = 'block';
+      if (res && res.challenge && res.challenge.q) {
+        chQuestion.textContent = res.challenge.q;
+      }
+      chInput.value = '';
+      chInput.focus();
+    }
+  } catch (err) {
+    chError.style.display = 'block';
+  } finally {
+    chSubmitBtn.disabled = false;
+  }
+}
+
+chSubmitBtn.addEventListener('click', submitChallengeAnswer);
+chInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    submitChallengeAnswer();
+  }
+});
+
+// Trap focus inside challenge modal
+challengeOverlay.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    e.preventDefault(); // Unclosable
+    return;
+  }
+  if (e.key === 'Tab') {
+    const focusable = challengeCard.querySelectorAll('input, button');
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  }
+});
+
+/* Demo simulation buttons */
+document.getElementById('demoQuestionBtn').addEventListener('click', () => {
+  showChallengeModal({ id: 'demo_q', q: '৭ + ৮ = ?' }, async (ans) => {
+    if (ans === '১৫' || ans === '15') {
+      showToast('সঠিক উত্তর!');
+      return { ok: true };
+    }
+    return { ok: false, challenge: { id: 'demo_q2', q: '৯ + ৪ = ?' } };
+  });
+});
+
+document.getElementById('demoAdBlockBtn').addEventListener('click', () => {
+  const notice = document.getElementById('adsBlockedNotice');
+  const isHidden = notice.style.display === 'none';
+  notice.style.display = isHidden ? 'block' : 'none';
+  showToast(isHidden ? 'বিজ্ঞাপন ব্লক বার্তা দেখানো হচ্ছে' : 'বিজ্ঞাপন ব্লক বার্তা সরানো হয়েছে');
+});
+
+document.getElementById('demoActiveToggleBtn').addEventListener('click', () => {
+  isSimulatedInactive = !isSimulatedInactive;
+  if (!isSimulatedInactive) lastUserActivity = Date.now();
+  updateStatusLine();
+  showToast(isSimulatedInactive ? 'অবস্থা: নিষ্ক্রিয়' : 'অবস্থা: সক্রিয়');
+});
+
+document.getElementById('demoAdToggleBtn').addEventListener('click', () => {
+  const isLoaded = adEl.dataset.loaded === 'true';
+  adEl.dataset.loaded = isLoaded ? 'false' : 'true';
+  updateStatusLine();
+  showToast(isLoaded ? 'বিজ্ঞাপন আনলোড করা হয়েছে' : 'বিজ্ঞাপন লোড করা হয়েছে');
+});
+
+/* Session Management */
+let sessionInstance = null;
+let hasReportedError = false;
+
+function initSessionForUser(user) {
+  if (sessionInstance || !matchedGame) return;
+
+  sessionInstance = startGamoroSession({
+    auth,
+    gameId: matchedGame.id,
+    apiUrl: SESSION_URL,
+    adSelector: '#gamoro-ad',
+    onPoints: (points, creditedSec) => {
+      currentPoints = points;
+      updatePointsDisplay(points);
+      if (creditedSec && creditedSec > 0) {
+        const mins = (creditedSec / 60).toFixed(1);
+        showToast(`+${toBn(mins)} মিনিট যোগ হয়েছে`);
+      }
+    },
+    onChallenge: (ch, submitFn) => {
+      showChallengeModal(ch, submitFn);
+    },
+    onAdsBlocked: () => {
+      const notice = document.getElementById('adsBlockedNotice');
+      if (notice) notice.style.display = 'block';
+      updateStatusLine();
+    },
+    onError: (err) => {
+      if (!hasReportedError) {
+        showToast('সার্ভারের সাথে সংযোগ হয়নি, পয়েন্ট জমছে না।');
+        hasReportedError = true;
+      }
+    }
+  });
+}
+
+/* Firebase User Listener */
+onAuthStateChanged(auth, async (user) => {
+  currentUser = user;
+  updateStatusLine();
+
+  if (user) {
+    try {
+      const snap = await getDoc(doc(db, 'users', user.uid));
+      if (snap.exists()) {
+        const data = snap.data();
+        const currentPeriod = getDhakaPeriod();
+        if (data.pointsPeriod === currentPeriod && typeof data.points === 'number') {
+          currentPoints = data.points;
+        } else {
+          currentPoints = 0;
+        }
+      } else {
+        currentPoints = 0;
+      }
+    } catch (e) {
+      currentPoints = 0;
+    }
+    updatePointsDisplay(currentPoints);
+
+    if (matchedGame) {
+      initSessionForUser(user);
+    }
+  } else {
+    if (sessionInstance) {
+      try { sessionInstance.stop(); } catch (e) {}
+      sessionInstance = null;
+    }
+    if (isDemoParam) {
+      currentPoints = 1250;
+      updatePointsDisplay(currentPoints);
+    } else {
+      currentPoints = 0;
+      updatePointsDisplay(0);
+    }
+  }
+});
+</script>
+</body>
+</html>

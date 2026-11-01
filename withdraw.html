@@ -766,6 +766,9 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{
         <span class="bal-usd" id="balanceUsdText">$০.০০</span>
         <span class="bal-bdt" id="balanceBdtText">≈ ৳০</span>
       </div>
+      <div id="pinStatusArea" style="margin-top:10px;display:none">
+        <button type="button" id="changePinBtn" class="action-btn-sm secondary" style="font-size:12px;padding:4px 12px;border-radius:20px">পিন বদলান</button>
+      </div>
     </section>
 
     <!-- Email Verification Card (when emailVerified !== true) -->
@@ -780,17 +783,26 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{
       </div>
     </div>
 
-    <!-- PIN Setup Card (when pinSet !== true) -->
+    <!-- PIN Setup Card (when pinSet !== true or changing PIN) -->
     <div class="pin-card" id="pinSetupCard" style="display:none">
-      <div class="verify-text" style="font-weight:700">টাকা তোলার পিন সেট করুন</div>
-      <div style="font-size:13px;color:var(--muted);margin-top:2px;margin-bottom:12px">টাকা তোলার নিরাপত্তা নিশ্চিত করতে ৬ ডিজিটের পিন সেট করুন।</div>
-      <div style="display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
         <div>
-          <label class="field-label" for="newPinInput">৬ ডিজিটের পিন</label>
+          <div class="verify-text" style="font-weight:700" id="pinCardTitle">টাকা তোলার পিন সেট করুন</div>
+          <div style="font-size:13px;color:var(--muted);margin-top:2px;margin-bottom:12px" id="pinCardDesc">টাকা তোলার নিরাপত্তা নিশ্চিত করতে ৬ ডিজিটের পিন সেট করুন।</div>
+        </div>
+        <button type="button" id="closePinCardBtn" style="display:none;background:none;border:0;color:var(--muted);font-size:18px;cursor:pointer;padding:0 4px" aria-label="বন্ধ করুন">✕</button>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div id="currentPinGroup" style="display:none">
+          <label class="field-label" for="currentPinInput">বর্তমান পিন</label>
+          <input type="password" inputmode="numeric" maxlength="6" class="field-input" id="currentPinInput" placeholder="••••••">
+        </div>
+        <div>
+          <label class="field-label" for="newPinInput" id="newPinLabel">৬ ডিজিটের পিন</label>
           <input type="password" inputmode="numeric" maxlength="6" class="field-input" id="newPinInput" placeholder="••••••">
         </div>
         <div>
-          <label class="field-label" for="confirmPinInput">পিন পুনরায় লিখুন</label>
+          <label class="field-label" for="confirmPinInput" id="confirmPinLabel">পিন পুনরায় লিখুন</label>
           <input type="password" inputmode="numeric" maxlength="6" class="field-input" id="confirmPinInput" placeholder="••••••">
         </div>
         <button type="button" class="submit-btn" style="padding:10px 14px;font-size:14.5px" id="savePinBtn">পিন সেট করুন</button>
@@ -823,11 +835,11 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{
           <div class="field-group">
             <label class="field-label" for="rechargeOperator">মোবাইল অপারেটর</label>
             <select class="field-select" id="rechargeOperator">
-              <option value="গ্রামীণফোন">গ্রামীণফোন (Grameenphone)</option>
-              <option value="রবি">রবি (Robi)</option>
-              <option value="বাংলালিংক">বাংলালিংক (Banglalink)</option>
-              <option value="এয়ারটেল">এয়ারটেল (Airtel)</option>
-              <option value="টেলিটক">টেলিটক (Teletalk)</option>
+              <option value="gp">গ্রামীণফোন (Grameenphone)</option>
+              <option value="robi">রবি (Robi)</option>
+              <option value="bl">বাংলালিংক (Banglalink)</option>
+              <option value="airtel">এয়ারটেল (Airtel)</option>
+              <option value="teletalk">টেলিটক (Teletalk)</option>
             </select>
           </div>
           <div class="field-group">
@@ -1094,6 +1106,25 @@ async function loadConfig(){
   }
 }
 
+/* Error Code Mapping Helper */
+function getErrorMessage(code, defaultMsg){
+  const map = {
+    'wrong_pin': 'পিন ভুল',
+    'pin_locked': '১ ঘণ্টা পরে চেষ্টা করুন',
+    'no_pin': 'আগে পিন সেট করুন',
+    'weak_pin': 'সহজ পিন দেওয়া যাবে না, অন্য পিন দিন',
+    'pin_exists': 'আপনার পিন আগে থেকেই আছে',
+    'email_not_verified': 'ইমেইল ভেরিফাই করুন',
+    'account_used': 'এই পেমেন্ট নম্বর/আইডি আগেই অন্য অ্যাকাউন্টে ব্যবহার হয়েছে',
+    'below_min': 'ন্যূনতম সীমার কম',
+    'method_not_allowed': 'এই পদ্ধতি এই পরিমাণে চলবে না',
+    'bad_details': 'তথ্য সঠিক নয়',
+    'insufficient': 'ব্যালেন্স যথেষ্ট নয়',
+    'too_fast': 'কিছুক্ষণ পরে আবার চেষ্টা করুন'
+  };
+  return map[code] || defaultMsg || 'সমস্যা হয়েছে, পরে আবার চেষ্টা করুন';
+}
+
 /* UI Rendering based on userState & config */
 function renderUI(){
   // 1. Balance Header
@@ -1102,6 +1133,7 @@ function renderUI(){
 
   const emailWarning = document.getElementById('emailWarning');
   const pinSetupCard = document.getElementById('pinSetupCard');
+  const pinStatusArea = document.getElementById('pinStatusArea');
   const thresholdNotice = document.getElementById('thresholdNotice');
   const thresholdSubText = document.getElementById('thresholdSubText');
   const withdrawForm = document.getElementById('withdrawForm');
@@ -1112,7 +1144,23 @@ function renderUI(){
   const isFullyGated = !isEmailOk || !isPinOk;
 
   emailWarning.style.display = !isEmailOk ? 'flex' : 'none';
-  pinSetupCard.style.display = !isPinOk ? 'block' : 'none';
+
+  if(pinStatusArea){
+    pinStatusArea.style.display = isPinOk ? 'block' : 'none';
+  }
+
+  if(!isPinOk){
+    document.getElementById('pinCardTitle').textContent = 'টাকা তোলার পিন সেট করুন';
+    document.getElementById('pinCardDesc').textContent = 'টাকা তোলার নিরাপত্তা নিশ্চিত করতে ৬ ডিজিটের পিন সেট করুন।';
+    document.getElementById('currentPinGroup').style.display = 'none';
+    document.getElementById('newPinLabel').textContent = '৬ ডিজিটের পিন';
+    document.getElementById('confirmPinLabel').textContent = 'পিন পুনরায় লিখুন';
+    document.getElementById('savePinBtn').textContent = 'পিন সেট করুন';
+    document.getElementById('closePinCardBtn').style.display = 'none';
+    pinSetupCard.style.display = 'block';
+  } else {
+    pinSetupCard.style.display = 'none';
+  }
 
   if(isFullyGated){
     thresholdNotice.style.display = 'none';
@@ -1142,6 +1190,36 @@ function renderUI(){
   withdrawForm.style.display = 'flex';
   withdrawForm.classList.remove('gated');
   renderMethods();
+}
+
+/* Change PIN Card Toggling */
+const changePinBtn = document.getElementById('changePinBtn');
+const closePinCardBtn = document.getElementById('closePinCardBtn');
+
+if(changePinBtn){
+  changePinBtn.addEventListener('click', () => {
+    const pinSetupCard = document.getElementById('pinSetupCard');
+    document.getElementById('pinCardTitle').textContent = 'পিন বদলান';
+    document.getElementById('pinCardDesc').textContent = 'আপনার বর্তমান পিন ও নতুন ৬ ডিজিটের পিন লিখুন।';
+    document.getElementById('currentPinGroup').style.display = 'block';
+    document.getElementById('newPinLabel').textContent = 'নতুন পিন (৬ ডিজিট)';
+    document.getElementById('confirmPinLabel').textContent = 'নতুন পিন পুনরায় লিখুন';
+    document.getElementById('savePinBtn').textContent = 'পিন পরিবর্তন করুন';
+    document.getElementById('closePinCardBtn').style.display = 'block';
+    document.getElementById('currentPinInput').value = '';
+    document.getElementById('newPinInput').value = '';
+    document.getElementById('confirmPinInput').value = '';
+    pinSetupCard.style.display = 'block';
+    pinSetupCard.scrollIntoView({ behavior: 'smooth' });
+  });
+}
+
+if(closePinCardBtn){
+  closePinCardBtn.addEventListener('click', () => {
+    if(userState.pinSet){
+      document.getElementById('pinSetupCard').style.display = 'none';
+    }
+  });
 }
 
 /* Email Verification Action Listeners */
@@ -1187,11 +1265,17 @@ document.getElementById('reloadEmailBtn').addEventListener('click', async () => 
   }
 });
 
-/* PIN Setup Action Listener */
+/* PIN Setup / Change Action Listener */
 document.getElementById('savePinBtn').addEventListener('click', async () => {
+  const isChanging = userState.pinSet === true;
+  const currentPin = document.getElementById('currentPinInput').value.trim();
   const p1 = document.getElementById('newPinInput').value.trim();
   const p2 = document.getElementById('confirmPinInput').value.trim();
 
+  if (isChanging && !/^\d{6}$/.test(currentPin)) {
+    showToast('বর্তমান পিন অবশ্যই ৬ সংখ্যার হতে হবে।');
+    return;
+  }
   if (!/^\d{6}$/.test(p1)) {
     showToast('পিন অবশ্যই ৬ সংখ্যার হতে হবে।');
     return;
@@ -1201,39 +1285,61 @@ document.getElementById('savePinBtn').addEventListener('click', async () => {
     return;
   }
 
+  if (isDemoMode) {
+    userState.pinSet = true;
+    showToast(isChanging ? 'পিন সফলভাবে পরিবর্তন হয়েছে!' : 'পিন সফলভাবে সেট করা হয়েছে!');
+    document.getElementById('newPinInput').value = '';
+    document.getElementById('confirmPinInput').value = '';
+    document.getElementById('currentPinInput').value = '';
+    renderUI();
+    return;
+  }
+
   if (!SET_PIN_URL || SET_PIN_URL.trim() === '') {
     showToast('শীঘ্রই চালু হবে।');
     return;
   }
 
+  const saveBtn = document.getElementById('savePinBtn');
+  const originalText = saveBtn.textContent;
   try {
-    const saveBtn = document.getElementById('savePinBtn');
     saveBtn.disabled = true;
     saveBtn.textContent = 'সংরক্ষণ হচ্ছে...';
     const token = auth.currentUser ? await auth.currentUser.getIdToken() : '';
+    const body = isChanging ? { pin: p1, currentPin: currentPin } : { pin: p1 };
+
     const res = await fetch(SET_PIN_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer ' + token
       },
-      body: JSON.stringify({ pin: p1 })
+      body: JSON.stringify(body)
     });
-    if (!res.ok) {
-      const errData = await res.json().catch(() => ({}));
-      throw new Error(errData.message || 'পিন সেট ব্যর্থ হয়েছে');
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || data.ok === false) {
+      const code = data.error || data.code || '';
+      showToast(getErrorMessage(code, data.message));
+      return;
     }
+
     userState.pinSet = true;
-    showToast('পিন সফলভাবে সেট করা হয়েছে!');
+    showToast(isChanging ? 'পিন সফলভাবে পরিবর্তন হয়েছে!' : 'পিন সফলভাবে সেট করা হয়েছে!');
     document.getElementById('newPinInput').value = '';
     document.getElementById('confirmPinInput').value = '';
-    renderUI();
+    document.getElementById('currentPinInput').value = '';
+
+    if (auth.currentUser) {
+      await loadUserData(auth.currentUser);
+    } else {
+      renderUI();
+    }
   } catch (err) {
-    showToast('ত্রুটি: ' + err.message);
+    showToast('সমস্যা হয়েছে, পরে আবার চেষ্টা করুন');
   } finally {
-    const saveBtn = document.getElementById('savePinBtn');
     saveBtn.disabled = false;
-    saveBtn.textContent = 'পিন সেট করুন';
+    saveBtn.textContent = originalText;
   }
 });
 
@@ -1448,18 +1554,23 @@ function validateAndOpenModal(){
     return;
   }
 
+  let methodKey = selectedMethod === 'recharge' ? 'mobile_recharge' : selectedMethod;
   let methodDisplayName = '';
   let detailsText = '';
+  let detailsObj = {};
 
   if(selectedMethod === 'recharge'){
     if(amt < config.mobileRechargeMin || amt >= config.mobileRechargeMaxExclusive){
       showToast('মোবাইল রিচার্জ $' + toBn(config.mobileRechargeMin) + ' থেকে $' + toBn(config.mobileRechargeMaxExclusive - 0.01) + ' পর্যন্ত প্রযোজ্য।');
       return;
     }
-    const op = document.getElementById('rechargeOperator').value;
+    const opSelect = document.getElementById('rechargeOperator');
+    const opVal = opSelect.value;
+    const opText = opSelect.options[opSelect.selectedIndex]?.text || opVal;
     const num = userState.mobile;
     methodDisplayName = 'মোবাইল রিচার্জ';
-    detailsText = op + ' (' + num + ')';
+    detailsText = opText + ' (' + num + ')';
+    detailsObj = { operator: opVal };
   } else if(selectedMethod === 'bkash' || selectedMethod === 'nagad' || selectedMethod === 'rocket'){
     if(amt < config.bankWalletMin){
       showToast('ন্যূনতম উত্তোলন $' + toBn(config.bankWalletMin) + ' হতে হবে।');
@@ -1472,7 +1583,8 @@ function validateAndOpenModal(){
     }
     const mNames = { bkash: 'বিকাশ', nagad: 'নগদ', rocket: 'রকেট' };
     methodDisplayName = mNames[selectedMethod];
-    detailsText = num + ' (' + selectedMfsType + ')';
+    detailsText = num + ' (পার্সোনাল)';
+    detailsObj = { accountNumber: num, accountType: 'personal' };
   } else if(selectedMethod === 'bank'){
     if(amt < config.bankWalletMin){
       showToast('ব্যাংক উত্তোলনে ন্যূনতম $' + toBn(config.bankWalletMin) + ' হতে হবে।');
@@ -1490,6 +1602,13 @@ function validateAndOpenModal(){
     }
     methodDisplayName = 'ব্যাংক ট্রান্সফার';
     detailsText = bName + ', ' + bBranch + ' (হি: ' + bAccNum + ')';
+    detailsObj = {
+      bankName: bName,
+      branch: bBranch,
+      accountName: bAccName,
+      accountNumber: bAccNum,
+      routing: bRouting
+    };
   } else if(selectedMethod === 'binance'){
     if(amt < config.binanceMin){
       showToast('Binance Pay-এ ন্যূনতম উত্তোলন $' + toBn(config.binanceMin) + ' হতে হবে।');
@@ -1502,16 +1621,19 @@ function validateAndOpenModal(){
     }
     methodDisplayName = 'Binance Pay';
     detailsText = 'Pay ID: ' + bId;
+    detailsObj = { binanceId: bId };
   }
 
   const amtBdt = Math.round(amt * config.usdToBdt);
 
   pendingSubmission = {
-    method: methodDisplayName,
-    details: detailsText,
+    method: methodKey,
+    methodDisplayName: methodDisplayName,
+    detailsText: detailsText,
+    details: detailsObj,
     amountUsd: amt,
     amountBdt: amtBdt,
-    autoWithdraw: autoWithdrawCheck.checked
+    auto: autoWithdrawCheck.checked
   };
 
   document.getElementById('modalMethodVal').textContent = methodDisplayName;
@@ -1542,49 +1664,67 @@ modalConfirmBtn.addEventListener('click', async () => {
   confirmModal.classList.remove('open');
   if(pinInput) pinInput.value = '';
 
-  // Check WITHDRAW_URL from api-config.js
-  if(!WITHDRAW_URL || WITHDRAW_URL.trim() === ''){
-    showToast('শীঘ্রই চালু হবে।');
+  if (isDemoMode) {
+    userState.balanceUsd = Math.max(0, userState.balanceUsd - pendingSubmission.amountUsd);
+    showToast('আবেদন জমা হয়েছে');
+    amountUsdInput.value = '';
+    updateBdtPreview();
+    renderUI();
+    demoPayoutsSample.unshift({
+      method: pendingSubmission.methodDisplayName,
+      accountDetails: pendingSubmission.detailsText,
+      amountUsd: pendingSubmission.amountUsd,
+      amountBdt: pendingSubmission.amountBdt,
+      status: 'pending',
+      createdAt: new Date()
+    });
+    renderPayoutHistory(demoPayoutsSample);
+    pendingSubmission = null;
     return;
   }
 
-  // If WITHDRAW_URL is configured, dispatch via POST
+  if(!WITHDRAW_URL || WITHDRAW_URL.trim() === ''){
+    showToast('শীঘ্রই চালু হবে।');
+    pendingSubmission = null;
+    return;
+  }
+
   try{
     modalConfirmBtn.disabled = true;
     showToast('আবেদন প্রক্রিয়াধীন...');
     const token = auth.currentUser ? await auth.currentUser.getIdToken() : '';
+    const bodyPayload = {
+      method: pendingSubmission.method,
+      amountUsd: pendingSubmission.amountUsd,
+      pin: pinVal,
+      auto: pendingSubmission.auto,
+      details: pendingSubmission.details
+    };
+
     const res = await fetch(WITHDRAW_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer ' + token
       },
-      body: JSON.stringify({ ...pendingSubmission, pin: pinVal })
+      body: JSON.stringify(bodyPayload)
     });
-    if(!res.ok){
-      const errData = await res.json().catch(() => ({}));
-      const code = errData.error || errData.code || '';
-      if(code === 'wrong_pin'){
-        showToast('পিন ভুল');
-      } else if(code === 'pin_locked'){
-        showToast('১ ঘণ্টা পরে চেষ্টা করুন');
-      } else if(code === 'account_used'){
-        showToast('এই পেমেন্ট নম্বর/আইডি আগেই অন্য অ্যাকাউন্টে ব্যবহার হয়েছে।');
-      } else if(code === 'email_not_verified'){
-        showToast('ইমেইল ভেরিফাই করুন।');
-      } else if(code === 'below_min'){
-        showToast('ন্যূনতম সীমার কম ব্যালেন্স।');
-      } else {
-        showToast('ত্রুটি: ' + (errData.message || 'উইথড্রয়াল ব্যর্থ হয়েছে'));
-      }
+
+    const data = await res.json().catch(() => ({}));
+    if(!res.ok || data.ok === false){
+      const code = data.error || data.code || '';
+      showToast(getErrorMessage(code, data.message));
       return;
     }
-    showToast('উইথড্রয়াল আবেদন সফলভাবে জমা হয়েছে!');
+
+    showToast('আবেদন জমা হয়েছে');
     amountUsdInput.value = '';
     updateBdtPreview();
-    if(auth.currentUser) loadPayoutHistory(auth.currentUser.uid);
+    if(auth.currentUser){
+      await loadUserData(auth.currentUser);
+    }
   }catch(err){
-    showToast('ত্রুটি: ' + err.message);
+    showToast('সমস্যা হয়েছে, পরে আবার চেষ্টা করুন');
   }finally{
     modalConfirmBtn.disabled = false;
     pendingSubmission = null;

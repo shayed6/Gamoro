@@ -1,0 +1,3428 @@
+<!DOCTYPE html>
+<html lang="bn" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#0C4A34">
+<title>Gamoro – অ্যাডমিন প্যানেল</title>
+<link rel="icon" type="image/png" href="logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script type="importmap">
+{
+  "imports": {
+    "firebase/app": "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js",
+    "firebase/auth": "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js"
+  }
+}
+</script>
+<style>
+:root {
+  color-scheme: light;
+  --green: #0C4A34;
+  --green-2: #176746;
+  --gold: #E9A820;
+  --coral: #D6403B;
+  --blue: #2563EB;
+  --bg: #F0F8F2;
+  --surface: #ffffff;
+  --surface2: #E4F1E8;
+  --text: #17372B;
+  --muted: #63796D;
+  --line: #D5E5D9;
+  --shadow: 0 8px 25px rgba(12,74,52,.08);
+  --focus: #D6403B;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --sidebar-w: 260px;
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #101B17;
+  --surface: #182720;
+  --surface2: #25382E;
+  --text: #F1F7F3;
+  --muted: #B3C5B9;
+  --line: #354B3E;
+  --shadow: 0 8px 25px rgba(0,0,0,.35);
+  --focus: #FFD16B;
+  --green-2: #9BD6B5;
+  --coral: #FF7A74;
+  --blue: #60A5FA;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: "Hind Siliguri", system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--line); border-radius: 4px; }
+
+/* Buttons & Inputs */
+button, input, select, textarea {
+  font-family: inherit;
+  font-size: 14px;
+}
+button {
+  cursor: pointer;
+  border: none;
+  background: none;
+  transition: all .18s ease;
+}
+button:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  font-size: 14px;
+  transition: transform .1s, background .2s, box-shadow .2s;
+}
+.btn:active:not(:disabled) { transform: scale(0.98); }
+.btn-primary {
+  background: var(--green);
+  color: #ffffff;
+}
+.btn-primary:hover:not(:disabled) {
+  background: var(--green-2);
+}
+.btn-secondary {
+  background: var(--surface2);
+  color: var(--text);
+  border: 1px solid var(--line);
+}
+.btn-secondary:hover:not(:disabled) {
+  background: var(--line);
+}
+.btn-danger {
+  background: var(--coral);
+  color: #ffffff;
+}
+.btn-danger:hover:not(:disabled) {
+  filter: brightness(0.9);
+}
+.btn-sm {
+  padding: 5px 10px;
+  font-size: 12px;
+  border-radius: 6px;
+}
+
+/* Badges */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+.badge-demo {
+  background: rgba(233,168,32,0.18);
+  color: #B26A00;
+  border: 1px solid rgba(233,168,32,0.4);
+}
+:root[data-theme="dark"] .badge-demo {
+  color: #FCD34D;
+  background: rgba(233,168,32,0.25);
+}
+.badge-success { background: rgba(12,74,52,0.12); color: var(--green); }
+:root[data-theme="dark"] .badge-success { color: #86EFAC; background: rgba(34,197,94,0.15); }
+.badge-warning { background: rgba(233,168,32,0.15); color: #B26A00; }
+:root[data-theme="dark"] .badge-warning { color: #FCD34D; }
+.badge-danger { background: rgba(214,64,59,0.15); color: var(--coral); }
+.badge-muted { background: var(--surface2); color: var(--muted); }
+
+/* Layout */
+.app-container {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* Sidebar */
+.sidebar {
+  width: var(--sidebar-w);
+  background: var(--surface);
+  border-right: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 100;
+  transition: transform .25s ease;
+}
+.sidebar-header {
+  padding: 20px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--line);
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.brand img {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+}
+.brand-info h1 {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.1;
+}
+.brand-info span {
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 500;
+}
+.nav-list {
+  list-style: none;
+  padding: 12px 10px;
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  color: var(--muted);
+  font-weight: 500;
+  font-size: 14px;
+  text-decoration: none;
+  transition: all .15s;
+  cursor: pointer;
+  position: relative;
+}
+.nav-item:hover {
+  background: var(--surface2);
+  color: var(--text);
+}
+.nav-item.active {
+  background: rgba(12,74,52,0.12);
+  color: var(--green);
+  font-weight: 700;
+}
+:root[data-theme="dark"] .nav-item.active {
+  background: rgba(155,214,181,0.15);
+  color: var(--green-2);
+}
+.nav-item .badge-count {
+  margin-left: auto;
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--coral);
+  color: #fff;
+  font-weight: 600;
+}
+.sidebar-footer {
+  padding: 14px 16px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.admin-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.admin-meta {
+  overflow: hidden;
+}
+.admin-email {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 150px;
+}
+.admin-role {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* Main Content Area */
+.main-wrapper {
+  margin-left: var(--sidebar-w);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+.topbar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  padding: 12px 20px;
+  position: sticky;
+  top: 0;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.menu-toggle {
+  display: none;
+  padding: 8px;
+  border-radius: var(--radius-sm);
+  color: var(--text);
+}
+.topbar-title {
+  font-size: 18px;
+  font-weight: 700;
+}
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Inactivity banner / indicator */
+.inactivity-pill {
+  font-size: 11px;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.pulse-dot {
+  width: 7px;
+  height: 7px;
+  background: #10B981;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+@keyframes pulse {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16,185,129,0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16,185,129,0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16,185,129,0); }
+}
+
+/* Main views */
+.content-area {
+  padding: 24px;
+  flex: 1;
+  max-width: 1280px;
+  width: 100%;
+  margin: 0 auto;
+}
+.admin-section {
+  display: none;
+}
+.admin-section.active {
+  display: block;
+  animation: fadeIn .2s ease;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Cards & Grid */
+.grid-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: var(--shadow);
+}
+.stat-card-title {
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: 500;
+}
+.stat-card-val {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.2;
+}
+.stat-card-sub {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.panel-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow);
+}
+.panel-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+.panel-card-title {
+  font-size: 16px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Tabs */
+.tabs-nav {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 18px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 6px;
+  overflow-x: auto;
+}
+.tab-btn {
+  padding: 8px 16px;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--muted);
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+}
+.tab-btn:hover {
+  color: var(--text);
+  background: var(--surface2);
+}
+.tab-btn.active {
+  color: #ffffff;
+  background: var(--green);
+}
+
+/* Tables & Lists */
+.data-table-container {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 13px;
+}
+.data-table th {
+  background: var(--surface2);
+  padding: 10px 14px;
+  color: var(--muted);
+  font-weight: 600;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+.data-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+  color: var(--text);
+  vertical-align: middle;
+}
+.data-table tr:last-child td {
+  border-bottom: none;
+}
+.data-table tr:hover td {
+  background: rgba(12,74,52,0.03);
+}
+
+/* Form controls */
+.form-group {
+  margin-bottom: 16px;
+}
+.form-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+.form-hint {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+.form-input, .form-select, .form-textarea {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+  border-radius: var(--radius-sm);
+  outline: none;
+  transition: border-color .15s;
+}
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+  border-color: var(--green);
+}
+
+/* Modals */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(2px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .2s;
+}
+.modal-overlay.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+.modal-content {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  max-width: 520px;
+  width: 100%;
+  padding: 24px;
+  border: 1px solid var(--line);
+  box-shadow: 0 15px 35px rgba(0,0,0,0.25);
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  transform: translateY(10px);
+  transition: transform .2s;
+}
+.modal-overlay.open .modal-content {
+  transform: translateY(0);
+}
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+.modal-title {
+  font-size: 17px;
+  font-weight: 700;
+}
+.modal-close {
+  font-size: 20px;
+  color: var(--muted);
+  line-height: 1;
+  padding: 4px;
+}
+.modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+/* Destructive / Audit Notice */
+.audit-warning {
+  background: rgba(214,64,59,0.08);
+  border: 1px solid rgba(214,64,59,0.3);
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  color: var(--coral);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  font-weight: 500;
+}
+.period-warn {
+  background: rgba(233,168,32,0.12);
+  border: 1px solid rgba(233,168,32,0.35);
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  color: #B26A00;
+  font-size: 13px;
+  margin-top: 12px;
+}
+:root[data-theme="dark"] .period-warn { color: #FCD34D; }
+
+/* SVG Charts */
+.chart-container {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 18px;
+  margin-bottom: 20px;
+}
+.chart-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.chart-title {
+  font-size: 14px;
+  font-weight: 700;
+}
+.svg-chart {
+  width: 100%;
+  height: 160px;
+  overflow: visible;
+}
+.chart-bar {
+  fill: var(--green);
+  rx: 3px;
+  transition: opacity .15s, fill .15s;
+  cursor: pointer;
+}
+.chart-bar:hover {
+  fill: var(--gold);
+  opacity: 0.9;
+}
+.chart-bar-blue {
+  fill: var(--blue);
+}
+.chart-bar-blue:hover {
+  fill: var(--gold);
+}
+.chart-label {
+  fill: var(--muted);
+  font-size: 10px;
+  text-anchor: middle;
+}
+.chart-grid {
+  stroke: var(--line);
+  stroke-dasharray: 2,2;
+}
+
+/* Skeleton Loading */
+.skeleton {
+  background: linear-gradient(90deg, var(--surface2) 25%, var(--line) 50%, var(--surface2) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+}
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+.skeleton-row {
+  height: 38px;
+  margin-bottom: 8px;
+  width: 100%;
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--muted);
+}
+.empty-state svg {
+  margin-bottom: 12px;
+  stroke: var(--muted);
+}
+.empty-state p {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Toast */
+.toast-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.toast {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--line);
+  padding: 10px 16px;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow);
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  animation: slideIn .2s ease;
+}
+@keyframes slideIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+/* Switch toggle */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+}
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background-color: var(--line);
+  transition: .2s;
+  border-radius: 24px;
+}
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .2s;
+  border-radius: 50%;
+}
+input:checked + .slider {
+  background-color: var(--green);
+}
+input:checked + .slider:before {
+  transform: translateX(20px);
+}
+
+/* Notification Preview */
+.notification-preview {
+  border: 1px dashed var(--line);
+  padding: 16px;
+  border-radius: var(--radius-sm);
+  background: var(--surface2);
+  margin-top: 12px;
+}
+.notif-pill {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+/* Responsive */
+@media (max-width: 899px) {
+  .sidebar {
+    transform: translateX(-100%);
+  }
+  .sidebar.open {
+    transform: translateX(0);
+  }
+  .sidebar-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 99;
+  }
+  .sidebar-backdrop.open {
+    display: block;
+  }
+  .main-wrapper {
+    margin-left: 0;
+  }
+  .menu-toggle {
+    display: inline-flex;
+  }
+}
+</style>
+</head>
+<body>
+
+<!-- Backdrop for mobile drawer -->
+<div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+<!-- Admin Login Screen (Only displayed if unauthenticated or non-admin) -->
+<div id="adminLoginScreen" style="display:none; min-height:100vh; width:100%; align-items:center; justify-content:center; padding:20px; background:var(--bg);">
+  <div class="stat-card" style="max-width:380px; width:100%; text-align:center; box-shadow:var(--shadow); padding:28px 24px; border-radius:18px;">
+    <img src="logo.png" alt="Gamoro" style="width:48px; height:48px; margin:0 auto 12px; border-radius:12px; display:block;">
+    <h2 style="font-size:20px; font-weight:700; margin-bottom:4px; color:var(--text);">Gamoro অ্যাডমিন লগইন</h2>
+    <p style="font-size:12px; color:var(--muted); margin-bottom:18px;">শুধু অনুমোদিত অ্যাডমিন অ্যাকাউন্ট।</p>
+
+    <div id="loginErrorMsg" style="display:none; background:rgba(214,64,59,0.1); border:1px solid rgba(214,64,59,0.3); color:var(--coral); padding:8px 12px; border-radius:8px; font-size:13px; margin-bottom:14px; text-align:left;"></div>
+
+    <form id="adminLoginForm" style="text-align:left; display:flex; flex-direction:column; gap:12px;">
+      <div>
+        <label class="form-label" style="font-size:12px;">ইমেইল</label>
+        <input type="email" id="adminEmailInput" class="form-input" required placeholder="admin@example.com" autocomplete="username">
+      </div>
+      <div>
+        <label class="form-label" style="font-size:12px;">পাসওয়ার্ড</label>
+        <input type="password" id="adminPasswordInput" class="form-input" required placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <button type="submit" id="adminLoginSubmitBtn" class="btn btn-primary" style="width:100%; margin-top:6px; padding:10px;">লগইন করুন</button>
+    </form>
+
+    <div style="margin-top:16px; padding-top:14px; border-top:1px solid var(--line); font-size:12px;">
+      <a href="index.html" style="color:var(--muted); text-decoration:none;">← হোমপেজে ফিরে যান</a>
+    </div>
+  </div>
+</div>
+
+<div class="app-container" id="appContainer">
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="brand">
+        <img src="logo.png" alt="Gamoro">
+        <div class="brand-info">
+          <h1>Gamoro</h1>
+          <span>অ্যাডমিন ড্যাশবোর্ড</span>
+        </div>
+      </div>
+      <button class="modal-close" id="sidebarCloseBtn" style="display:none;" aria-label="বন্ধ করুন">✕</button>
+    </div>
+
+    <ul class="nav-list" id="navList">
+      <li>
+        <a class="nav-item active" data-section="dashboard">
+          <span>📊</span>
+          <span>ড্যাশবোর্ড</span>
+        </a>
+      </li>
+      <li>
+        <a class="nav-item" data-section="payouts">
+          <span>💸</span>
+          <span>পেআউট</span>
+          <span class="badge-count" id="pendingPayoutsBadge" style="display:none;">০</span>
+        </a>
+      </li>
+      <li>
+        <a class="nav-item" data-section="referrals">
+          <span>👥</span>
+          <span>রেফারেল</span>
+          <span class="badge-count" id="pendingRefBadge" style="display:none;">০</span>
+        </a>
+      </li>
+      <li>
+        <a class="nav-item" data-section="users">
+          <span>👤</span>
+          <span>ইউজার</span>
+        </a>
+      </li>
+      <li>
+        <a class="nav-item" data-section="flags">
+          <span>⚠️</span>
+          <span>সন্দেহজনক ফ্ল্যাগ</span>
+          <span class="badge-count" id="flagsBadge" style="display:none;">০</span>
+        </a>
+      </li>
+      <li>
+        <a class="nav-item" data-section="period">
+          <span>🔄</span>
+          <span>পুল ও পিরিয়ড</span>
+        </a>
+      </li>
+      <li>
+        <a class="nav-item" data-section="announcement">
+          <span>📢</span>
+          <span>ঘোষণা</span>
+        </a>
+      </li>
+      <li>
+        <a class="nav-item" data-section="games">
+          <span>🎮</span>
+          <span>গেম তালিকা</span>
+        </a>
+      </li>
+      <li>
+        <a class="nav-item" data-section="config">
+          <span>⚙️</span>
+          <span>সেটিংস</span>
+        </a>
+      </li>
+      <li>
+        <a class="nav-item" data-section="audit">
+          <span>📜</span>
+          <span>অডিট লগ</span>
+        </a>
+      </li>
+    </ul>
+
+    <div class="sidebar-footer">
+      <div class="admin-card">
+        <div class="admin-meta">
+          <div class="admin-email" id="adminEmailDisplay">অ্যাডমিন লোড হচ্ছে...</div>
+          <div class="admin-role" id="adminRoleDisplay">প্রশাসক</div>
+        </div>
+        <button id="themeToggleBtn" title="থিম পরিবর্তন" class="btn btn-secondary btn-sm" style="padding:6px 8px;">
+          🌓
+        </button>
+      </div>
+      <button id="logoutBtn" class="btn btn-secondary btn-sm" style="width:100%; color:var(--coral);">
+        🚪 লগআউট
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main Wrapper -->
+  <div class="main-wrapper">
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="menu-toggle" id="menuToggleBtn" aria-label="মেনু">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+        </button>
+        <div class="topbar-title" id="currentSectionTitle">ড্যাশবোর্ড</div>
+      </div>
+      <div class="topbar-right">
+        <span class="badge badge-demo" id="demoBadge" style="display:none;">
+          ⚠️ ডেমো ডেটা
+        </span>
+        <div class="inactivity-pill" title="সক্রিয় সেশন">
+          <div class="pulse-dot"></div>
+          <span id="sessionTimerText">সক্রিয়</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="content-area">
+
+      <!-- ============================================================
+           SECTION 1: ড্যাশবোর্ড (dashboard)
+           ============================================================ -->
+      <section class="admin-section active" id="sec-dashboard">
+        <div class="grid-cards" id="dashboardMetrics">
+          <div class="stat-card">
+            <span class="stat-card-title">আজকের সক্রিয় ইউজার (DAU)</span>
+            <span class="stat-card-val" id="metricDau">--</span>
+            <span class="stat-card-sub">বিগত ২৪ ঘণ্টায় গেম প্লেয়ার</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-card-title">চলতি মাসের অ্যাড রেভিনিউ</span>
+            <span class="stat-card-val" id="metricAdRev">--</span>
+            <span class="stat-card-sub">নেটওয়ার্ক আনুমানিক মোট আয়</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-card-title">উইথড্র পেন্ডিং</span>
+            <span class="stat-card-val" id="metricPayouts">--</span>
+            <span class="stat-card-sub" id="metricPayoutsUsd">মোট: $--</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-card-title">যাচাই পেন্ডিং রেফারেল</span>
+            <span class="stat-card-val" id="metricReferrals">--</span>
+            <span class="stat-card-sub">বোনাস অনুমোদনের অপেক্ষায়</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-card-title">সন্দেহজনক ফ্ল্যাগ</span>
+            <span class="stat-card-val" id="metricFlags" style="color:var(--coral);">--</span>
+            <span class="stat-card-sub">পর্যালোচনা করা প্রয়োজন</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-card-title">মাসিক পুল স্ট্যাটাস</span>
+            <span class="stat-card-val" id="metricPoolStatus">--</span>
+            <span class="stat-card-sub" id="metricPoolDays">মাসের শেষ হতে বাকি: -- দিন</span>
+          </div>
+        </div>
+
+        <!-- 2 Thin SVG Bar Charts -->
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px;">
+          <div class="chart-container">
+            <div class="chart-header">
+              <span class="chart-title">📈 বিগত ৭ দিনের সক্রিয় ইউজার (DAU)</span>
+              <span class="badge badge-muted" id="dauChartAvg">গড়: --</span>
+            </div>
+            <div id="dauChartWrapper">
+              <!-- Inline SVG generated by JS -->
+            </div>
+          </div>
+
+          <div class="chart-container">
+            <div class="chart-header">
+              <span class="chart-title">📊 বিগত ৭ দিনের অ্যাড ইমপ্রেশন</span>
+              <span class="badge badge-muted" id="adChartTotal">মোট: --</span>
+            </div>
+            <div id="adChartWrapper">
+              <!-- Inline SVG generated by JS -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================
+           SECTION 2: পেআউট (payouts.list, payouts.markPaid, payouts.reject)
+           ============================================================ -->
+      <section class="admin-section" id="sec-payouts">
+        <div class="panel-card">
+          <div class="panel-card-header">
+            <span class="panel-card-title">💸 টাকা তোলার আবেদন তালিকা</span>
+            <button class="btn btn-secondary btn-sm" id="refreshPayoutsBtn">🔄 রিফ্রেশ</button>
+          </div>
+
+          <div class="tabs-nav" id="payoutTabs">
+            <button class="tab-btn active" data-status="pending">পেন্ডিং আবেদন</button>
+            <button class="tab-btn" data-status="paid">পরিশোধিত</button>
+            <button class="tab-btn" data-status="rejected">বাতিলকৃত</button>
+          </div>
+
+          <div id="payoutsListContainer">
+            <!-- Table inserted via JS -->
+          </div>
+
+          <div style="text-align:center; margin-top:16px;">
+            <button class="btn btn-secondary btn-sm" id="loadMorePayoutsBtn" style="display:none;">আরও দেখুন</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================
+           SECTION 3: রেফারেল (referrals.list, referrals.approve, referrals.reject)
+           ============================================================ -->
+      <section class="admin-section" id="sec-referrals">
+        <div class="panel-card">
+          <div class="panel-card-header">
+            <span class="panel-card-title">👥 রেফারেল বোনাস যাচাই ও অনুমোদন</span>
+            <button class="btn btn-secondary btn-sm" id="refreshReferralsBtn">🔄 রিফ্রেশ</button>
+          </div>
+
+          <div class="tabs-nav" id="referralTabs">
+            <button class="tab-btn active" data-status="verifying">যাচাই হচ্ছে</button>
+            <button class="tab-btn" data-status="completed">সম্পন্ন বোনাস</button>
+            <button class="tab-btn" data-status="rejected">বাতিল</button>
+          </div>
+
+          <div id="referralsListContainer">
+            <!-- Rendered via JS -->
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================
+           SECTION 4: ইউজার ম্যানেজমেন্ট
+           ============================================================ -->
+      <section class="admin-section" id="sec-users">
+        <div class="panel-card">
+          <div class="panel-card-header">
+            <span class="panel-card-title">👤 ইউজার সন্ধান ও নিয়ন্ত্রণ</span>
+          </div>
+
+          <div style="display:flex; gap:10px; margin-bottom:16px;">
+            <input type="text" id="userSearchInput" class="form-input" placeholder="UID, ইমেইল বা ফোন নম্বর লিখে খুঁজুন...">
+            <button class="btn btn-primary" id="userSearchBtn">খুঁজুন</button>
+          </div>
+
+          <div id="userSearchResultsContainer">
+            <div class="empty-state">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <p>ইউজার খুঁজতে উপরে UID বা ইমেইল লিখুন</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- User Detail Sheet / Modal is triggered on clicking user -->
+      </section>
+
+      <!-- ============================================================
+           SECTION 5: সন্দেহজনক ফ্ল্যাগ
+           ============================================================ -->
+      <section class="admin-section" id="sec-flags">
+        <div class="panel-card">
+          <div class="panel-card-header">
+            <span class="panel-card-title">⚠️ ফ্রড ও অসামঞ্জস্যতা শনাক্তকরণ</span>
+            <button class="btn btn-secondary btn-sm" id="refreshFlagsBtn">🔄 রিফ্রেশ</button>
+          </div>
+          <p style="font-size:13px; color:var(--muted); margin-bottom:16px;">
+            সিস্টেমে একই আইপি ক্লাস্টার, একাধিক চ্যালেঞ্জ মিস, অস্বাভাবিক খেলার সময় বা অ্যাড ব্লকিং অসঙ্গতি দেখা দিলে স্বয়ংক্রিয়ভাবে ফ্ল্যাগ হয়।
+          </p>
+
+          <div id="flagsListContainer">
+            <!-- Rendered via JS -->
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================
+           SECTION 6: পুল ও পিরিয়ড
+           ============================================================ -->
+      <section class="admin-section" id="sec-period">
+        <div class="panel-card">
+          <div class="panel-card-header">
+            <span class="panel-card-title">🔄 মাসিক পুল বন্ধ ও পয়েন্ট কনভার্সন</span>
+          </div>
+
+          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:16px;">
+            <div class="form-group">
+              <label class="form-label">হিসাবের মাস</label>
+              <input type="text" id="periodMonthInput" class="form-input" value="2026-10" placeholder="YYYY-MM">
+              <span class="form-hint">উদাহরণ: ২০২৬-১০</span>
+            </div>
+            <div class="form-group">
+              <label class="form-label">নেটওয়ার্ক মোট আয় ($)</label>
+              <input type="number" id="periodRevenueInput" class="form-input" value="450.00" step="0.01">
+              <span class="form-hint">অ্যাড নেটওয়ার্কের মোট রেভিনিউ</span>
+            </div>
+            <div class="form-group">
+              <label class="form-label">ইউজার পুল শতকরা হার (%)</label>
+              <input type="number" id="periodPoolPercentInput" class="form-input" value="70" min="1" max="100">
+              <span class="form-hint">ইউজারদের মধ্যে বণ্টনযোগ্য অংশ (ডিফল্ট ৭০%)</span>
+            </div>
+            <div class="form-group">
+              <label class="form-label">মোট অ্যাড ইমপ্রেশন</label>
+              <input type="number" id="periodImpressionsInput" class="form-input" value="128500">
+              <span class="form-hint">চলতি মাসের নেটওয়ার্ক ভ্যালিড ইমপ্রেশন</span>
+            </div>
+          </div>
+
+          <div style="display:flex; gap:12px; margin-top:12px;">
+            <button class="btn btn-primary" id="periodPreviewBtn">🧮 হিসাব প্রিভিউ দেখুন</button>
+            <button class="btn btn-danger" id="periodCloseModalBtn">🔒 পিরিয়ড বন্ধ ও পয়েন্ট কনভার্ট করুন</button>
+          </div>
+
+          <div id="periodPreviewResult" style="display:none; margin-top:20px; border-top:1px solid var(--line); padding-top:16px;">
+            <!-- Calculation Preview Box -->
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================
+           SECTION 7: ঘোষণা (announcement)
+           ============================================================ -->
+      <section class="admin-section" id="sec-announcement">
+        <div class="panel-card">
+          <div class="panel-card-header">
+            <span class="panel-card-title">📢 গ্লোবাল ইন-অ্যাপ ঘোষণা</span>
+          </div>
+
+          <div class="form-group">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+              <label class="form-label" style="margin:0;">ঘোষণার স্ট্যাটাস (Active / Inactive)</label>
+              <label class="switch">
+                <input type="checkbox" id="announcementActiveToggle" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+              <label class="form-label">ঘোষণার মেসেজ (সর্বোচ্চ ১৬০ অক্ষর)</label>
+              <span id="announcementCharCount" style="font-size:12px; color:var(--muted);">০ / ১৬০</span>
+            </div>
+            <textarea id="announcementTextInput" class="form-textarea" rows="3" maxlength="160" placeholder="ব্যবহারকারীদের জন্য জরুরি বার্তা লিখুন..."></textarea>
+          </div>
+
+          <button class="btn btn-primary" id="saveAnnouncementBtn">সংরক্ষণ করুন</button>
+
+          <!-- Live Preview -->
+          <div class="notification-preview">
+            <div style="font-size:12px; font-weight:700; margin-bottom:8px; color:var(--muted);">
+              📱 লাইভ প্রিভিউ (অ্যাপের বেল আইকনে যেভাবে দেখাবে):
+            </div>
+            <div class="notif-pill">
+              <span style="font-size:20px;">🔔</span>
+              <div>
+                <div style="font-size:13px; font-weight:600; color:var(--green);" id="previewNotifTitle">Gamoro নোটিশ</div>
+                <div style="font-size:13px; color:var(--text); margin-top:2px;" id="previewNotifText">কোনো সক্রিয় ঘোষণা নেই</div>
+                <div style="font-size:11px; color:var(--muted); margin-top:4px;">এখনই প্রযোজ্য</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================
+           SECTION 8: গেম তালিকা ও নিয়ন্ত্রণ
+           ============================================================ -->
+      <section class="admin-section" id="sec-games">
+        <div class="panel-card">
+          <div class="panel-card-header">
+            <span class="panel-card-title">🎮 গেম ক্যাটালগ ও সাজানো</span>
+            <button class="btn btn-primary btn-sm" id="addNewGameBtn">➕ নতুন গেম যোগ করুন</button>
+          </div>
+          <p style="font-size:13px; color:var(--muted); margin-bottom:16px;">
+            গেমের ক্রম পরিবর্তন করতে উপরে/নিচে বোতাম ব্যবহার করুন। নিষ্ক্রিয় করা গেম অ্যাপের হোমপেজে দেখাবে না।
+          </p>
+
+          <div id="gamesCatalogContainer">
+            <!-- Rendered via JS -->
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================
+           SECTION 9: গ্লোবাল সেটিংস
+           ============================================================ -->
+      <section class="admin-section" id="sec-config">
+        <div class="panel-card">
+          <div class="panel-card-header">
+            <span class="panel-card-title">⚙️ প্ল্যাটফর্ম গ্লোবাল সেটিংস</span>
+            <button class="btn btn-secondary btn-sm" id="refreshConfigBtn">🔄 রিফ্রেশ</button>
+          </div>
+
+          <div class="audit-warning" style="margin-bottom:20px;">
+            <span>⚠️ সতর্কবার্তা: এখানে পরিবর্তন করলে তা অবিলম্বে সকল ব্যবহারকারীর জন্য প্রযোজ্য হবে এবং অডিট লগে রেকর্ড থাকবে।</span>
+          </div>
+
+          <form id="globalConfigForm">
+            <!-- Group 1: Points & Play -->
+            <h3 style="font-size:15px; font-weight:700; margin-bottom:12px; color:var(--green);">১. পয়েন্ট ও গেম রুলস</h3>
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:16px; margin-bottom:20px;">
+              <div class="form-group">
+                <label class="form-label">পয়েন্ট প্রতি সেকেন্ড (pts/sec)</label>
+                <input type="number" id="cfg_pointsPerSec" class="form-input" value="1" step="0.1">
+                <span class="form-hint">স্বাভাবিক খেলার প্রতি সেকেন্ডে প্রাপ্ত পয়েন্ট</span>
+              </div>
+              <div class="form-group">
+                <label class="form-label">নিষ্ক্রিয়তার সময়সীমা (idleSec)</label>
+                <input type="number" id="cfg_idleSec" class="form-input" value="60">
+                <span class="form-hint">যত সেকেন্ড ইনপুট না থাকলে পয়েন্ট বন্ধ হবে</span>
+              </div>
+              <div class="form-group">
+                <label class="form-label">চ্যালেঞ্জ ব্যবধান মিনিট (challengeIntervalMin)</label>
+                <input type="number" id="cfg_challengeInterval" class="form-input" value="15">
+                <span class="form-hint">বট প্রতিরোধে কত মিনিট পর পর চ্যালেঞ্জ আসবে</span>
+              </div>
+            </div>
+
+            <!-- Group 2: Withdraw Settings -->
+            <h3 style="font-size:15px; font-weight:700; margin-bottom:12px; color:var(--green);">২. উইথড্রয়াল রেট ও সীমা</h3>
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:16px; margin-bottom:20px;">
+              <div class="form-group">
+                <label class="form-label">ডলার থেকে টাকা রেট (usdToBdt)</label>
+                <input type="number" id="cfg_usdToBdt" class="form-input" value="110">
+                <span class="form-hint">প্রতি ১ USD সমান BDT</span>
+              </div>
+              <div class="form-group">
+                <label class="form-label">মোবাইল রিচার্জ সর্বনিম্ন ($)</label>
+                <input type="number" id="cfg_mobileRechargeMin" class="form-input" value="1">
+                <span class="form-hint">ন্যূনতম রিচার্জ সীমা</span>
+              </div>
+              <div class="form-group">
+                <label class="form-label">মোবাইল ওয়ালেট সর্বনিম্ন ($)</label>
+                <input type="number" id="cfg_bankWalletMin" class="form-input" value="20">
+                <span class="form-hint">বিকাশ/নগদ/রকেটে তোলার ন্যূনতম সীমা</span>
+              </div>
+              <div class="form-group">
+                <label class="form-label">বাইন্যান্স সর্বনিম্ন ($)</label>
+                <input type="number" id="cfg_binanceMin" class="form-input" value="10">
+                <span class="form-hint">Binance Pay-তে তোলার ন্যূনতম সীমা</span>
+              </div>
+              <div class="form-group">
+                <label class="form-label">পরবর্তী মাসে ট্রান্সফার সীমা ($)</label>
+                <input type="number" id="cfg_carryBelowUsd" class="form-input" value="1">
+                <span class="form-hint">এর কম হলে পরবর্তী মাসে যোগ হবে</span>
+              </div>
+            </div>
+
+            <!-- Group 3: Referral Settings -->
+            <h3 style="font-size:15px; font-weight:700; margin-bottom:12px; color:var(--green);">৩. রেফারেল প্রোগ্রাম সেটিংস</h3>
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:16px; margin-bottom:20px;">
+              <div class="form-group">
+                <label class="form-label">মোট বোনাস পয়েন্ট (totalBonus)</label>
+                <input type="number" id="cfg_totalBonus" class="form-input" value="1000">
+                <span class="form-hint">প্রতি সফল রেফারেলের মোট পয়েন্ট</span>
+              </div>
+              <div class="form-group">
+                <label class="form-label">রেফারার শতকরা (%)</label>
+                <input type="number" id="cfg_referrerPercent" class="form-input" value="80">
+                <span class="form-hint">আমন্ত্রণকারী যত ভাগ পাবে</span>
+              </div>
+              <div class="form-group">
+                <label class="form-label">ইনভাইটি শতকরা (%)</label>
+                <input type="number" id="cfg_inviteePercent" class="form-input" value="20">
+                <span class="form-hint">নতুন ব্যবহারকারী যত ভাগ পাবে</span>
+              </div>
+              <div class="form-group">
+                <label class="form-label">প্রয়োজনীয় খেলার সময় (requiredHours)</label>
+                <input type="number" id="cfg_requiredHours" class="form-input" value="25">
+                <span class="form-hint">বোনাস সক্রিয় হতে যত ঘণ্টা খেলা আবশ্যক</span>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" style="color:var(--coral);">পরিবর্তনের কারণ (বাধ্যতামূলক)</label>
+              <input type="text" id="configChangeReason" class="form-input" placeholder="যেমন: নতুন ডলার রেট আপডেট বা রেফারেল অফার বাড়ানো" required>
+            </div>
+
+            <button type="submit" class="btn btn-primary" id="saveConfigBtn">⚙️ সেটিংস সংরক্ষণ করুন</button>
+          </form>
+        </div>
+      </section>
+
+      <!-- ============================================================
+           SECTION 10: অডিট লগ (audit.list)
+           ============================================================ -->
+      <section class="admin-section" id="sec-audit">
+        <div class="panel-card">
+          <div class="panel-card-header">
+            <span class="panel-card-title">📜 অপরিবর্তনীয় অডিট লগ</span>
+            <div style="display:flex; gap:10px;">
+              <select id="auditFilterSelect" class="form-select" style="width:160px; padding:6px 10px;">
+                <option value="all">সকল অ্যাকশন</option>
+                <option value="payout">পেআউট (Payout)</option>
+                <option value="user">ইউজার নিয়ন্ত্রণ</option>
+                <option value="period">পুল ও পিরিয়ড</option>
+                <option value="config">সেটিংস পরিবর্তন</option>
+                <option value="referral">রেফারেল</option>
+              </select>
+              <button class="btn btn-secondary btn-sm" id="refreshAuditBtn">🔄 রিফ্রেশ</button>
+            </div>
+          </div>
+          <p style="font-size:12px; color:var(--muted); margin-bottom:16px;">
+            প্রশাসকদের সকল আর্থিক, নীতিগত ও নিয়ন্ত্রণমূলক কার্যক্রমের অপরিবর্তনশীল সময় ও বিবরণী।
+          </p>
+
+          <div id="auditLogContainer">
+            <!-- Table rendered via JS -->
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<!-- ============================================================
+     MODALS
+     ============================================================ -->
+
+<!-- 1. Universal Confirmation Modal with Audit Log Warning -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 class="modal-title" id="confirmModalTitle">নিশ্চিতকরণ</h3>
+      <button class="modal-close" data-close-modal>✕</button>
+    </div>
+    <div class="audit-warning">
+      <span>⚠️ সতর্কবার্তা: এই কাজটি সরাসরি অ্যাকাউন্টে প্রভাব ফেলবে এবং অপরিবর্তনীয়ভাবে অডিট লগে রেকর্ড হবে।</span>
+    </div>
+    <p id="confirmModalMessage" style="font-size:14px; color:var(--text); line-height:1.6; margin-bottom:16px;">
+      আপনি কি নিশ্চিত?
+    </p>
+    <div id="confirmModalExtraInput"></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-close-modal>না, বাতিল</button>
+      <button class="btn btn-primary" id="confirmModalSubmitBtn">হ্যাঁ, নিশ্চিত</button>
+    </div>
+  </div>
+</div>
+
+<!-- 2. Payout Action Modal (Mark Paid / Reject) -->
+<div class="modal-overlay" id="payoutActionModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 class="modal-title" id="payoutActionTitle">পেআউট অ্যাকশন</h3>
+      <button class="modal-close" data-close-modal>✕</button>
+    </div>
+    <div class="audit-warning">
+      <span>⚠️ অডিট লগে লেখা হবে</span>
+    </div>
+    <div id="payoutActionBody">
+      <!-- Injected dynamically -->
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-close-modal>বাতিল</button>
+      <button class="btn btn-primary" id="payoutActionSubmitBtn">সম্পন্ন করুন</button>
+    </div>
+  </div>
+</div>
+
+<!-- 3. User Detail & Control Sheet Modal -->
+<div class="modal-overlay" id="userDetailModal">
+  <div class="modal-content" style="max-width:600px;">
+    <div class="modal-header">
+      <h3 class="modal-title">👤 ইউজার প্রোফাইল ও নিয়ন্ত্রণ</h3>
+      <button class="modal-close" data-close-modal>✕</button>
+    </div>
+    <div id="userDetailContent">
+      <!-- Injected dynamically -->
+    </div>
+  </div>
+</div>
+
+<!-- 4. Period Close Confirmation Modal (Typed Confirmation) -->
+<div class="modal-overlay" id="periodCloseModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 class="modal-title" style="color:var(--coral);">🔒 পিরিয়ড ক্লোজ নিশ্চিতকরণ</h3>
+      <button class="modal-close" data-close-modal>✕</button>
+    </div>
+    <div class="audit-warning">
+      <span>⚠️ চরম সতর্কতা: পয়েন্ট কনভার্সন একবার সম্পন্ন হলে তা আর ফিরিয়ে নেওয়া যাবে না!</span>
+    </div>
+    <p style="font-size:13px; line-height:1.6; margin-bottom:14px;">
+      এই কার্যক্রমের মাধ্যমে সকল ইউজারের চলতি মাসের পয়েন্ট কনভার্ট করে একাউন্ট ব্যালেন্সে ($) যোগ হবে এবং নতুন মাসের হিসাব চালু হবে।
+    </p>
+    <div class="form-group">
+      <label class="form-label">নিশ্চিত করতে নিচে হুবহু <b style="color:var(--coral);">বন্ধ করুন</b> লিখুন:</label>
+      <input type="text" id="periodTypeConfirmInput" class="form-input" placeholder="বন্ধ করুন">
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-close-modal>বাতিল</button>
+      <button class="btn btn-danger" id="periodConfirmSubmitBtn" disabled>🔒 বন্ধ করুন ও পয়েন্ট বণ্টন করুন</button>
+    </div>
+  </div>
+</div>
+
+<!-- 5. Inactivity Warning Modal -->
+<div class="modal-overlay" id="inactivityModal">
+  <div class="modal-content" style="max-width:400px; text-align:center;">
+    <div style="font-size:36px; margin-bottom:8px;">⏳</div>
+    <h3 style="font-size:17px; font-weight:700; margin-bottom:10px;">সেশন সময়সীমা সমাপ্তির সতর্কবার্তা</h3>
+    <p style="font-size:13px; color:var(--muted); line-height:1.6; margin-bottom:20px;">
+      নিরাপত্তার স্বার্থে দীর্ঘ নিষ্ক্রিয়তার কারণে <b style="color:var(--coral);">১ মিনিট পর</b> স্বয়ংক্রিয়ভাবে অ্যাডমিন প্যানেল থেকে লগআউট করা হবে।
+    </p>
+    <button class="btn btn-primary" id="stayLoggedInBtn" style="width:100%;">
+      সেশন চালু রাখুন
+    </button>
+  </div>
+</div>
+
+<!-- 6. Game Edit / Add Modal -->
+<div class="modal-overlay" id="gameEditModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 class="modal-title" id="gameModalTitle">গেম তথ্য সম্পাদনা</h3>
+      <button class="modal-close" data-close-modal>✕</button>
+    </div>
+    <form id="gameEditForm">
+      <input type="hidden" id="gameIdInput">
+      <div class="form-group">
+        <label class="form-label">গেমের নাম (বাংলা বা ইংরেজি)</label>
+        <input type="text" id="gameTitleInput" class="form-input" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">ক্যাটাগরি</label>
+        <select id="gameCategoryInput" class="form-select">
+          <option value="আর্কেড">আর্কেড</option>
+          <option value="ধাঁধা">ধাঁধা</option>
+          <option value="অ্যাকশন">অ্যাকশন</option>
+          <option value="কার্ড">কার্ড</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">গেম ইউআরএল (URL)</label>
+        <input type="text" id="gameUrlInput" class="form-input" required placeholder="/games/demo/index.html">
+      </div>
+      <div class="form-group">
+        <label class="form-label">থাম্বনেইল ইমেজ ইউআরএল (বা ইমোজি)</label>
+        <input type="text" id="gameThumbInput" class="form-input" placeholder="🎮">
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-close-modal>বাতিল</button>
+        <button type="submit" class="btn btn-primary" id="saveGameSubmitBtn">সংরক্ষণ করুন</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- ============================================================
+     JAVASCRIPT LOGIC
+     ============================================================ -->
+<script type="module">
+import { auth, firebaseConfig } from "./firebase-config.js";
+import { onAuthStateChanged, signOut, getIdToken, signInWithEmailAndPassword } from "firebase/auth";
+import { ADMIN_API_URL, ADMIN_PRODUCTION } from "./api-config.js";
+
+// Helper for Bengali numerals
+function toBnNum(num) {
+  if (num === null || num === undefined) return "--";
+  return Number(num).toLocaleString('bn-BD');
+}
+
+// Global UI Toast
+function showToast(message, type = 'info') {
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  const icon = type === 'success' ? '✓' : type === 'error' ? '✗' : 'ℹ';
+  toast.innerHTML = `<span style="color:${type === 'success' ? 'var(--green)' : type === 'error' ? 'var(--coral)' : 'var(--blue)'}; font-weight:bold;">${icon}</span> <span>${message}</span>`;
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateY(10px)';
+    setTimeout(() => toast.remove(), 200);
+  }, 3200);
+}
+
+// Copy to Clipboard
+function copyToClipboard(text, label = 'কপি করা হয়েছে') {
+  navigator.clipboard.writeText(text).then(() => {
+    showToast(label, 'success');
+  }).catch(() => {
+    showToast('কপি করা যায়নি', 'error');
+  });
+}
+
+// Determine Demo Mode
+// (ADMIN_PRODUCTION === true হলে ?demo=1 সহ সমস্ত ডেমো মোড সম্পূর্ণ বন্ধ থাকবে)
+const isDemoMode = !ADMIN_PRODUCTION && (
+  !ADMIN_API_URL || 
+  ADMIN_API_URL.trim() === '' || 
+  window.location.search.includes('demo=1') || 
+  window.location.hostname.includes('run.app') || 
+  window.location.hostname.includes('localhost') || 
+  window.location.protocol === 'file:'
+);
+
+const demoBadge = document.getElementById('demoBadge');
+if (demoBadge) {
+  demoBadge.style.display = isDemoMode ? 'inline-flex' : 'none';
+}
+
+// ============================================================
+// TEMP: আসল API যুক্ত হলে এই অংশ মুছতে হবে
+// ডেমো ডেটা সিমুলেটর (Admin Mock Handler)
+// ============================================================
+const DEMO_STORE = {
+  admin: { email: 'admin@gamoro.com', role: 'সুপার অ্যাডমিন', name: 'Gamoro Admin' },
+  dashboard: {
+    dau: 1420,
+    monthlyAdRevenue: 384.50,
+    pendingPayoutsCount: 14,
+    pendingPayoutsUsd: 182.00,
+    pendingReferralsCount: 8,
+    flagsCount: 5,
+    periodStatus: { month: '2026-10', daysLeft: 6, estimatedPoolUsd: 269.15 },
+    dauHistory: [
+      { date: '২৫ অক্টো', value: 1120 },
+      { date: '২৬ অক্টো', value: 1250 },
+      { date: '২৭ অক্টো', value: 1310 },
+      { date: '২৮ অক্টো', value: 1290 },
+      { date: '২৯ অক্টো', value: 1380 },
+      { date: '৩০ অক্টো', value: 1405 },
+      { date: '৩১ অক্টো', value: 1420 }
+    ],
+    adHistory: [
+      { date: '২৫ অক্টো', value: 14200 },
+      { date: '২৬ অক্টো', value: 15800 },
+      { date: '২৭ অক্টো', value: 16900 },
+      { date: '২৮ অক্টো', value: 16200 },
+      { date: '২৯ অক্টো', value: 17800 },
+      { date: '৩০ অক্টো', value: 18400 },
+      { date: '৩১ অক্টো', value: 19100 }
+    ]
+  },
+  payouts: [
+    { id: 'pay_01', uid: 'usr_8923', userName: 'শাকিল আহমেদ', method: 'bkash', accountNo: '01711223344', amountUsd: 20.00, amountBdt: 2200, status: 'pending', createdAt: '৩১ অক্টো ২০২৬, ০৪:১৫ অপরাহ্ন' },
+    { id: 'pay_02', uid: 'usr_5412', userName: 'তানভীর হাসান', method: 'nagad', accountNo: '01822334455', amountUsd: 25.00, amountBdt: 2750, status: 'pending', createdAt: '৩১ অক্টো ২০২৬, ০৩:১০ অপরাহ্ন' },
+    { id: 'pay_03', uid: 'usr_3211', userName: 'মো: আরিফুল', method: 'mobile_recharge', accountNo: '01933445566', operator: 'bl', amountUsd: 2.00, amountBdt: 220, status: 'pending', createdAt: '৩১ অক্টো ২০২৬, ০১:৪৫ অপরাহ্ন' },
+    { id: 'pay_04', uid: 'usr_9981', userName: 'ফারহান চৌধুরী', method: 'binance', accountNo: '728192019', amountUsd: 15.00, amountBdt: 1650, status: 'pending', createdAt: '৩০ অক্টো ২০২৬, ০৯:২০ অপরাহ্ন' },
+    { id: 'pay_05', uid: 'usr_1029', userName: 'সুমাইয়া আক্তার', method: 'rocket', accountNo: '01655667788', amountUsd: 20.00, amountBdt: 2200, status: 'paid', txId: 'TRX98273611', createdAt: '২৯ অক্টো ২০২৬, ০২:১২ অপরাহ্ন', paidAt: '৩০ অক্টো ২০২৬' },
+    { id: 'pay_06', uid: 'usr_4432', userName: 'রাকিবুল ইসলাম', method: 'bkash', accountNo: '01799887766', amountUsd: 20.00, amountBdt: 2200, status: 'rejected', rejectReason: 'ভুল বিকাশ অ্যাকাউন্ট নম্বর', createdAt: '২৮ অক্টো ২০২৬, ১১:৩০ পূর্বাহ্ন' }
+  ],
+  referrals: [
+    { id: 'ref_01', referrerName: 'সাকিব আল হাসান', inviteeName: 'তাহমিদ ইসলাম', activeHours: 28, requiredHours: 25, emailVerified: true, status: 'verifying', totalBonus: 1000, referrerBonus: 800, inviteeBonus: 200, createdAt: '২৮ অক্টো ২০২৬' },
+    { id: 'ref_02', referrerName: 'নাঈম রহমান', inviteeName: 'সোহাগ মিয়া', activeHours: 26, requiredHours: 25, emailVerified: true, status: 'verifying', totalBonus: 1000, referrerBonus: 800, inviteeBonus: 200, createdAt: '২৯ অক্টো ২০২৬' },
+    { id: 'ref_03', referrerName: 'জাহিদুল ইসলাম', inviteeName: 'রুবেল হোসেন', activeHours: 14, requiredHours: 25, emailVerified: false, status: 'verifying', totalBonus: 1000, referrerBonus: 800, inviteeBonus: 200, createdAt: '৩০ অক্টো ২০২৬' },
+    { id: 'ref_04', referrerName: 'মাহমুদুল হাসান', inviteeName: 'কামরুল ইসলাম', activeHours: 25, requiredHours: 25, emailVerified: true, status: 'completed', totalBonus: 1000, completedAt: '৩১ অক্টো ২০২৬' },
+    { id: 'ref_05', referrerName: 'ইমরান খান', inviteeName: 'ফাহিম আশরাফ', activeHours: 2, requiredHours: 25, emailVerified: false, status: 'rejected', rejectReason: 'ভুয়া অ্যাকাউন্ট / আইপি ক্লোন', rejectedAt: '২৮ অক্টো ২০২৬' }
+  ],
+  users: [
+    { uid: 'usr_8923', email: 'shakil@gmail.com', name: 'শাকিল আহমেদ', phone: '01711223344', balanceUsd: 24.50, totalEarnedUsd: 120.00, totalPoints: 18450, pinSet: true, status: 'active', country: 'BD', joinedAt: '১৫ আগস্ট ২০২৬' },
+    { uid: 'usr_5412', email: 'tanvir@yahoo.com', name: 'তানভীর হাসান', phone: '01822334455', balanceUsd: 32.10, totalEarnedUsd: 95.00, totalPoints: 12300, pinSet: true, status: 'active', country: 'BD', joinedAt: '২০ সেপ্টেম্বর ২০২৬' },
+    { uid: 'usr_1029', email: 'sumaiya@gmail.com', name: 'সুমাইয়া আক্তার', phone: '01655667788', balanceUsd: 5.40, totalEarnedUsd: 40.00, totalPoints: 6400, pinSet: false, status: 'active', country: 'BD', joinedAt: '০১ অক্টোবর ২০২৬' },
+    { uid: 'usr_9981', email: 'farhan@dubai.ae', name: 'ফারহান চৌধুরী', phone: '+971501234567', balanceUsd: 18.00, totalEarnedUsd: 55.00, totalPoints: 9100, pinSet: true, status: 'suspended', suspendReason: 'স্বয়ংক্রিয় বট স্ক্রিপ্ট শনাক্ত', country: 'INTL', joinedAt: '০২ অক্টোবর ২০২৬' }
+  ],
+  flags: [
+    { id: 'flg_01', type: 'same_ip_cluster', severity: 'high', uid: 'usr_9981', userName: 'ফারহান চৌধুরী', ip: '103.114.98.22', details: 'একই আইপি থেকে ৪টি অ্যাকাউন্ট সক্রিয়', detectedAt: '৩১ অক্টো ২০২৬, ০১:৩০ অপরাহ্ন' },
+    { id: 'flg_02', type: 'many_challenge_misses', severity: 'medium', uid: 'usr_4432', userName: 'রাকিবুল ইসলাম', details: 'বিগত ৩ ঘণ্টায় টানা ৪ বার ক্যাপচা ব্যর্থ', detectedAt: '৩১ অক্টো ২০২৬, ১২:১৫ অপরাহ্ন' },
+    { id: 'flg_03', type: 'abnormal_hours', severity: 'medium', uid: 'usr_3211', userName: 'মো: আরিফুল', details: 'টানা ১৮ ঘণ্টা বিরতিহীন সেশন সক্রিয়', detectedAt: '৩০ অক্টো ২০২৬, ১০:৪০ অপরাহ্ন' },
+    { id: 'flg_04', type: 'ad_mismatch', severity: 'low', uid: 'usr_1029', userName: 'সুমাইয়া আক্তার', details: 'অ্যাড অনুপাত ০.০ কিন্তু পয়েন্ট রিকোয়েস্ট', detectedAt: '৩০ অক্টো ২০২৬, ০৮:২০ অপরাহ্ন' }
+  ],
+  announcement: {
+    active: true,
+    message: 'অক্টোবর মাসের পয়েন্ট টু ব্যালেন্স কনভার্সন আগামী ৩১ তারিখে সম্পন্ন হবে।'
+  },
+  games: [
+    { id: 'game-bubble-shooter', title: 'বাবল শুটার', category: 'আর্কেড', active: true, order: 1, url: '/games/demo/index.html', thumb: '🎯', playersToday: 840 },
+    { id: 'game-block-puzzle', title: 'ব্লক পাজল', category: 'ধাঁধা', active: true, order: 2, url: '/games/demo/index.html', thumb: '🧩', playersToday: 620 },
+    { id: 'game-candy-match', title: 'ক্যান্ডি ম্যাচ ৩', category: 'ধাঁধা', active: true, order: 3, url: '/games/demo/index.html', thumb: '🍬', playersToday: 510 },
+    { id: 'game-fruit-slice', title: 'ফ্রুট স্লাইস', category: 'অ্যাকশন', active: true, order: 4, url: '/games/demo/index.html', thumb: '🍉', playersToday: 390 },
+    { id: 'game-car-racing', title: 'স্পিড রেসার', category: 'আর্কেড', active: true, order: 5, url: '/games/demo/index.html', thumb: '🏎️', playersToday: 320 }
+  ],
+  config: {
+    pointsPerSec: 1,
+    idleSec: 60,
+    challengeIntervalMin: 15,
+    usdToBdt: 110,
+    mobileRechargeMin: 1,
+    bankWalletMin: 20,
+    binanceMin: 10,
+    carryBelowUsd: 1,
+    totalBonus: 1000,
+    referrerPercent: 80,
+    inviteePercent: 20,
+    requiredHours: 25
+  },
+  audit: [
+    { id: 'aud_01', timestamp: '৩১ অক্টো ২০২৬, ০৪:৫০ অপরাহ্ন', admin: 'admin@gamoro.com', action: 'payout.markPaid', target: 'pay_05 (সুমাইয়া আক্তার)', details: 'পরিশোধ সম্পন্ন (TxID: TRX98273611)' },
+    { id: 'aud_02', timestamp: '৩১ অক্টো ২০২৬, ০২:১৫ অপরাহ্ন', admin: 'admin@gamoro.com', action: 'users.suspend', target: 'usr_9981 (ফারহান চৌধুরী)', details: 'অ্যাকাউন্ট স্থগিত: বট স্ক্রিপ্ট শনাক্ত' },
+    { id: 'aud_03', timestamp: '৩০ অক্টো ২০২৬, ০৬:০০ অপরাহ্ন', admin: 'admin@gamoro.com', action: 'config.set', target: 'গ্লোবাল সেটিংস', details: 'ডলার রেট ১০৮ থেকে ১১০ এ আপডেট' },
+    { id: 'aud_04', timestamp: '২৯ অক্টো ২০২৬, ১০:০০ পূর্বাহ্ন', admin: 'admin@gamoro.com', action: 'announcement.set', target: 'ইন-অ্যাপ ঘোষণা', details: 'অক্টোবর পুল নোটিশ আপডেট' }
+  ]
+};
+
+function handleDemoCall(action, params = {}) {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      switch (action) {
+        case 'whoami':
+          resolve({ ok: true, admin: DEMO_STORE.admin });
+          break;
+
+        case 'dashboard':
+          resolve({ ok: true, data: DEMO_STORE.dashboard });
+          break;
+
+        case 'payouts.list': {
+          const status = params.status || 'pending';
+          const list = DEMO_STORE.payouts.filter(p => p.status === status);
+          resolve({ ok: true, payouts: list });
+          break;
+        }
+
+        case 'payouts.markPaid': {
+          const item = DEMO_STORE.payouts.find(p => p.id === params.id);
+          if (item) {
+            item.status = 'paid';
+            item.txId = params.txId || 'MANUAL_' + Date.now();
+            item.paidAt = new Date().toLocaleDateString('bn-BD');
+            DEMO_STORE.dashboard.pendingPayoutsCount = Math.max(0, DEMO_STORE.dashboard.pendingPayoutsCount - 1);
+            DEMO_STORE.audit.unshift({
+              id: 'aud_' + Date.now(),
+              timestamp: new Date().toLocaleString('bn-BD'),
+              admin: DEMO_STORE.admin.email,
+              action: 'payout.markPaid',
+              target: `${item.id} (${item.userName})`,
+              details: `পরিশোধ সম্পন্ন (TxID: ${item.txId})`
+            });
+          }
+          resolve({ ok: true });
+          break;
+        }
+
+        case 'payouts.reject': {
+          const item = DEMO_STORE.payouts.find(p => p.id === params.id);
+          if (item) {
+            item.status = 'rejected';
+            item.rejectReason = params.reason || 'বাতিল করা হয়েছে';
+            DEMO_STORE.dashboard.pendingPayoutsCount = Math.max(0, DEMO_STORE.dashboard.pendingPayoutsCount - 1);
+            DEMO_STORE.audit.unshift({
+              id: 'aud_' + Date.now(),
+              timestamp: new Date().toLocaleString('bn-BD'),
+              admin: DEMO_STORE.admin.email,
+              action: 'payout.reject',
+              target: `${item.id} (${item.userName})`,
+              details: `আবেদন বাতিল: ${item.rejectReason} (রিফান্ড: ${params.refundBalance ? 'হ্যাঁ' : 'না'})`
+            });
+          }
+          resolve({ ok: true });
+          break;
+        }
+
+        case 'referrals.list': {
+          const status = params.status || 'verifying';
+          const list = DEMO_STORE.referrals.filter(r => r.status === status);
+          resolve({ ok: true, referrals: list });
+          break;
+        }
+
+        case 'referrals.approve': {
+          const ref = DEMO_STORE.referrals.find(r => r.id === params.id);
+          if (ref) {
+            ref.status = 'completed';
+            ref.completedAt = new Date().toLocaleDateString('bn-BD');
+            DEMO_STORE.dashboard.pendingReferralsCount = Math.max(0, DEMO_STORE.dashboard.pendingReferralsCount - 1);
+            DEMO_STORE.audit.unshift({
+              id: 'aud_' + Date.now(),
+              timestamp: new Date().toLocaleString('bn-BD'),
+              admin: DEMO_STORE.admin.email,
+              action: 'referrals.approve',
+              target: `${ref.referrerName} → ${ref.inviteeName}`,
+              details: `রেফারেল বোনাস অনুমোদিত (মোট ${ref.totalBonus} পয়েন্ট)`
+            });
+          }
+          resolve({ ok: true });
+          break;
+        }
+
+        case 'referrals.reject': {
+          const ref = DEMO_STORE.referrals.find(r => r.id === params.id);
+          if (ref) {
+            ref.status = 'rejected';
+            ref.rejectReason = params.reason || 'শর্ত পূরণ না হওয়ায় বাতিল';
+            DEMO_STORE.dashboard.pendingReferralsCount = Math.max(0, DEMO_STORE.dashboard.pendingReferralsCount - 1);
+            DEMO_STORE.audit.unshift({
+              id: 'aud_' + Date.now(),
+              timestamp: new Date().toLocaleString('bn-BD'),
+              admin: DEMO_STORE.admin.email,
+              action: 'referrals.reject',
+              target: `${ref.referrerName} → ${ref.inviteeName}`,
+              details: `রেফারেল বাতিল: ${ref.rejectReason}`
+            });
+          }
+          resolve({ ok: true });
+          break;
+        }
+
+        case 'users.search': {
+          const q = (params.query || '').trim().toLowerCase();
+          const results = DEMO_STORE.users.filter(u => 
+            u.uid.toLowerCase().includes(q) || 
+            u.email.toLowerCase().includes(q) || 
+            (u.phone && u.phone.includes(q))
+          );
+          resolve({ ok: true, users: results });
+          break;
+        }
+
+        case 'users.get': {
+          const u = DEMO_STORE.users.find(x => x.uid === params.uid);
+          resolve({ ok: !!u, user: u || null });
+          break;
+        }
+
+        case 'users.suspend': {
+          const u = DEMO_STORE.users.find(x => x.uid === params.uid);
+          if (u) {
+            u.status = 'suspended';
+            u.suspendReason = params.reason || 'অ্যাডমিন কর্তৃক স্থগিত';
+            DEMO_STORE.audit.unshift({
+              id: 'aud_' + Date.now(),
+              timestamp: new Date().toLocaleString('bn-BD'),
+              admin: DEMO_STORE.admin.email,
+              action: 'users.suspend',
+              target: `${u.uid} (${u.email})`,
+              details: `অ্যাকাউন্ট স্থগিত: ${u.suspendReason}`
+            });
+          }
+          resolve({ ok: true });
+          break;
+        }
+
+        case 'users.unsuspend': {
+          const u = DEMO_STORE.users.find(x => x.uid === params.uid);
+          if (u) {
+            u.status = 'active';
+            delete u.suspendReason;
+            DEMO_STORE.audit.unshift({
+              id: 'aud_' + Date.now(),
+              timestamp: new Date().toLocaleString('bn-BD'),
+              admin: DEMO_STORE.admin.email,
+              action: 'users.unsuspend',
+              target: `${u.uid} (${u.email})`,
+              details: 'অ্যাকাউন্ট পুনরায় সক্রিয় করা হয়েছে'
+            });
+          }
+          resolve({ ok: true });
+          break;
+        }
+
+        case 'users.resetPin': {
+          const u = DEMO_STORE.users.find(x => x.uid === params.uid);
+          if (u) {
+            u.pinSet = false;
+            DEMO_STORE.audit.unshift({
+              id: 'aud_' + Date.now(),
+              timestamp: new Date().toLocaleString('bn-BD'),
+              admin: DEMO_STORE.admin.email,
+              action: 'users.resetPin',
+              target: `${u.uid} (${u.email})`,
+              details: 'উইথড্রয়াল পিন রিসেট করা হয়েছে'
+            });
+          }
+          resolve({ ok: true });
+          break;
+        }
+
+        case 'users.adjustBalance': {
+          const u = DEMO_STORE.users.find(x => x.uid === params.uid);
+          if (u) {
+            const delta = Number(params.amountUsd) || 0;
+            u.balanceUsd = Math.max(0, Number((u.balanceUsd + delta).toFixed(2)));
+            DEMO_STORE.audit.unshift({
+              id: 'aud_' + Date.now(),
+              timestamp: new Date().toLocaleString('bn-BD'),
+              admin: DEMO_STORE.admin.email,
+              action: 'users.adjustBalance',
+              target: `${u.uid} (${u.email})`,
+              details: `ব্যালেন্স সমন্বয়: ${delta >= 0 ? '+' : ''}${delta}$ (কারণ: ${params.reason || 'সমন্বয়'})`
+            });
+          }
+          resolve({ ok: true });
+          break;
+        }
+
+        case 'flags.list':
+          resolve({ ok: true, flags: DEMO_STORE.flags });
+          break;
+
+        case 'flags.dismiss': {
+          DEMO_STORE.flags = DEMO_STORE.flags.filter(f => f.id !== params.id);
+          DEMO_STORE.dashboard.flagsCount = Math.max(0, DEMO_STORE.dashboard.flagsCount - 1);
+          DEMO_STORE.audit.unshift({
+            id: 'aud_' + Date.now(),
+            timestamp: new Date().toLocaleString('bn-BD'),
+            admin: DEMO_STORE.admin.email,
+            action: 'flags.dismiss',
+            target: params.id,
+            details: 'সন্দেহজনক ফ্ল্যাগ খারিজ করা হয়েছে'
+          });
+          resolve({ ok: true });
+          break;
+        }
+
+        case 'period.preview': {
+          const rev = Number(params.revenueUsd) || 450;
+          const pct = Number(params.poolPercent) || 70;
+          const userPoolUsd = Number(((rev * pct) / 100).toFixed(2));
+          const totalPoints = 1250000; // Simulated
+          const ratePerThousand = Number(((userPoolUsd / totalPoints) * 1000).toFixed(4));
+          const diffPct = Math.abs(((userPoolUsd - 300) / 300) * 100);
+          resolve({
+            ok: true,
+            preview: {
+              month: params.month || '2026-10',
+              revenueUsd: rev,
+              poolPercent: pct,
+              userPoolUsd,
+              totalPoints,
+              ratePerThousand,
+              diffPercent: Number(diffPct.toFixed(1)),
+              warning: diffPct > 15 ? 'সতর্কতা: রেভিনিউ ও প্রাক্কলিত পুলের মধ্যে ১৫%-এর বেশি পার্থক্য রয়েছে!' : null
+            }
+          });
+          break;
+        }
+
+        case 'period.close': {
+          DEMO_STORE.audit.unshift({
+            id: 'aud_' + Date.now(),
+            timestamp: new Date().toLocaleString('bn-BD'),
+            admin: DEMO_STORE.admin.email,
+            action: 'period.close',
+            target: params.month || '2026-10',
+            details: `মাসিক পিরিয়ড বন্ধ ও পয়েন্ট কনভার্সন সফল (রেভিনিউ: $${params.revenueUsd})`
+          });
+          resolve({ ok: true, message: 'পিরিয়ড সফলভাবে বন্ধ করা হয়েছে এবং পয়েন্ট কনভার্সন সম্পন্ন হয়েছে।' });
+          break;
+        }
+
+        case 'announcement.get':
+          resolve({ ok: true, announcement: DEMO_STORE.announcement });
+          break;
+
+        case 'announcement.set': {
+          DEMO_STORE.announcement = {
+            active: Boolean(params.active),
+            message: params.message || ''
+          };
+          DEMO_STORE.audit.unshift({
+            id: 'aud_' + Date.now(),
+            timestamp: new Date().toLocaleString('bn-BD'),
+            admin: DEMO_STORE.admin.email,
+            action: 'announcement.set',
+            target: 'ঘোষণা',
+            details: `ঘোষণা আপডেট (${params.active ? 'সক্রিয়' : 'নিষ্ক্রিয়'}): ${params.message.slice(0, 40)}...`
+          });
+          resolve({ ok: true });
+          break;
+        }
+
+        case 'games.list':
+          resolve({ ok: true, games: DEMO_STORE.games });
+          break;
+
+        case 'games.save': {
+          if (params.games) {
+            DEMO_STORE.games = params.games;
+          } else if (params.game) {
+            const idx = DEMO_STORE.games.findIndex(g => g.id === params.game.id);
+            if (idx >= 0) {
+              DEMO_STORE.games[idx] = { ...DEMO_STORE.games[idx], ...params.game };
+            } else {
+              DEMO_STORE.games.push({
+                ...params.game,
+                id: params.game.id || 'game-' + Date.now(),
+                order: DEMO_STORE.games.length + 1,
+                playersToday: 0
+              });
+            }
+          }
+          DEMO_STORE.audit.unshift({
+            id: 'aud_' + Date.now(),
+            timestamp: new Date().toLocaleString('bn-BD'),
+            admin: DEMO_STORE.admin.email,
+            action: 'games.save',
+            target: 'গেম ক্যাটালগ',
+            details: 'গেম তালিকা বা সেটিংস আপডেট করা হয়েছে'
+          });
+          resolve({ ok: true });
+          break;
+        }
+
+        case 'config.get':
+          resolve({ ok: true, config: DEMO_STORE.config });
+          break;
+
+        case 'config.set': {
+          DEMO_STORE.config = { ...DEMO_STORE.config, ...params.config };
+          DEMO_STORE.audit.unshift({
+            id: 'aud_' + Date.now(),
+            timestamp: new Date().toLocaleString('bn-BD'),
+            admin: DEMO_STORE.admin.email,
+            action: 'config.set',
+            target: 'প্ল্যাটফর্ম গ্লোবাল সেটিংস',
+            details: `সেটিংস পরিবর্তিত (কারণ: ${params.reason || 'উল্লেখ নেই'})`
+          });
+          resolve({ ok: true });
+          break;
+        }
+
+        case 'audit.list': {
+          let list = [...DEMO_STORE.audit];
+          if (params.filter && params.filter !== 'all') {
+            list = list.filter(a => a.action.toLowerCase().includes(params.filter.toLowerCase()));
+          }
+          resolve({ ok: true, audit: list });
+          break;
+        }
+
+        default:
+          resolve({ ok: false, error: 'unknown_action' });
+      }
+    }, 280);
+  });
+}
+// ============================================================
+
+
+// Backend API Caller
+async function adminCall(action, params = {}) {
+  if (isDemoMode) {
+    return handleDemoCall(action, params);
+  }
+
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error('অনুগ্রহ করে প্রথমে লগইন করুন');
+  }
+
+  const token = await getIdToken(user);
+  const res = await fetch(ADMIN_API_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({ action, params })
+  });
+
+  if (res.status === 401 || res.status === 403) {
+    await signOut(auth);
+    throw new Error('এই অ্যাকাউন্টের অনুমতি নেই');
+  }
+
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`সার্ভার ত্রুটি: ${errText || res.statusText}`);
+  }
+
+  return await res.json();
+}
+
+
+// Inactivity Tracker (30 Min Timeout, Warning at 29 Min)
+let lastActivity = Date.now();
+const INACTIVITY_LIMIT_MS = 30 * 60 * 1000; // 30 minutes
+const WARNING_LIMIT_MS = 29 * 60 * 1000;    // 29 minutes
+let inactivityTimer = null;
+let warningShown = false;
+
+function resetInactivity() {
+  lastActivity = Date.now();
+  if (warningShown) {
+    warningShown = false;
+    document.getElementById('inactivityModal').classList.remove('open');
+  }
+}
+
+['pointerdown', 'keydown', 'scroll', 'touchstart'].forEach(ev => {
+  window.addEventListener(ev, resetInactivity, { passive: true });
+});
+
+document.getElementById('stayLoggedInBtn').addEventListener('click', () => {
+  resetInactivity();
+});
+
+function startInactivityWatcher() {
+  if (inactivityTimer) clearInterval(inactivityTimer);
+  inactivityTimer = setInterval(() => {
+    const elapsed = Date.now() - lastActivity;
+    if (elapsed >= INACTIVITY_LIMIT_MS) {
+      clearInterval(inactivityTimer);
+      signOut(auth).then(() => {
+        alert('নিষ্ক্রিয়তার কারণে আপনি স্বয়ংক্রিয়ভাবে লগআউট হয়েছেন।');
+        window.location.reload();
+      });
+    } else if (elapsed >= WARNING_LIMIT_MS && !warningShown) {
+      warningShown = true;
+      document.getElementById('inactivityModal').classList.add('open');
+    }
+  }, 10000);
+}
+
+
+// Theme management
+const themeBtn = document.getElementById('themeToggleBtn');
+function initTheme() {
+  const saved = localStorage.getItem('gamoro_theme') || 'light';
+  document.documentElement.setAttribute('data-theme', saved);
+}
+initTheme();
+themeBtn.addEventListener('click', () => {
+  const current = document.documentElement.getAttribute('data-theme') || 'light';
+  const next = current === 'light' ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('gamoro_theme', next);
+});
+
+
+// Confirmation Modal Helper
+function openConfirmModal({ title, message, onConfirm, isDestructive = false }) {
+  const modal = document.getElementById('confirmModal');
+  const titleEl = document.getElementById('confirmModalTitle');
+  const msgEl = document.getElementById('confirmModalMessage');
+  const submitBtn = document.getElementById('confirmModalSubmitBtn');
+
+  titleEl.textContent = title || 'নিশ্চিতকরণ';
+  msgEl.textContent = message || 'আপনি কি নিশ্চিত?';
+  submitBtn.className = isDestructive ? 'btn btn-danger' : 'btn btn-primary';
+
+  modal.classList.add('open');
+
+  const handleConfirm = async () => {
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'অপেক্ষা করুন...';
+    try {
+      await onConfirm();
+      modal.classList.remove('open');
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'হ্যাঁ, নিশ্চিত';
+      submitBtn.removeEventListener('click', handleConfirm);
+    }
+  };
+
+  submitBtn.onclick = handleConfirm;
+}
+
+// Close Modal Bindings
+document.querySelectorAll('[data-close-modal]').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    const overlay = e.target.closest('.modal-overlay');
+    if (overlay) overlay.classList.remove('open');
+  });
+});
+
+
+// Mobile Sidebar Toggle
+const menuToggleBtn = document.getElementById('menuToggleBtn');
+const sidebar = document.getElementById('sidebar');
+const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+const sidebarCloseBtn = document.getElementById('sidebarCloseBtn');
+
+function openSidebar() {
+  sidebar.classList.add('open');
+  sidebarBackdrop.classList.add('open');
+}
+function closeSidebar() {
+  sidebar.classList.remove('open');
+  sidebarBackdrop.classList.remove('open');
+}
+menuToggleBtn.addEventListener('click', openSidebar);
+sidebarBackdrop.addEventListener('click', closeSidebar);
+sidebarCloseBtn.addEventListener('click', closeSidebar);
+
+
+// Navigation Routing
+const navItems = document.querySelectorAll('.nav-item');
+const sections = document.querySelectorAll('.admin-section');
+const currentTitleEl = document.getElementById('currentSectionTitle');
+
+const sectionTitles = {
+  dashboard: '📊 ড্যাশবোর্ড',
+  payouts: '💸 পেআউট',
+  referrals: '👥 রেফারেল',
+  users: '👤 ইউজার',
+  flags: '⚠️ সন্দেহজনক ফ্ল্যাগ',
+  period: '🔄 পুল ও পিরিয়ড',
+  announcement: '📢 ঘোষণা',
+  games: '🎮 গেম তালিকা',
+  config: '⚙️ সেটিংস',
+  audit: '📜 অডিট লগ'
+};
+
+function switchSection(sectionId) {
+  navItems.forEach(item => {
+    if (item.dataset.section === sectionId) {
+      item.classList.add('active');
+    } else {
+      item.classList.remove('active');
+    }
+  });
+
+  sections.forEach(sec => {
+    if (sec.id === `sec-${sectionId}`) {
+      sec.classList.add('active');
+    } else {
+      sec.classList.remove('active');
+    }
+  });
+
+  currentTitleEl.textContent = sectionTitles[sectionId] || 'অ্যাডমিন প্যানেল';
+  closeSidebar();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  // Load section-specific data
+  loadSectionData(sectionId);
+}
+
+navItems.forEach(item => {
+  item.addEventListener('click', () => {
+    switchSection(item.dataset.section);
+  });
+});
+
+
+// ============================================================
+// SECTION 1: DASHBOARD
+// Action: 'dashboard'
+// Expected JSON Response: { ok: true, data: { dau, monthlyAdRevenue, pendingPayoutsCount, ... } }
+// ============================================================
+async function loadDashboard() {
+  try {
+    const res = await adminCall('dashboard');
+    if (!res.ok) throw new Error(res.error || 'ড্যাশবোর্ড লোড ব্যর্থ');
+    const d = res.data;
+
+    document.getElementById('metricDau').textContent = toBnNum(d.dau);
+    document.getElementById('metricAdRev').textContent = `$${d.monthlyAdRevenue.toFixed(2)}`;
+    document.getElementById('metricPayouts').textContent = toBnNum(d.pendingPayoutsCount);
+    document.getElementById('metricPayoutsUsd').textContent = `মোট: $${d.pendingPayoutsUsd.toFixed(2)}`;
+    document.getElementById('metricReferrals').textContent = toBnNum(d.pendingReferralsCount);
+    document.getElementById('metricFlags').textContent = toBnNum(d.flagsCount);
+    document.getElementById('metricPoolStatus').textContent = `$${d.periodStatus.estimatedPoolUsd.toFixed(2)}`;
+    document.getElementById('metricPoolDays').textContent = `মাসের শেষ হতে বাকি: ${toBnNum(d.periodStatus.daysLeft)} দিন`;
+
+    // Badges in sidebar
+    updateBadge('pendingPayoutsBadge', d.pendingPayoutsCount);
+    updateBadge('pendingRefBadge', d.pendingReferralsCount);
+    updateBadge('flagsBadge', d.flagsCount);
+
+    // Render 2 Thin SVG Bar Charts
+    renderSvgBarChart('dauChartWrapper', d.dauHistory, { isBlue: false });
+    renderSvgBarChart('adChartWrapper', d.adHistory, { isBlue: true });
+
+    // Averages/Totals
+    const avgDau = Math.round(d.dauHistory.reduce((acc, c) => acc + c.value, 0) / d.dauHistory.length);
+    document.getElementById('dauChartAvg').textContent = `গড়: ${toBnNum(avgDau)}`;
+    const totalAd = d.adHistory.reduce((acc, c) => acc + c.value, 0);
+    document.getElementById('adChartTotal').textContent = `মোট: ${toBnNum(totalAd)}`;
+
+  } catch (err) {
+    showToast('ড্যাশবোর্ড লোড করা যায়নি: ' + err.message, 'error');
+  }
+}
+
+function updateBadge(elId, count) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  if (count > 0) {
+    el.style.display = 'inline-block';
+    el.textContent = toBnNum(count);
+  } else {
+    el.style.display = 'none';
+  }
+}
+
+// Thin SVG Bar Chart Generator
+function renderSvgBarChart(containerId, data, options = {}) {
+  const container = document.getElementById(containerId);
+  if (!container || !data || data.length === 0) return;
+
+  const width = 360;
+  const height = 140;
+  const paddingBottom = 24;
+  const paddingTop = 12;
+  const maxVal = Math.max(...data.map(d => d.value)) * 1.15 || 100;
+  const barWidth = 24;
+  const spacing = (width - 40) / data.length;
+
+  let barsSvg = '';
+  data.forEach((item, i) => {
+    const barHeight = ((item.value / maxVal) * (height - paddingBottom - paddingTop));
+    const x = 20 + i * spacing + (spacing - barWidth) / 2;
+    const y = height - paddingBottom - barHeight;
+    const colorClass = options.isBlue ? 'chart-bar chart-bar-blue' : 'chart-bar';
+
+    barsSvg += `
+      <rect class="${colorClass}" x="${x}" y="${y}" width="${barWidth}" height="${barHeight}">
+        <title>${item.date}: ${toBnNum(item.value)}</title>
+      </rect>
+      <text class="chart-label" x="${x + barWidth / 2}" y="${height - 6}">${item.date}</text>
+    `;
+  });
+
+  container.innerHTML = `
+    <svg class="svg-chart" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none">
+      <line class="chart-grid" x1="10" y1="${height - paddingBottom}" x2="${width - 10}" y2="${height - paddingBottom}"></line>
+      <line class="chart-grid" x1="10" y1="${paddingTop}" x2="${width - 10}" y2="${paddingTop}"></line>
+      ${barsSvg}
+    </svg>
+  `;
+}
+
+
+// ============================================================
+// SECTION 2: PAYOUTS
+// Action: 'payouts.list'
+// Expected JSON Response: { ok: true, payouts: [ { id, uid, userName, method, accountNo, amountUsd, amountBdt, status, ... } ] }
+// Action: 'payouts.markPaid'
+// Expected JSON Response: { ok: true }
+// Action: 'payouts.reject'
+// Expected JSON Response: { ok: true }
+// ============================================================
+let currentPayoutStatus = 'pending';
+
+async function loadPayouts(status = 'pending') {
+  currentPayoutStatus = status;
+  const container = document.getElementById('payoutsListContainer');
+  container.innerHTML = `<div class="skeleton skeleton-row"></div><div class="skeleton skeleton-row"></div>`;
+
+  try {
+    const res = await adminCall('payouts.list', { status });
+    if (!res.ok) throw new Error(res.error || 'পেআউট লোড ব্যর্থ');
+
+    if (!res.payouts || res.payouts.length === 0) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none"><rect x="2" y="4" width="20" height="16" rx="2"></rect><line x1="6" y1="12" x2="18" y2="12"></line></svg>
+          <p>এই মুহূর্তে কোনো ${status === 'pending' ? 'পেন্ডিং' : status === 'paid' ? 'পরিশোধিত' : 'বাতিলকৃত'} আবেদন নেই।</p>
+        </div>
+      `;
+      return;
+    }
+
+    let rows = '';
+    res.payouts.forEach(p => {
+      const methodBadge = getMethodBadge(p.method);
+      const isPending = p.status === 'pending';
+
+      rows += `
+        <tr>
+          <td>
+            <div style="font-weight:600;">${p.userName}</div>
+            <div style="font-size:11px; color:var(--muted);">${p.uid}</div>
+          </td>
+          <td>${methodBadge}</td>
+          <td>
+            <div style="display:flex; align-items:center; gap:6px;">
+              <span>${p.accountNo}</span>
+              <button class="btn btn-secondary btn-sm" onclick="copyToClipboard('${p.accountNo}', 'অ্যাকাউন্ট নম্বর কপি করা হয়েছে')" style="padding:2px 6px;">
+                📋
+              </button>
+            </div>
+          </td>
+          <td>
+            <div style="font-weight:700; color:var(--green);">$${p.amountUsd.toFixed(2)}</div>
+            <div style="font-size:11px; color:var(--muted);">৳ ${toBnNum(p.amountBdt)}</div>
+          </td>
+          <td style="font-size:12px; color:var(--muted);">${p.createdAt}</td>
+          <td>
+            ${isPending ? `
+              <div style="display:flex; gap:6px;">
+                <button class="btn btn-primary btn-sm" onclick="openPayoutModal('pay', '${p.id}', '${p.userName}', ${p.amountUsd})">পরিশোধ</button>
+                <button class="btn btn-danger btn-sm" onclick="openPayoutModal('reject', '${p.id}', '${p.userName}', ${p.amountUsd})">বাতিল</button>
+              </div>
+            ` : p.status === 'paid' ? `
+              <span class="badge badge-success">পরিশোধিত (${p.txId || 'ম্যাটিক'})</span>
+            ` : `
+              <span class="badge badge-danger">বাতিল: ${p.rejectReason || ''}</span>
+            `}
+          </td>
+        </tr>
+      `;
+    });
+
+    container.innerHTML = `
+      <div class="data-table-container">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ইউজার</th>
+              <th>পদ্ধতি</th>
+              <th>অ্যাকাউন্ট নম্বর</th>
+              <th>পরিমাণ</th>
+              <th>তারিখ</th>
+              <th>অ্যাকশন</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    `;
+
+  } catch (err) {
+    container.innerHTML = `<div class="empty-state" style="color:var(--coral);"><p>${err.message}</p></div>`;
+  }
+}
+
+function getMethodBadge(method) {
+  switch (method) {
+    case 'bkash': return `<span class="badge" style="background:#DF146E; color:#fff;">বিকাশ</span>`;
+    case 'nagad': return `<span class="badge" style="background:#F7941D; color:#fff;">নগদ</span>`;
+    case 'rocket': return `<span class="badge" style="background:#8C3494; color:#fff;">রকেট</span>`;
+    case 'binance': return `<span class="badge" style="background:#F0B90B; color:#000;">Binance Pay</span>`;
+    case 'mobile_recharge': return `<span class="badge badge-muted">মোবাইল রিচার্জ</span>`;
+    default: return `<span class="badge badge-muted">${method}</span>`;
+  }
+}
+
+document.querySelectorAll('#payoutTabs .tab-btn').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    document.querySelectorAll('#payoutTabs .tab-btn').forEach(b => b.classList.remove('active'));
+    e.target.classList.add('active');
+    loadPayouts(e.target.dataset.status);
+  });
+});
+
+document.getElementById('refreshPayoutsBtn').addEventListener('click', () => loadPayouts(currentPayoutStatus));
+
+// Payout Modal Logic
+window.openPayoutModal = function(actionType, id, userName, amountUsd) {
+  const modal = document.getElementById('payoutActionModal');
+  const title = document.getElementById('payoutActionTitle');
+  const body = document.getElementById('payoutActionBody');
+  const submitBtn = document.getElementById('payoutActionSubmitBtn');
+
+  if (actionType === 'pay') {
+    title.textContent = `পরিশোধ সম্পন্ন নিশ্চিতকরণ (${userName})`;
+    body.innerHTML = `
+      <p style="font-size:14px; margin-bottom:12px;">
+        আপনি <b>${userName}</b>-কে <b>$${amountUsd.toFixed(2)}</b> প্রদান করছেন।
+      </p>
+      <div class="form-group">
+        <label class="form-label">ট্রানজ্যাকশন আইডি (TxID - ঐচ্ছিক):</label>
+        <input type="text" id="payoutTxIdInput" class="form-input" placeholder="যেমন: TRX92837411">
+      </div>
+    `;
+    submitBtn.textContent = 'হ্যাঁ, পরিশোধ সম্পন্ন হয়েছে';
+    submitBtn.className = 'btn btn-primary';
+
+    submitBtn.onclick = async () => {
+      const txId = document.getElementById('payoutTxIdInput').value.trim();
+      submitBtn.disabled = true;
+      try {
+        await adminCall('payouts.markPaid', { id, txId });
+        showToast('পেআউট পরিশোধ সম্পন্ন মার্ক করা হয়েছে', 'success');
+        modal.classList.remove('open');
+        loadPayouts(currentPayoutStatus);
+      } catch (err) {
+        showToast(err.message, 'error');
+      } finally {
+        submitBtn.disabled = false;
+      }
+    };
+  } else {
+    title.textContent = `পেআউট বাতিলকরণ (${userName})`;
+    body.innerHTML = `
+      <p style="font-size:14px; margin-bottom:12px; color:var(--coral);">
+        আপনি কি এই আবেদনটি বাতিল করতে চান?
+      </p>
+      <div class="form-group">
+        <label class="form-label" style="color:var(--coral);">বাতিল করার কারণ (বাধ্যতামূলক):</label>
+        <textarea id="payoutRejectReasonInput" class="form-textarea" rows="2" placeholder="যেমন: ভুল অ্যাকাউন্ট নম্বর বা ফ্রড সন্দেহ" required></textarea>
+      </div>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <input type="checkbox" id="refundBalanceCheck" checked>
+        <label for="refundBalanceCheck" style="font-size:13px; font-weight:600;">ইউজারের ব্যালেন্সে ডলার ফেরত দিন (Refund)</label>
+      </div>
+    `;
+    submitBtn.textContent = 'আবেদন বাতিল করুন';
+    submitBtn.className = 'btn btn-danger';
+
+    submitBtn.onclick = async () => {
+      const reason = document.getElementById('payoutRejectReasonInput').value.trim();
+      if (!reason) {
+        showToast('বাতিল করার কারণ লিখুন', 'error');
+        return;
+      }
+      const refundBalance = document.getElementById('refundBalanceCheck').checked;
+      submitBtn.disabled = true;
+      try {
+        await adminCall('payouts.reject', { id, reason, refundBalance });
+        showToast('আবেদনটি বাতিল করা হয়েছে', 'info');
+        modal.classList.remove('open');
+        loadPayouts(currentPayoutStatus);
+      } catch (err) {
+        showToast(err.message, 'error');
+      } finally {
+        submitBtn.disabled = false;
+      }
+    };
+  }
+
+  modal.classList.add('open');
+};
+
+
+// ============================================================
+// SECTION 3: REFERRALS
+// Action: 'referrals.list'
+// Expected JSON Response: { ok: true, referrals: [ { id, referrerName, inviteeName, activeHours, requiredHours, emailVerified, status, ... } ] }
+// Action: 'referrals.approve'
+// Expected JSON Response: { ok: true }
+// Action: 'referrals.reject'
+// Expected JSON Response: { ok: true }
+// ============================================================
+let currentRefStatus = 'verifying';
+
+async function loadReferrals(status = 'verifying') {
+  currentRefStatus = status;
+  const container = document.getElementById('referralsListContainer');
+  container.innerHTML = `<div class="skeleton skeleton-row"></div><div class="skeleton skeleton-row"></div>`;
+
+  try {
+    const res = await adminCall('referrals.list', { status });
+    if (!res.ok) throw new Error(res.error || 'রেফারেল লোড ব্যর্থ');
+
+    if (!res.referrals || res.referrals.length === 0) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <p>কোনো রেফারেল পাওয়া যায়নি।</p>
+        </div>
+      `;
+      return;
+    }
+
+    let rows = '';
+    res.referrals.forEach(r => {
+      const isVerifying = r.status === 'verifying';
+      const meetsTime = r.activeHours >= r.requiredHours;
+
+      rows += `
+        <tr>
+          <td>
+            <div style="font-weight:600;">${r.referrerName} ➔ ${r.inviteeName}</div>
+            <div style="font-size:11px; color:var(--muted);">${r.createdAt}</div>
+          </td>
+          <td>
+            <span style="font-weight:600; color:${meetsTime ? 'var(--green)' : 'var(--coral)'};">
+              ${toBnNum(r.activeHours)} / ${toBnNum(r.requiredHours)} ঘণ্টা
+            </span>
+          </td>
+          <td>
+            ${r.emailVerified ? 
+              `<span class="badge badge-success">✓ ভেরিফাইড</span>` : 
+              `<span class="badge badge-danger">✗ হয়নি</span>`}
+          </td>
+          <td>
+            <div style="font-weight:700;">${toBnNum(r.totalBonus)} পয়েন্ট</div>
+            <div style="font-size:11px; color:var(--muted);">${toBnNum(r.referrerBonus)} / ${toBnNum(r.inviteeBonus)}</div>
+          </td>
+          <td>
+            ${isVerifying ? `
+              <div style="display:flex; gap:6px;">
+                <button class="btn btn-primary btn-sm" onclick="approveReferral('${r.id}')">অনুমোদন</button>
+                <button class="btn btn-danger btn-sm" onclick="rejectReferral('${r.id}')">বাতিল</button>
+              </div>
+            ` : r.status === 'completed' ? `
+              <span class="badge badge-success">সম্পন্ন</span>
+            ` : `
+              <span class="badge badge-danger">বাতিল: ${r.rejectReason || ''}</span>
+            `}
+          </td>
+        </tr>
+      `;
+    });
+
+    container.innerHTML = `
+      <div class="data-table-container">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>রেফারেল জোড়</th>
+              <th>খেলার সময়</th>
+              <th>ইমেইল যাচাই</th>
+              <th>বোনাস পয়েন্ট</th>
+              <th>অ্যাকশন</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    `;
+
+  } catch (err) {
+    container.innerHTML = `<div class="empty-state" style="color:var(--coral);"><p>${err.message}</p></div>`;
+  }
+}
+
+document.querySelectorAll('#referralTabs .tab-btn').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    document.querySelectorAll('#referralTabs .tab-btn').forEach(b => b.classList.remove('active'));
+    e.target.classList.add('active');
+    loadReferrals(e.target.dataset.status);
+  });
+});
+document.getElementById('refreshReferralsBtn').addEventListener('click', () => loadReferrals(currentRefStatus));
+
+window.approveReferral = function(id) {
+  openConfirmModal({
+    title: 'রেফারেল বোনাস অনুমোদন',
+    message: 'আপনি কি উভয় ব্যবহারকারীর অ্যাকাউন্টে রেফারেল বোনাস পয়েন্ট যোগ করতে চান?',
+    onConfirm: async () => {
+      await adminCall('referrals.approve', { id });
+      showToast('রেফারেল বোনাস অনুমোদিত হয়েছে', 'success');
+      loadReferrals(currentRefStatus);
+    }
+  });
+};
+
+window.rejectReferral = function(id) {
+  openConfirmModal({
+    title: 'রেফারেল বাতিল',
+    message: 'আপনি কি এই রেফারেল বোনাসটি বাতিল করতে চান?',
+    isDestructive: true,
+    onConfirm: async () => {
+      await adminCall('referrals.reject', { id, reason: 'শর্ত পূরণ না হওয়ায় বাতিল' });
+      showToast('রেফারেল বাতিল করা হয়েছে', 'info');
+      loadReferrals(currentRefStatus);
+    }
+  });
+};
+
+
+// ============================================================
+// SECTION 4: USER MANAGEMENT
+// Action: 'users.search'
+// Expected JSON Response: { ok: true, users: [ { uid, email, name, phone, balanceUsd, ... } ] }
+// Action: 'users.get'
+// Expected JSON Response: { ok: true, user: { ... } }
+// Action: 'users.suspend'
+// Action: 'users.unsuspend'
+// Action: 'users.resetPin'
+// Action: 'users.adjustBalance'
+// ============================================================
+const userSearchInput = document.getElementById('userSearchInput');
+const userSearchBtn = document.getElementById('userSearchBtn');
+const userSearchResultsContainer = document.getElementById('userSearchResultsContainer');
+
+async function performUserSearch() {
+  const query = userSearchInput.value.trim();
+  if (!query) {
+    showToast('অনুসন্ধান করতে UID বা ইমেইল লিখুন', 'error');
+    return;
+  }
+
+  userSearchResultsContainer.innerHTML = `<div class="skeleton skeleton-row"></div><div class="skeleton skeleton-row"></div>`;
+
+  try {
+    const res = await adminCall('users.search', { query });
+    if (!res.ok) throw new Error(res.error || 'ইউজার সন্ধান ব্যর্থ');
+
+    if (!res.users || res.users.length === 0) {
+      userSearchResultsContainer.innerHTML = `
+        <div class="empty-state">
+          <p>"${query}" দিয়ে কোনো ইউজার পাওয়া যায়নি।</p>
+        </div>
+      `;
+      return;
+    }
+
+    let cards = '';
+    res.users.forEach(u => {
+      const isSuspended = u.status === 'suspended';
+      cards += `
+        <div style="background:var(--surface2); border:1px solid var(--line); border-radius:var(--radius-sm); padding:14px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <div style="font-weight:700; font-size:15px;">${u.name} <span class="badge ${isSuspended ? 'badge-danger' : 'badge-success'}">${isSuspended ? 'স্থগিত' : 'সক্রিয়'}</span></div>
+            <div style="font-size:12px; color:var(--muted);">${u.email} | ${u.uid}</div>
+            <div style="font-size:13px; font-weight:600; color:var(--green); margin-top:4px;">ব্যালেন্স: $${u.balanceUsd.toFixed(2)} | পয়েন্ট: ${toBnNum(u.totalPoints)}</div>
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="viewUserDetails('${u.uid}')">বিস্তারিত ও নিয়ন্ত্রণ ➔</button>
+        </div>
+      `;
+    });
+
+    userSearchResultsContainer.innerHTML = cards;
+
+  } catch (err) {
+    userSearchResultsContainer.innerHTML = `<div class="empty-state" style="color:var(--coral);"><p>${err.message}</p></div>`;
+  }
+}
+
+userSearchBtn.addEventListener('click', performUserSearch);
+userSearchInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') performUserSearch(); });
+
+window.viewUserDetails = async function(uid) {
+  const modal = document.getElementById('userDetailModal');
+  const content = document.getElementById('userDetailContent');
+  content.innerHTML = `<div class="skeleton skeleton-row"></div><div class="skeleton skeleton-row"></div>`;
+  modal.classList.add('open');
+
+  try {
+    const res = await adminCall('users.get', { uid });
+    if (!res.ok || !res.user) throw new Error(res.error || 'ইউজার লোড করা যায়নি');
+    const u = res.user;
+
+    const isSuspended = u.status === 'suspended';
+
+    content.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px;">
+        <div>
+          <h2 style="font-size:18px; font-weight:700;">${u.name}</h2>
+          <div style="font-size:13px; color:var(--muted);">${u.email}</div>
+          <div style="font-size:12px; color:var(--muted);">UID: ${u.uid}</div>
+        </div>
+        <span class="badge ${isSuspended ? 'badge-danger' : 'badge-success'}" style="font-size:13px;">
+          ${isSuspended ? 'অ্যাকাউন্ট স্থগিত' : 'অ্যাকাউন্ট সক্রিয়'}
+        </span>
+      </div>
+
+      <div class="audit-warning">
+        <span>⚠️ অডিট লগে লেখা হবে: ইউজারের যে কোনো পরিবর্তনে অডিট রেকর্ড তৈরি হয়।</span>
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:18px;">
+        <div style="background:var(--surface2); padding:10px; border-radius:var(--radius-sm);">
+          <div style="font-size:11px; color:var(--muted);">বর্তমান ব্যালেন্স</div>
+          <div style="font-size:20px; font-weight:700; color:var(--green);">$${u.balanceUsd.toFixed(2)}</div>
+        </div>
+        <div style="background:var(--surface2); padding:10px; border-radius:var(--radius-sm);">
+          <div style="font-size:11px; color:var(--muted);">মোট পয়েন্ট</div>
+          <div style="font-size:20px; font-weight:700;">${toBnNum(u.totalPoints)}</div>
+        </div>
+        <div style="background:var(--surface2); padding:10px; border-radius:var(--radius-sm);">
+          <div style="font-size:11px; color:var(--muted);">উইথড্রয়াল পিন</div>
+          <div style="font-size:14px; font-weight:600;">${u.pinSet ? '✓ সেট করা আছে' : '✗ সেট করা নেই'}</div>
+        </div>
+        <div style="background:var(--surface2); padding:10px; border-radius:var(--radius-sm);">
+          <div style="font-size:11px; color:var(--muted);">কান্ট্রি কোড</div>
+          <div style="font-size:14px; font-weight:600;">${u.country || 'BD'}</div>
+        </div>
+      </div>
+
+      <!-- User Actions -->
+      <h4 style="font-size:14px; font-weight:700; margin-bottom:10px;">ইউজার নিয়ন্ত্রণ অ্যাকশন:</h4>
+      
+      <!-- Balance Adjustment -->
+      <div style="background:var(--surface); border:1px solid var(--line); border-radius:var(--radius-sm); padding:12px; margin-bottom:12px;">
+        <div style="font-size:13px; font-weight:600; margin-bottom:8px;">💰 ব্যালেন্স সমন্বয় (USD)</div>
+        <div style="display:flex; gap:8px; margin-bottom:6px;">
+          <input type="number" id="adjustAmtInput" class="form-input" placeholder="যেমন: +5.00 বা -2.00" step="0.01">
+          <input type="text" id="adjustReasonInput" class="form-input" placeholder="বাধ্যতামূলক কারণ লিখুন">
+          <button class="btn btn-primary btn-sm" onclick="submitBalanceAdjust('${u.uid}')">সমন্বয়</button>
+        </div>
+        <span class="form-hint">পজিটিভ বা নেগেটিভ মান প্রদান করতে পারেন।</span>
+      </div>
+
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <button class="btn btn-secondary btn-sm" onclick="submitResetPin('${u.uid}')">🔑 উইথড্র পিন রিসেট</button>
+        ${isSuspended ? `
+          <button class="btn btn-primary btn-sm" onclick="submitUnsuspend('${u.uid}')">সক্রিয় করুন (Unsuspend)</button>
+        ` : `
+          <button class="btn btn-danger btn-sm" onclick="submitSuspend('${u.uid}')">স্থগিত করুন (Suspend)</button>
+        `}
+      </div>
+    `;
+
+  } catch (err) {
+    content.innerHTML = `<div class="empty-state" style="color:var(--coral);"><p>${err.message}</p></div>`;
+  }
+};
+
+window.submitBalanceAdjust = async function(uid) {
+  const amtInput = document.getElementById('adjustAmtInput');
+  const reasonInput = document.getElementById('adjustReasonInput');
+  const amt = parseFloat(amtInput.value);
+  const reason = reasonInput.value.trim();
+
+  if (isNaN(amt) || amt === 0) {
+    showToast('সঠিক ব্যালেন্স পরিমাণ লিখুন', 'error');
+    return;
+  }
+  if (!reason) {
+    showToast('ব্যালেন্স পরিবর্তনের কারণ আবশ্যক', 'error');
+    return;
+  }
+
+  openConfirmModal({
+    title: 'ব্যালেন্স সমন্বয় নিশ্চিতকরণ',
+    message: `আপনি কি এই ইউজারের অ্যাকাউন্টে ${amt >= 0 ? '+' : ''}${amt}$ যোগ/বিয়োগ করতে চান? (কারণ: ${reason})`,
+    onConfirm: async () => {
+      await adminCall('users.adjustBalance', { uid, amountUsd: amt, reason });
+      showToast('ব্যালেন্স সমন্বয় সম্পন্ন', 'success');
+      viewUserDetails(uid);
+    }
+  });
+};
+
+window.submitResetPin = function(uid) {
+  openConfirmModal({
+    title: 'উইথড্রয়াল পিন রিসেট',
+    message: 'ইউজারের বর্তমান পিনটি মুছে দেওয়া হবে এবং ইউজারকে নতুন পিন সেট করার সুযোগ দেওয়া হবে।',
+    onConfirm: async () => {
+      await adminCall('users.resetPin', { uid });
+      showToast('পিন রিসেট করা হয়েছে', 'success');
+      viewUserDetails(uid);
+    }
+  });
+};
+
+window.submitSuspend = function(uid) {
+  openConfirmModal({
+    title: 'ইউজার অ্যাকাউন্ট স্থগিতকরণ',
+    message: 'ইউজারকে সাসপেন্ড করলে সে আর গেম খেলতে বা টাকা তুলতে পারবে না।',
+    isDestructive: true,
+    onConfirm: async () => {
+      await adminCall('users.suspend', { uid, reason: 'প্রশাসক কর্তৃক স্থগিত' });
+      showToast('ইউজার স্থগিত করা হয়েছে', 'info');
+      viewUserDetails(uid);
+    }
+  });
+};
+
+window.submitUnsuspend = function(uid) {
+  openConfirmModal({
+    title: 'ইউজার অ্যাকাউন্ট সক্রিয়করণ',
+    message: 'স্থগিত অবস্থা তুলে নিয়ে অ্যাকাউন্টটিকে পুনরায় কার্যকর করা হবে।',
+    onConfirm: async () => {
+      await adminCall('users.unsuspend', { uid });
+      showToast('ইউজার পুনরায় সক্রিয় হয়েছে', 'success');
+      viewUserDetails(uid);
+    }
+  });
+};
+
+
+// ============================================================
+// SECTION 5: SUSPICIOUS FLAGS
+// Action: 'flags.list'
+// Expected JSON Response: { ok: true, flags: [ { id, type, severity, uid, userName, details, ... } ] }
+// Action: 'flags.dismiss'
+// Expected JSON Response: { ok: true }
+// ============================================================
+async function loadFlags() {
+  const container = document.getElementById('flagsListContainer');
+  container.innerHTML = `<div class="skeleton skeleton-row"></div><div class="skeleton skeleton-row"></div>`;
+
+  try {
+    const res = await adminCall('flags.list');
+    if (!res.ok) throw new Error(res.error || 'ফ্ল্যাগ লোড ব্যর্থ');
+
+    if (!res.flags || res.flags.length === 0) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <p>কোনো সন্দেহজনক ফ্ল্যাগ নেই। প্ল্যাটফর্ম স্বাভাবিক আছে।</p>
+        </div>
+      `;
+      return;
+    }
+
+    let cards = '';
+    res.flags.forEach(f => {
+      const typeLabel = getFlagTypeLabel(f.type);
+      const sevBadge = f.severity === 'high' ? 'badge-danger' : f.severity === 'medium' ? 'badge-warning' : 'badge-muted';
+
+      cards += `
+        <div style="background:var(--surface); border:1px solid var(--line); border-radius:var(--radius-sm); padding:16px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; gap:16px;">
+          <div>
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+              <span class="badge ${sevBadge}">${f.severity.toUpperCase()}</span>
+              <span style="font-weight:700; font-size:14px;">${typeLabel}</span>
+            </div>
+            <div style="font-size:13px; color:var(--text); margin-bottom:4px;">${f.details}</div>
+            <div style="font-size:11px; color:var(--muted);">ইউজার: <b>${f.userName}</b> (${f.uid}) | সনাক্ত: ${f.detectedAt}</div>
+          </div>
+          <div style="display:flex; gap:8px; flex-shrink:0;">
+            <button class="btn btn-secondary btn-sm" onclick="inspectFlagUser('${f.uid}')">ইউজার দেখুন</button>
+            <button class="btn btn-danger btn-sm" onclick="dismissFlag('${f.id}')">খারিজ করুন</button>
+          </div>
+        </div>
+      `;
+    });
+
+    container.innerHTML = cards;
+
+  } catch (err) {
+    container.innerHTML = `<div class="empty-state" style="color:var(--coral);"><p>${err.message}</p></div>`;
+  }
+}
+
+function getFlagTypeLabel(type) {
+  switch (type) {
+    case 'same_ip_cluster': return 'একই আইপি ক্লাস্টার';
+    case 'many_challenge_misses': return 'বারংবার চ্যালেঞ্জ মিস';
+    case 'abnormal_hours': return 'অস্বাভাবিক দীর্ঘ খেলা';
+    case 'ad_mismatch': return 'অ্যাড অসঙ্গতি';
+    default: return type;
+  }
+}
+
+document.getElementById('refreshFlagsBtn').addEventListener('click', loadFlags);
+
+window.inspectFlagUser = function(uid) {
+  switchSection('users');
+  userSearchInput.value = uid;
+  performUserSearch().then(() => {
+    viewUserDetails(uid);
+  });
+};
+
+window.dismissFlag = function(id) {
+  openConfirmModal({
+    title: 'ফ্ল্যাগ খারিজ',
+    message: 'আপনি কি নিশ্চিত যে এই সন্দেহজনক ফ্ল্যাগটি খারিজ করতে চান?',
+    onConfirm: async () => {
+      await adminCall('flags.dismiss', { id });
+      showToast('ফ্ল্যাগটি খারিজ করা হয়েছে', 'info');
+      loadFlags();
+    }
+  });
+};
+
+
+// ============================================================
+// SECTION 6: PERIOD & POOL CLOSING
+// Action: 'period.preview'
+// Expected JSON Response: { ok: true, preview: { month, revenueUsd, poolPercent, userPoolUsd, totalPoints, ratePerThousand, diffPercent, warning } }
+// Action: 'period.close'
+// Expected JSON Response: { ok: true, message: '...' }
+// ============================================================
+const periodMonthInput = document.getElementById('periodMonthInput');
+const periodRevenueInput = document.getElementById('periodRevenueInput');
+const periodPoolPercentInput = document.getElementById('periodPoolPercentInput');
+const periodImpressionsInput = document.getElementById('periodImpressionsInput');
+const periodPreviewBtn = document.getElementById('periodPreviewBtn');
+const periodPreviewResult = document.getElementById('periodPreviewResult');
+const periodCloseModalBtn = document.getElementById('periodCloseModalBtn');
+
+periodPreviewBtn.addEventListener('click', async () => {
+  periodPreviewBtn.disabled = true;
+  periodPreviewBtn.textContent = 'হিসাব হচ্ছে...';
+
+  try {
+    const res = await adminCall('period.preview', {
+      month: periodMonthInput.value.trim(),
+      revenueUsd: parseFloat(periodRevenueInput.value),
+      poolPercent: parseFloat(periodPoolPercentInput.value),
+      impressions: parseInt(periodImpressionsInput.value)
+    });
+
+    if (!res.ok) throw new Error(res.error || 'হিসাব প্রিভিউ তৈরি ব্যর্থ');
+    const p = res.preview;
+
+    let warningHtml = '';
+    if (p.diffPercent > 15 || p.warning) {
+      warningHtml = `
+        <div class="period-warn">
+          <b>⚠️ বৈষম্য সতর্কতা:</b> নেটওয়ার্ক রেভিনিউ ও প্রাক্কলিত পুলের মধ্যে <b>${toBnNum(p.diffPercent)}%</b> পার্থক্য লক্ষ্য করা গেছে। হিসাব ভালোভাবে যাচাই করুন।
+        </div>
+      `;
+    }
+
+    periodPreviewResult.style.display = 'block';
+    periodPreviewResult.innerHTML = `
+      <h4 style="font-size:15px; font-weight:700; margin-bottom:12px; color:var(--green);">📊 হিসাব প্রিভিউ ফলাফল (${p.month}):</h4>
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:12px;">
+        <div style="background:var(--surface2); padding:10px; border-radius:var(--radius-sm);">
+          <div style="font-size:11px; color:var(--muted);">মোট ইউজার পুল ব্যালেন্স</div>
+          <div style="font-size:18px; font-weight:700; color:var(--green);">$${p.userPoolUsd.toFixed(2)}</div>
+        </div>
+        <div style="background:var(--surface2); padding:10px; border-radius:var(--radius-sm);">
+          <div style="font-size:11px; color:var(--muted);">মোট যোগ্য পয়েন্ট</div>
+          <div style="font-size:18px; font-weight:700;">${toBnNum(p.totalPoints)}</div>
+        </div>
+        <div style="background:var(--surface2); padding:10px; border-radius:var(--radius-sm);">
+          <div style="font-size:11px; color:var(--muted);">পয়েন্ট রেট (প্রতি ১০০০ পয়েন্ট)</div>
+          <div style="font-size:18px; font-weight:700;">$${p.ratePerThousand.toFixed(4)}</div>
+        </div>
+      </div>
+      ${warningHtml}
+    `;
+
+  } catch (err) {
+    showToast(err.message, 'error');
+  } finally {
+    periodPreviewBtn.disabled = false;
+    periodPreviewBtn.textContent = '🧮 হিসাব প্রিভিউ দেখুন';
+  }
+});
+
+// Period Close with Typed Confirmation ("বন্ধ করুন")
+const periodCloseModal = document.getElementById('periodCloseModal');
+const periodTypeConfirmInput = document.getElementById('periodTypeConfirmInput');
+const periodConfirmSubmitBtn = document.getElementById('periodConfirmSubmitBtn');
+
+periodCloseModalBtn.addEventListener('click', () => {
+  periodTypeConfirmInput.value = '';
+  periodConfirmSubmitBtn.disabled = true;
+  periodCloseModal.classList.add('open');
+});
+
+periodTypeConfirmInput.addEventListener('input', () => {
+  const val = periodTypeConfirmInput.value.trim();
+  periodConfirmSubmitBtn.disabled = (val !== 'বন্ধ করুন');
+});
+
+periodConfirmSubmitBtn.addEventListener('click', async () => {
+  periodConfirmSubmitBtn.disabled = true;
+  periodConfirmSubmitBtn.textContent = 'প্রসেসিং হচ্ছে...';
+
+  try {
+    const res = await adminCall('period.close', {
+      month: periodMonthInput.value.trim(),
+      revenueUsd: parseFloat(periodRevenueInput.value),
+      poolPercent: parseFloat(periodPoolPercentInput.value)
+    });
+
+    if (!res.ok) throw new Error(res.error || 'পিরিয়ড বন্ধ করা যায়নি');
+
+    showToast('পিরিয়ড সফলভাবে বন্ধ করা হয়েছে এবং পয়েন্ট কনভার্সন সম্পন্ন!', 'success');
+    periodCloseModal.classList.remove('open');
+    loadDashboard();
+  } catch (err) {
+    showToast(err.message, 'error');
+  } finally {
+    periodConfirmSubmitBtn.disabled = false;
+    periodConfirmSubmitBtn.textContent = '🔒 বন্ধ করুন ও পয়েন্ট বণ্টন করুন';
+  }
+});
+
+
+// ============================================================
+// SECTION 7: ANNOUNCEMENT
+// Action: 'announcement.get'
+// Expected JSON Response: { ok: true, announcement: { active, message } }
+// Action: 'announcement.set'
+// Expected JSON Response: { ok: true }
+// ============================================================
+const announcementActiveToggle = document.getElementById('announcementActiveToggle');
+const announcementTextInput = document.getElementById('announcementTextInput');
+const announcementCharCount = document.getElementById('announcementCharCount');
+const saveAnnouncementBtn = document.getElementById('saveAnnouncementBtn');
+const previewNotifText = document.getElementById('previewNotifText');
+
+function updateAnnouncementCharCount() {
+  const len = announcementTextInput.value.length;
+  announcementCharCount.textContent = `${toBnNum(len)} / ১৬০`;
+  previewNotifText.textContent = announcementTextInput.value.trim() || 'কোনো সক্রিয় ঘোষণা নেই';
+}
+
+announcementTextInput.addEventListener('input', updateAnnouncementCharCount);
+
+async function loadAnnouncement() {
+  try {
+    const res = await adminCall('announcement.get');
+    if (res.ok && res.announcement) {
+      announcementActiveToggle.checked = Boolean(res.announcement.active);
+      announcementTextInput.value = res.announcement.message || '';
+      updateAnnouncementCharCount();
+    }
+  } catch (err) {
+    console.error('Failed to load announcement:', err);
+  }
+}
+
+saveAnnouncementBtn.addEventListener('click', async () => {
+  saveAnnouncementBtn.disabled = true;
+  saveAnnouncementBtn.textContent = 'সংরক্ষণ হচ্ছে...';
+
+  try {
+    await adminCall('announcement.set', {
+      active: announcementActiveToggle.checked,
+      message: announcementTextInput.value.trim()
+    });
+    showToast('ঘোষণা সফলভাবে আপডেট হয়েছে', 'success');
+  } catch (err) {
+    showToast(err.message, 'error');
+  } finally {
+    saveAnnouncementBtn.disabled = false;
+    saveAnnouncementBtn.textContent = 'সংরক্ষণ করুন';
+  }
+});
+
+
+// ============================================================
+// SECTION 8: GAMES MANAGEMENT
+// Action: 'games.list'
+// Expected JSON Response: { ok: true, games: [ { id, title, category, active, order, url, thumb, playersToday } ] }
+// Action: 'games.save'
+// Expected JSON Response: { ok: true }
+// ============================================================
+let currentGamesList = [];
+
+async function loadGames() {
+  const container = document.getElementById('gamesCatalogContainer');
+  container.innerHTML = `<div class="skeleton skeleton-row"></div><div class="skeleton skeleton-row"></div>`;
+
+  try {
+    const res = await adminCall('games.list');
+    if (!res.ok) throw new Error(res.error || 'গেম তালিকা লোড ব্যর্থ');
+
+    currentGamesList = res.games || [];
+    renderGamesList();
+
+  } catch (err) {
+    container.innerHTML = `<div class="empty-state" style="color:var(--coral);"><p>${err.message}</p></div>`;
+  }
+}
+
+function renderGamesList() {
+  const container = document.getElementById('gamesCatalogContainer');
+  if (currentGamesList.length === 0) {
+    container.innerHTML = `<div class="empty-state"><p>কোনো গেম নেই।</p></div>`;
+    return;
+  }
+
+  let rows = '';
+  currentGamesList.sort((a,b) => (a.order || 0) - (b.order || 0)).forEach((g, idx) => {
+    rows += `
+      <div style="background:var(--surface); border:1px solid var(--line); border-radius:var(--radius-sm); padding:14px; margin-bottom:8px; display:flex; align-items:center; justify-content:space-between; gap:12px;">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <div style="font-size:24px; width:36px; text-align:center;">${g.thumb || '🎮'}</div>
+          <div>
+            <div style="font-weight:700; font-size:14px;">${g.title}</div>
+            <div style="font-size:11px; color:var(--muted);">${g.category} | আজ খেলোয়াড়: ${toBnNum(g.playersToday || 0)}</div>
+          </div>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:10px;">
+          <label class="switch" title="${g.active ? 'সক্রিয়' : 'নিষ্ক্রিয়'}">
+            <input type="checkbox" ${g.active ? 'checked' : ''} onchange="toggleGameActive('${g.id}', this.checked)">
+            <span class="slider"></span>
+          </label>
+
+          <button class="btn btn-secondary btn-sm" onclick="moveGameOrder(${idx}, -1)" ${idx === 0 ? 'disabled' : ''} title="উপরে নিন">▲</button>
+          <button class="btn btn-secondary btn-sm" onclick="moveGameOrder(${idx}, 1)" ${idx === currentGamesList.length - 1 ? 'disabled' : ''} title="নিচে নিন">▼</button>
+          <button class="btn btn-secondary btn-sm" onclick="editGame('${g.id}')">সম্পাদনা</button>
+        </div>
+      </div>
+    `;
+  });
+
+  container.innerHTML = rows;
+}
+
+window.toggleGameActive = async function(gameId, isActive) {
+  const g = currentGamesList.find(x => x.id === gameId);
+  if (g) {
+    g.active = isActive;
+    try {
+      await adminCall('games.save', { games: currentGamesList });
+      showToast(`${g.title} ${isActive ? 'সক্রিয়' : 'নিষ্ক্রিয়'} করা হয়েছে`, 'info');
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  }
+};
+
+window.moveGameOrder = async function(idx, direction) {
+  const targetIdx = idx + direction;
+  if (targetIdx < 0 || targetIdx >= currentGamesList.length) return;
+
+  const temp = currentGamesList[idx];
+  currentGamesList[idx] = currentGamesList[targetIdx];
+  currentGamesList[targetIdx] = temp;
+
+  currentGamesList.forEach((g, i) => { g.order = i + 1; });
+  renderGamesList();
+
+  try {
+    await adminCall('games.save', { games: currentGamesList });
+    showToast('গেমের ক্রম সাজানো হয়েছে', 'success');
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+};
+
+const gameEditModal = document.getElementById('gameEditModal');
+const gameEditForm = document.getElementById('gameEditForm');
+const addNewGameBtn = document.getElementById('addNewGameBtn');
+
+addNewGameBtn.addEventListener('click', () => {
+  document.getElementById('gameModalTitle').textContent = 'নতুন গেম যোগ করুন';
+  document.getElementById('gameIdInput').value = '';
+  document.getElementById('gameTitleInput').value = '';
+  document.getElementById('gameCategoryInput').value = 'আর্কেড';
+  document.getElementById('gameUrlInput').value = '/games/demo/index.html';
+  document.getElementById('gameThumbInput').value = '🎮';
+  gameEditModal.classList.add('open');
+});
+
+window.editGame = function(gameId) {
+  const g = currentGamesList.find(x => x.id === gameId);
+  if (!g) return;
+
+  document.getElementById('gameModalTitle').textContent = 'গেম সম্পাদনা';
+  document.getElementById('gameIdInput').value = g.id;
+  document.getElementById('gameTitleInput').value = g.title;
+  document.getElementById('gameCategoryInput').value = g.category;
+  document.getElementById('gameUrlInput').value = g.url;
+  document.getElementById('gameThumbInput').value = g.thumb || '🎮';
+  gameEditModal.classList.add('open');
+};
+
+gameEditForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const id = document.getElementById('gameIdInput').value.trim();
+  const title = document.getElementById('gameTitleInput').value.trim();
+  const category = document.getElementById('gameCategoryInput').value;
+  const url = document.getElementById('gameUrlInput').value.trim();
+  const thumb = document.getElementById('gameThumbInput').value.trim();
+
+  const gameData = { id: id || undefined, title, category, url, thumb, active: true };
+
+  const submitBtn = document.getElementById('saveGameSubmitBtn');
+  submitBtn.disabled = true;
+
+  try {
+    await adminCall('games.save', { game: gameData });
+    showToast('গেম তথ্য সংরক্ষিত হয়েছে', 'success');
+    gameEditModal.classList.remove('open');
+    loadGames();
+  } catch (err) {
+    showToast(err.message, 'error');
+  } finally {
+    submitBtn.disabled = false;
+  }
+});
+
+
+// ============================================================
+// SECTION 9: GLOBAL CONFIG
+// Action: 'config.get'
+// Expected JSON Response: { ok: true, config: { pointsPerSec, idleSec, usdToBdt, ... } }
+// Action: 'config.set'
+// Expected JSON Response: { ok: true }
+// ============================================================
+async function loadConfig() {
+  try {
+    const res = await adminCall('config.get');
+    if (!res.ok) throw new Error(res.error || 'সেটিংস লোড ব্যর্থ');
+    const c = res.config;
+
+    document.getElementById('cfg_pointsPerSec').value = c.pointsPerSec;
+    document.getElementById('cfg_idleSec').value = c.idleSec;
+    document.getElementById('cfg_challengeInterval').value = c.challengeIntervalMin;
+
+    document.getElementById('cfg_usdToBdt').value = c.usdToBdt;
+    document.getElementById('cfg_mobileRechargeMin').value = c.mobileRechargeMin;
+    document.getElementById('cfg_bankWalletMin').value = c.bankWalletMin;
+    document.getElementById('cfg_binanceMin').value = c.binanceMin;
+    document.getElementById('cfg_carryBelowUsd').value = c.carryBelowUsd;
+
+    document.getElementById('cfg_totalBonus').value = c.totalBonus;
+    document.getElementById('cfg_referrerPercent').value = c.referrerPercent;
+    document.getElementById('cfg_inviteePercent').value = c.inviteePercent;
+    document.getElementById('cfg_requiredHours').value = c.requiredHours;
+
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+document.getElementById('refreshConfigBtn').addEventListener('click', loadConfig);
+
+document.getElementById('globalConfigForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const reason = document.getElementById('configChangeReason').value.trim();
+  if (!reason) {
+    showToast('পরিবর্তনের কারণ উল্লেখ করা আবশ্যক', 'error');
+    return;
+  }
+
+  const updatedConfig = {
+    pointsPerSec: parseFloat(document.getElementById('cfg_pointsPerSec').value),
+    idleSec: parseInt(document.getElementById('cfg_idleSec').value),
+    challengeIntervalMin: parseInt(document.getElementById('cfg_challengeInterval').value),
+    usdToBdt: parseFloat(document.getElementById('cfg_usdToBdt').value),
+    mobileRechargeMin: parseFloat(document.getElementById('cfg_mobileRechargeMin').value),
+    bankWalletMin: parseFloat(document.getElementById('cfg_bankWalletMin').value),
+    binanceMin: parseFloat(document.getElementById('cfg_binanceMin').value),
+    carryBelowUsd: parseFloat(document.getElementById('cfg_carryBelowUsd').value),
+    totalBonus: parseInt(document.getElementById('cfg_totalBonus').value),
+    referrerPercent: parseInt(document.getElementById('cfg_referrerPercent').value),
+    inviteePercent: parseInt(document.getElementById('cfg_inviteePercent').value),
+    requiredHours: parseInt(document.getElementById('cfg_requiredHours').value)
+  };
+
+  openConfirmModal({
+    title: 'প্ল্যাটফর্ম সেটিংস সংরক্ষণ',
+    message: `আপনি কি নিশ্চিত যে নতুন নিয়ম ও মানসমূহ সংরক্ষণ করতে চান? (কারণ: ${reason})`,
+    onConfirm: async () => {
+      await adminCall('config.set', { config: updatedConfig, reason });
+      showToast('গ্লোবাল সেটিংস সংরক্ষিত হয়েছে', 'success');
+      document.getElementById('configChangeReason').value = '';
+    }
+  });
+});
+
+
+// ============================================================
+// SECTION 10: AUDIT LOG
+// Action: 'audit.list'
+// Expected JSON Response: { ok: true, audit: [ { id, timestamp, admin, action, target, details } ] }
+// ============================================================
+const auditFilterSelect = document.getElementById('auditFilterSelect');
+const refreshAuditBtn = document.getElementById('refreshAuditBtn');
+
+async function loadAudit(filter = 'all') {
+  const container = document.getElementById('auditLogContainer');
+  container.innerHTML = `<div class="skeleton skeleton-row"></div><div class="skeleton skeleton-row"></div>`;
+
+  try {
+    const res = await adminCall('audit.list', { filter });
+    if (!res.ok) throw new Error(res.error || 'অডিট লগ লোড ব্যর্থ');
+
+    if (!res.audit || res.audit.length === 0) {
+      container.innerHTML = `<div class="empty-state"><p>কোনো অডিট লগ পাওয়া যায়নি।</p></div>`;
+      return;
+    }
+
+    let rows = '';
+    res.audit.forEach(a => {
+      rows += `
+        <tr>
+          <td style="font-size:12px; white-space:nowrap; color:var(--muted);">${a.timestamp}</td>
+          <td style="font-weight:600; font-size:12px;">${a.admin}</td>
+          <td><span class="badge badge-muted">${a.action}</span></td>
+          <td style="font-weight:500;">${a.target}</td>
+          <td style="font-size:13px;">${a.details}</td>
+        </tr>
+      `;
+    });
+
+    container.innerHTML = `
+      <div class="data-table-container">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>সময়</th>
+              <th>প্রশাসক</th>
+              <th>অ্যাকশন</th>
+              <th>টার্গেট</th>
+              <th>বিস্তারিত বিবরণ</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    `;
+
+  } catch (err) {
+    container.innerHTML = `<div class="empty-state" style="color:var(--coral);"><p>${err.message}</p></div>`;
+  }
+}
+
+auditFilterSelect.addEventListener('change', (e) => loadAudit(e.target.value));
+refreshAuditBtn.addEventListener('click', () => loadAudit(auditFilterSelect.value));
+
+
+// Dispatcher for Section Data Loading
+function loadSectionData(sectionId) {
+  switch (sectionId) {
+    case 'dashboard': loadDashboard(); break;
+    case 'payouts': loadPayouts(currentPayoutStatus); break;
+    case 'referrals': loadReferrals(currentRefStatus); break;
+    case 'flags': loadFlags(); break;
+    case 'announcement': loadAnnouncement(); break;
+    case 'games': loadGames(); break;
+    case 'config': loadConfig(); break;
+    case 'audit': loadAudit(auditFilterSelect.value); break;
+  }
+}
+
+
+// Auth & Initialization
+const adminEmailDisplay = document.getElementById('adminEmailDisplay');
+const adminRoleDisplay = document.getElementById('adminRoleDisplay');
+const logoutBtn = document.getElementById('logoutBtn');
+
+logoutBtn.addEventListener('click', async () => {
+  openConfirmModal({
+    title: 'লগআউট',
+    message: 'আপনি কি নিশ্চিত যে অ্যাডমিন সেশন থেকে প্রস্থান করতে চান?',
+    onConfirm: async () => {
+      await signOut(auth);
+      window.location.reload();
+    }
+  });
+});
+
+// Admin Login Form Submit Handler
+const adminLoginForm = document.getElementById('adminLoginForm');
+if (adminLoginForm) {
+  adminLoginForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('adminEmailInput').value.trim();
+    const password = document.getElementById('adminPasswordInput').value;
+    const submitBtn = document.getElementById('adminLoginSubmitBtn');
+    const errorBox = document.getElementById('loginErrorMsg');
+
+    if (errorBox) {
+      errorBox.style.display = 'none';
+      errorBox.textContent = '';
+    }
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'লগইন হচ্ছে...';
+    }
+
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      // onAuthStateChanged will handle the token refresh & whoami verification
+    } catch (err) {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'লগইন করুন';
+      }
+      if (errorBox) {
+        const isBadCreds = err.code === 'auth/invalid-credential' || 
+                           err.code === 'auth/user-not-found' || 
+                           err.code === 'auth/wrong-password' ||
+                           (err.message && err.message.includes('invalid-credential'));
+        errorBox.textContent = isBadCreds ? 'ভুল ইমেইল বা পাসওয়ার্ড।' : 'লগইন ব্যর্থ হয়েছে: ' + err.message;
+        errorBox.style.display = 'block';
+      }
+    }
+  });
+}
+
+async function initAdminApp() {
+  startInactivityWatcher();
+
+  const appContainer = document.getElementById('appContainer');
+  const loginScreen = document.getElementById('adminLoginScreen');
+  const errorBox = document.getElementById('loginErrorMsg');
+  const submitBtn = document.getElementById('adminLoginSubmitBtn');
+
+  // (গ) ADMIN_PRODUCTION === false হলে বিদ্যমান ডেমো আচরণ বজায় থাকবে (এপিআই না পেলে বা ?demo=1 থাকলে ডেমো ডেটা দিয়ে পেজ চলবে)
+  if (!ADMIN_PRODUCTION && isDemoMode) {
+    if (loginScreen) loginScreen.style.display = 'none';
+    if (appContainer) appContainer.style.display = 'flex';
+    adminEmailDisplay.textContent = DEMO_STORE.admin.email;
+    adminRoleDisplay.textContent = DEMO_STORE.admin.role;
+    loadDashboard();
+    return;
+  }
+
+  // (খ) ADMIN_PRODUCTION === true হলে whoami সফল হওয়ার আগে DOM-এ কোনো সেকশন বা ডেমো ডেটা তৈরি/প্রদর্শন করবে না
+  if (appContainer) appContainer.style.display = 'none';
+
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+      if (appContainer) appContainer.style.display = 'none';
+      if (loginScreen) loginScreen.style.display = 'flex';
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'লগইন করুন';
+      }
+      return;
+    }
+
+    try {
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'অনুমতি যাচাই হচ্ছে...';
+      }
+
+      // (ক) লগইনের পর adminCall("whoami") সফল হলে তবেই পেজ লোড করো। এর ঠিক আগে একবার await auth.currentUser.getIdToken(true) চালিয়ে টোকেন ফ্রেশ করে নাও
+      await user.getIdToken(true);
+
+      const res = await adminCall('whoami');
+      if (!res || !res.ok) {
+        throw new Error('এই অ্যাকাউন্টের অনুমতি নেই');
+      }
+
+      // whoami সফল হয়েছে: এবার পেজ লোড করো
+      if (loginScreen) loginScreen.style.display = 'none';
+      if (appContainer) appContainer.style.display = 'flex';
+      adminEmailDisplay.textContent = user.email || res.admin?.email || 'প্রশাসক';
+      adminRoleDisplay.textContent = res.admin?.role || 'অ্যাডমিন';
+      loadDashboard();
+
+    } catch (err) {
+      // (ঘ) নন-অ্যাডমিন ইমেইল দিয়ে লগইন করলে দেখাবে "এই অ্যাকাউন্টের অনুমতি নেই" এবং সঙ্গে সঙ্গে signOut করে দেবে
+      try {
+        await signOut(auth);
+      } catch (_) {}
+
+      if (appContainer) appContainer.style.display = 'none';
+      if (loginScreen) loginScreen.style.display = 'flex';
+      if (errorBox) {
+        errorBox.textContent = 'এই অ্যাকাউন্টের অনুমতি নেই';
+        errorBox.style.display = 'block';
+      }
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'লগইন করুন';
+      }
+    }
+  });
+}
+
+initAdminApp();
+</script>
+</body>
+</html>

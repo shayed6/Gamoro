@@ -103,6 +103,7 @@ footer{margin:22px 15px 0;padding:15px 4px 3px;border-top:1px solid var(--line);
   <button class="nav-item" data-action="লিডারবোর্ড"><span class="nav-icon">🏆</span>লিডারবোর্ড</button>
   <button class="nav-item" data-action="উইথড্রয়াল"><span class="nav-icon">💸</span>উইথড্রয়াল</button>
   <button class="nav-item" data-action="রেফারেল"><span class="nav-icon">🎁</span>রেফারেল</button>
+  <a class="nav-item" id="menuAdmin" style="display:none;text-decoration:none;cursor:pointer;"><span class="nav-icon">⚙️</span>অ্যাডমিন প্যানেল</a>
   <button class="nav-item" data-action="সাধারণ জিজ্ঞাসা"><span class="nav-icon">❔</span>FAQ / সাধারণ জিজ্ঞাসা</button>
   <button class="nav-item" data-action="প্রাইভেসি পলিসি"><span class="nav-icon">🔒</span>প্রাইভেসি পলিসি</button>
  </nav>
@@ -112,6 +113,7 @@ footer{margin:22px 15px 0;padding:15px 4px 3px;border-top:1px solid var(--line);
 
 <script type="module">
 import { auth, db } from "./firebase-config.js";
+import { GAMES } from "./games.js";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 
@@ -167,7 +169,13 @@ import { doc, getDoc } from "firebase/firestore";
    if(drawer.classList.contains('open'))closeDrawer();
  }));
 
- document.querySelectorAll('[data-game]').forEach(b=>b.addEventListener('click',()=>showToast(b.dataset.game+' — ডেমো গেম, এখনো চালু নয়')));
+ document.querySelectorAll('[data-game]').forEach(b => {
+   b.addEventListener('click', () => {
+     const match = GAMES.find(g => g.name === b.dataset.game);
+     const gid = match ? match.id : 'color-match';
+     window.location.href = `play.html?game=${gid}`;
+   });
+ });
  const search=document.getElementById('gameSearch'), cards=[...document.querySelectorAll('.game-card')], empty=document.getElementById('emptyState');
  function filterGames(){const q=search.value.trim().toLocaleLowerCase('bn');let shown=0;cards.forEach(card=>{const matchName=card.dataset.game.toLocaleLowerCase('bn').includes(q);const matchCategory=activeCategory==='সব'||card.dataset.category===activeCategory;const visible=matchName&&matchCategory;card.hidden=!visible;if(visible)shown++});empty.classList.toggle('show',shown===0)}
  search.addEventListener('input',filterGames);
@@ -202,6 +210,7 @@ import { doc, getDoc } from "firebase/firestore";
  const menuSignup = document.getElementById('menuSignup');
  const menuForgot = document.getElementById('menuForgot');
  const menuLogout = document.getElementById('menuLogout');
+ const menuAdmin = document.getElementById('menuAdmin');
  const accountLabel = document.getElementById('accountLabel');
  const pointsElem = document.getElementById('points');
 
@@ -211,6 +220,20 @@ import { doc, getDoc } from "firebase/firestore";
      menuSignup.style.display = 'none';
      menuForgot.style.display = 'none';
      menuLogout.style.display = 'block';
+
+     try {
+       const tokenResult = await user.getIdTokenResult();
+       if (tokenResult?.claims?.admin === true) {
+         menuAdmin.href = 'admin.html';
+         menuAdmin.style.display = 'flex';
+       } else {
+         menuAdmin.style.display = 'none';
+         menuAdmin.removeAttribute('href');
+       }
+     } catch (e) {
+       menuAdmin.style.display = 'none';
+       menuAdmin.removeAttribute('href');
+     }
      let pinSet = false;
      try {
        const userDocRef = doc(db, 'users', user.uid);
@@ -251,6 +274,10 @@ import { doc, getDoc } from "firebase/firestore";
      menuSignup.style.display = 'block';
      menuForgot.style.display = 'block';
      menuLogout.style.display = 'none';
+     if (menuAdmin) {
+       menuAdmin.style.display = 'none';
+       menuAdmin.removeAttribute('href');
+     }
      if (emailNotice) emailNotice.style.display = 'none';
      if (pinNotice) pinNotice.style.display = 'none';
    }

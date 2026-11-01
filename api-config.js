@@ -10,5 +10,11 @@ export const SEND_OTP_URL = "";
 export const VERIFY_OTP_URL = "";
 export const TELEGRAM_CODE_URL = "";
 export const TELEGRAM_BOT_LINK = "";
-export const WITHDRAW_URL = "";
-export const SET_PIN_URL = "";
+export const WITHDRAW_URL = "/.netlify/functions/withdraw";
+export const SET_PIN_URL = "/.netlify/functions/set-pin";
+export const SESSION_URL = "/.netlify/functions/session";
+export const ADMIN_API_URL = "/.netlify/functions/admin";
+
+// লাইভ করার আগে অবশ্যই true করতে হবে
+export const ADMIN_PRODUCTION = false;
+
