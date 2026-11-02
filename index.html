@@ -98,6 +98,7 @@ footer{margin:22px 15px 0;padding:15px 4px 3px;border-top:1px solid var(--line);
     <button data-action="লগইন" id="menuLogin">লগইন</button>
     <button data-action="সাইন আপ" id="menuSignup">সাইন আপ</button>
     <button data-action="পাসওয়ার্ড ভুলে গেছেন" id="menuForgot">পাসওয়ার্ড ভুলে গেছেন</button>
+    <button data-action="অ্যাকাউন্ট মুছুন" id="menuDeleteAccount" style="color:var(--coral)">অ্যাকাউন্ট মুছুন</button>
     <button data-action="লগআউট" id="menuLogout" style="display:none;color:var(--coral)">লগআউট</button>
   </div>
   <button class="nav-item" data-action="লিডারবোর্ড"><span class="nav-icon">🏆</span>লিডারবোর্ড</button>
@@ -142,6 +143,10 @@ import { doc, getDoc } from "firebase/firestore";
    }
    if(act === 'পাসওয়ার্ড ভুলে গেছেন'){
      window.location.href = 'auth.html#forgot';
+     return;
+   }
+   if(act === 'অ্যাকাউন্ট মুছুন'){
+     window.location.href = 'delete-account.html';
      return;
    }
    if(act === 'লিডারবোর্ড'){

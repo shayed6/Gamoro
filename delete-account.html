@@ -1,0 +1,1242 @@
+<!-- সার্ভার ফাংশন (Netlify): টোকেন যাচাই, পিন যাচাই (সেট থাকলে), অপেক্ষমাণ payoutRequests থাকলে মুছতে না দেওয়া, তারপর users/{uid} ও সাবকালেকশন, pins/{uid}, activeSessions/{uid} মুছে Firebase Auth ইউজার মুছে ফেলা। payoutRequests রেখে uid বদলে অজ্ঞাত করা, payoutAccounts-এ শুধু হ্যাশ রাখা। -->
+<!DOCTYPE html>
+<html lang="bn" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0C4A34">
+<meta name="description" content="Gamoro – অ্যাকাউন্ট মুছে ফেলার অনুরোধ">
+<title>Gamoro – অ্যাকাউন্ট মুছুন</title>
+<link rel="icon" type="image/png" href="logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script type="importmap">
+{
+  "imports": {
+    "firebase/app": "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js",
+    "firebase/auth": "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js",
+    "firebase/firestore": "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"
+  }
+}
+</script>
+<script>
+  try {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme) {
+      document.documentElement.setAttribute('data-theme', savedTheme);
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    }
+  } catch(e){}
+</script>
+<style>
+:root{
+  color-scheme:light;
+  --green:#0C4A34;
+  --green-2:#176746;
+  --gold:#E9A820;
+  --coral:#D6403B;
+  --coral-soft:#FDE8E8;
+  --coral-line:#F8B4B4;
+  --bg:#F0F8F2;
+  --surface:#ffffff;
+  --surface2:#E4F1E8;
+  --text:#17372B;
+  --muted:#63796D;
+  --line:#D5E5D9;
+  --shadow:0 8px 25px rgba(12,74,52,.08);
+  --focus:#D6403B;
+}
+:root[data-theme=dark]{
+  color-scheme:dark;
+  --bg:#101B17;
+  --surface:#182720;
+  --surface2:#25382E;
+  --text:#F1F7F3;
+  --muted:#B3C5B9;
+  --line:#354B3E;
+  --shadow:0 8px 25px rgba(0,0,0,.28);
+  --focus:#FFD16B;
+  --green-2:#9BD6B5;
+  --coral:#FF7A74;
+  --coral-soft:#2E1717;
+  --coral-line:#642828;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:"Hind Siliguri",system-ui,sans-serif;
+  min-height:100vh;
+}
+button,input,a{font:inherit}
+button{cursor:pointer}
+button:focus-visible,a:focus-visible,input:focus-visible{
+  outline:3px solid var(--focus);
+  outline-offset:2px;
+}
+.app{
+  max-width:480px;
+  margin:auto;
+  min-height:100vh;
+  padding-bottom:calc(36px + env(safe-area-inset-bottom));
+  display:flex;
+  flex-direction:column;
+}
+
+/* Header */
+.top{
+  background:var(--green);
+  color:#fff;
+  padding:calc(12px + env(safe-area-inset-top)) 16px 14px;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  position:sticky;
+  top:0;
+  z-index:30;
+  box-shadow:0 4px 15px rgba(6,43,29,.25);
+}
+.back{
+  width:40px;
+  height:40px;
+  border:0;
+  border-radius:12px;
+  background:#ffffff1c;
+  color:#fff;
+  font-size:20px;
+  display:grid;
+  place-items:center;
+  text-decoration:none;
+  flex:none;
+  transition:background .15s;
+}
+.back:hover{background:#ffffff2d}
+.title{
+  margin:0;
+  font-size:20px;
+  font-weight:700;
+  letter-spacing:-.3px;
+}
+
+/* Main Content */
+main{
+  padding:16px 14px;
+  display:flex;
+  flex-direction:column;
+  gap:16px;
+}
+
+/* Cards & Sections */
+.card{
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:18px;
+  padding:18px 16px;
+  box-shadow:var(--shadow);
+}
+.card-title{
+  margin:0 0 12px;
+  font-size:18px;
+  font-weight:700;
+  color:var(--text);
+}
+.divider{
+  height:1px;
+  background:var(--line);
+  margin:14px 0;
+}
+
+/* Info Lists */
+.info-block{
+  margin-bottom:12px;
+}
+.info-heading{
+  font-size:14px;
+  font-weight:700;
+  margin-bottom:6px;
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+.info-heading.danger{
+  color:var(--coral);
+}
+.info-heading.safe{
+  color:var(--green-2);
+}
+.info-text{
+  margin:0;
+  font-size:13.5px;
+  line-height:1.55;
+  color:var(--text);
+}
+.info-badge{
+  display:inline-grid;
+  place-items:center;
+  width:20px;
+  height:20px;
+  border-radius:50%;
+  font-size:11px;
+  font-weight:700;
+  flex:none;
+}
+.info-badge.red{
+  background:var(--coral-soft);
+  color:var(--coral);
+  border:1px solid var(--coral-line);
+}
+.info-badge.green{
+  background:var(--surface2);
+  color:var(--green-2);
+  border:1px solid var(--line);
+}
+
+/* Warning Banner */
+.warning-banner{
+  background:var(--coral-soft);
+  border:1px solid var(--coral-line);
+  border-radius:14px;
+  padding:12px 14px;
+  color:var(--coral);
+  font-size:13px;
+  line-height:1.55;
+  font-weight:500;
+  margin-top:10px;
+}
+
+/* Stepper Container */
+.stepper-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:14px;
+}
+.user-badge{
+  font-size:12px;
+  background:var(--surface2);
+  color:var(--text);
+  padding:4px 10px;
+  border-radius:99px;
+  border:1px solid var(--line);
+  max-width:210px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.step-card{
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:14px;
+  background:var(--bg);
+  margin-bottom:12px;
+  transition:border-color .15s, opacity .15s;
+}
+.step-card:last-child{
+  margin-bottom:0;
+}
+.step-card.locked{
+  opacity:0.6;
+  pointer-events:none;
+}
+.step-card.active{
+  border-color:var(--green-2);
+  background:var(--surface);
+}
+.step-card.completed{
+  border-color:var(--green-2);
+  background:var(--surface);
+}
+.step-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:10px;
+}
+.step-number{
+  font-weight:700;
+  font-size:14.5px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.step-icon{
+  display:inline-grid;
+  place-items:center;
+  width:24px;
+  height:24px;
+  border-radius:50%;
+  font-size:12px;
+  font-weight:700;
+  background:var(--surface2);
+  color:var(--text);
+}
+.step-card.active .step-icon{
+  background:var(--green);
+  color:#fff;
+}
+.step-card.completed .step-icon{
+  background:var(--green-2);
+  color:#fff;
+}
+.step-status{
+  font-size:12px;
+  font-weight:600;
+  color:var(--green-2);
+}
+
+/* Inputs & Form Elements */
+.field{
+  margin-top:8px;
+  margin-bottom:10px;
+}
+.label{
+  display:block;
+  font-size:13px;
+  font-weight:600;
+  margin-bottom:5px;
+  color:var(--text);
+}
+.inp-wrap{
+  display:flex;
+  align-items:center;
+  border:1.5px solid var(--line);
+  border-radius:12px;
+  background:var(--surface);
+  padding:0 12px;
+  transition:border-color .15s;
+}
+.inp-wrap:focus-within{
+  border-color:var(--green-2);
+}
+.inp-wrap.bad{
+  border-color:var(--coral);
+}
+.inp-wrap input{
+  flex:1;
+  min-width:0;
+  border:0;
+  outline:0;
+  background:transparent;
+  color:var(--text);
+  padding:11px 0;
+  font-size:14.5px;
+}
+.inp-msg{
+  font-size:12px;
+  margin-top:4px;
+  min-height:16px;
+}
+.inp-msg.err{
+  color:var(--coral);
+}
+.inp-msg.suc{
+  color:var(--green-2);
+}
+
+/* Buttons */
+.btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  width:100%;
+  padding:11px 14px;
+  border:0;
+  border-radius:12px;
+  font-size:14px;
+  font-weight:600;
+  text-decoration:none;
+  transition:background .15s, opacity .15s, transform .1s;
+}
+.btn:active{
+  transform:scale(0.99);
+}
+.btn:disabled{
+  opacity:0.45;
+  cursor:not-allowed;
+  pointer-events:none;
+}
+.btn-primary{
+  background:var(--green);
+  color:#fff;
+}
+.btn-primary:hover{
+  background:var(--green-2);
+}
+.btn-secondary{
+  background:var(--surface2);
+  color:var(--text);
+  border:1px solid var(--line);
+}
+.btn-secondary:hover{
+  background:var(--line);
+}
+.btn-danger{
+  background:var(--coral);
+  color:#fff;
+}
+.btn-danger:hover{
+  background:var(--focus);
+}
+.btn-google{
+  background:var(--surface);
+  color:var(--text);
+  border:1.5px solid var(--line);
+}
+.btn-google:hover{
+  background:var(--surface2);
+}
+
+/* Fallback Card */
+.fallback-card{
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:18px;
+  padding:18px 16px;
+  box-shadow:var(--shadow);
+}
+.fallback-title{
+  margin:0 0 8px;
+  font-size:16px;
+  font-weight:700;
+}
+.fallback-text{
+  font-size:13.5px;
+  line-height:1.55;
+  color:var(--muted);
+  margin:0 0 14px;
+}
+.fallback-actions{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+}
+@media(max-width:360px){
+  .fallback-actions{grid-template-columns:1fr}
+}
+
+/* Success Card */
+.success-card{
+  display:none;
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:18px;
+  padding:32px 18px;
+  text-align:center;
+  box-shadow:var(--shadow);
+}
+.success-icon{
+  width:60px;
+  height:60px;
+  border-radius:50%;
+  background:var(--coral-soft);
+  color:var(--coral);
+  display:grid;
+  place-items:center;
+  font-size:26px;
+  font-weight:700;
+  margin:0 auto 16px;
+  border:2px solid var(--coral-line);
+}
+.success-title{
+  margin:0 0 8px;
+  font-size:21px;
+  font-weight:700;
+}
+.success-sub{
+  font-size:14px;
+  color:var(--muted);
+  margin:0 0 24px;
+  line-height:1.5;
+}
+
+/* Confirmation Modal */
+.modal-overlay{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.5);
+  backdrop-filter:blur(3px);
+  z-index:100;
+  display:none;
+  place-items:center;
+  padding:16px;
+}
+.modal-overlay.open{
+  display:grid;
+}
+.modal-box{
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:18px;
+  max-width:380px;
+  width:100%;
+  padding:20px;
+  box-shadow:0 12px 36px rgba(0,0,0,0.3);
+  text-align:center;
+}
+.modal-title{
+  margin:0 0 8px;
+  font-size:18px;
+  font-weight:700;
+  color:var(--coral);
+}
+.modal-desc{
+  margin:0 0 20px;
+  font-size:13.5px;
+  color:var(--muted);
+  line-height:1.5;
+}
+.modal-actions{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+}
+
+/* Toast */
+.toast{
+  position:fixed;
+  z-index:120;
+  left:50%;
+  bottom:calc(20px + env(safe-area-inset-bottom));
+  transform:translate(-50%,20px);
+  opacity:0;
+  pointer-events:none;
+  background:var(--green);
+  color:#fff;
+  padding:10px 16px;
+  border-radius:12px;
+  font-size:13.5px;
+  box-shadow:0 6px 20px rgba(0,0,0,0.25);
+  transition:transform .2s ease, opacity .2s ease;
+  max-width:calc(100vw - 32px);
+  text-align:center;
+}
+.toast.show{
+  opacity:1;
+  transform:translate(-50%,0);
+}
+
+/* Demo Toolbar */
+.demo-bar{
+  margin-top:12px;
+  padding:12px;
+  background:var(--surface2);
+  border:1px dashed var(--line);
+  border-radius:14px;
+}
+.demo-bar-title{
+  font-size:11.5px;
+  font-weight:700;
+  color:var(--muted);
+  margin-bottom:8px;
+  text-transform:uppercase;
+  letter-spacing:.5px;
+}
+.demo-btn-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:6px;
+}
+.demo-btn{
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:8px;
+  padding:7px 6px;
+  font-size:11.5px;
+  font-weight:600;
+  color:var(--text);
+  text-align:center;
+  transition:background .15s;
+}
+.demo-btn:hover{
+  background:var(--bg);
+}
+
+/* Loading state */
+.auth-loading{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:24px;
+  color:var(--muted);
+  font-size:14px;
+  gap:10px;
+}
+.spinner{
+  width:18px;
+  height:18px;
+  border:2.5px solid var(--line);
+  border-top-color:var(--green);
+  border-radius:50%;
+  animation:spin 0.8s linear infinite;
+}
+@keyframes spin{
+  to{transform:rotate(360deg)}
+}
+
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{
+    transition:none!important;
+    animation:none!important;
+  }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- (ক) ব্যাক বাটন ও শিরোনাম "অ্যাকাউন্ট মুছুন" -->
+  <header class="top">
+    <a href="index.html" class="back" aria-label="হোমে ফিরে যান">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M19 12H5M12 19l-7-7 7-7"/>
+      </svg>
+    </a>
+    <h1 class="title">অ্যাকাউন্ট মুছুন</h1>
+  </header>
+
+  <main>
+    <!-- (খ) সবার জন্য দৃশ্যমান: "মুছলে কী হবে" -->
+    <section class="card" aria-labelledby="headingWhatHappens">
+      <h2 class="card-title" id="headingWhatHappens">মুছলে কী হবে</h2>
+      
+      <div class="info-block">
+        <div class="info-heading danger">
+          <span class="info-badge red" aria-hidden="true">✗</span>
+          <span>মুছে যাবে</span>
+        </div>
+        <p class="info-text">আপনার প্রোফাইল, পয়েন্ট, ব্যালেন্স, রেফারেল সংযোগ, টাকা তোলার পিন ও লগইন অ্যাকাউন্ট।</p>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="info-block">
+        <div class="info-heading safe">
+          <span class="info-badge green" aria-hidden="true">✓</span>
+          <span>থাকবে</span>
+        </div>
+        <p class="info-text">আইনি ও হিসাবের প্রয়োজনে পেআউটের লেনদেন-রেকর্ড (আপনার নাম ছাড়া) এবং জালিয়াতি ঠেকাতে পেমেন্ট নম্বরের হ্যাশ।</p>
+      </div>
+
+      <div class="warning-banner" role="alert">
+        মোছা অ্যাকাউন্ট ফেরানো যায় না। অব্যবহৃত ব্যালেন্স ও পয়েন্ট বাতিল হবে। অপেক্ষমাণ টাকা তোলার আবেদন থাকলে সেটি শেষ হওয়ার পর মুছতে পারবেন।
+      </div>
+    </section>
+
+    <!-- লোডিং স্টেট -->
+    <div id="authLoading" class="auth-loading">
+      <div class="spinner" aria-hidden="true"></div>
+      <span>যাচাই করা হচ্ছে...</span>
+    </div>
+
+    <!-- (গ) লগইন করা ব্যবহারকারীর জন্য: "মুছে ফেলার ধাপ" -->
+    <section class="card" id="stepperSection" style="display:none;" aria-labelledby="headingSteps">
+      <div class="stepper-header">
+        <h2 class="card-title" id="headingSteps" style="margin-bottom:0">মুছে ফেলার ধাপ</h2>
+        <span class="user-badge" id="userEmailBadge">ব্যবহারকারী</span>
+      </div>
+
+      <!-- ধাপ ১ (পরিচয় নিশ্চিতকরণ) -->
+      <div class="step-card active" id="step1Card">
+        <div class="step-head">
+          <span class="step-number">
+            <span class="step-icon" id="step1Icon">১</span>
+            <span>ধাপ ১: পরিচয় নিশ্চিতকরণ</span>
+          </span>
+          <span class="step-status" id="step1Status"></span>
+        </div>
+
+        <div id="step1Body">
+          <!-- Google ব্যবহারকারীর জন্য -->
+          <div id="googleAuthWrap" style="display:none;">
+            <p class="info-text" style="margin-bottom:10px;">নিরাপত্তার খাতিরে আপনার Google অ্যাকাউন্ট দিয়ে পুনরায় নিশ্চিত করুন:</p>
+            <button class="btn btn-google" id="btnGoogleReauth">
+              <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
+              <span>Google দিয়ে নিশ্চিত করুন</span>
+            </button>
+          </div>
+
+          <!-- পাসওয়ার্ড ব্যবহারকারীর জন্য -->
+          <div id="passwordAuthWrap" style="display:none;">
+            <div class="field">
+              <label class="label" for="reauthPassword">আপনার পাসওয়ার্ড দিন</label>
+              <div class="inp-wrap" id="reauthPasswordWrap">
+                <input type="password" id="reauthPassword" placeholder="লগইন পাসওয়ার্ড লিখুন" autocomplete="current-password">
+              </div>
+              <div class="inp-msg err" id="reauthPasswordErr"></div>
+            </div>
+            <button class="btn btn-primary" id="btnPasswordReauth">নিশ্চিত করুন</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ধাপ ২ (টাকা তোলার পিন) -->
+      <div class="step-card locked" id="step2Card">
+        <div class="step-head">
+          <span class="step-number">
+            <span class="step-icon" id="step2Icon">২</span>
+            <span>ধাপ ২: টাকা তোলার পিন</span>
+          </span>
+          <span class="step-status" id="step2Status"></span>
+        </div>
+
+        <div id="step2Body">
+          <div id="pinInputWrap">
+            <div class="field">
+              <label class="label" for="userPinInput">৬ সংখ্যার টাকা তোলার পিন দিন</label>
+              <div class="inp-wrap" id="userPinWrap">
+                <input type="password" id="userPinInput" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" placeholder="৬ সংখ্যার পিন">
+              </div>
+              <div class="inp-msg err" id="userPinErr"></div>
+            </div>
+            <button class="btn btn-secondary" id="btnConfirmPin">পিন নিশ্চিত করুন</button>
+          </div>
+          <div id="pinNotRequiredWrap" style="display:none;" class="info-text">
+            <span>টাকা তোলার পিন সেট করা নেই — এই ধাপ প্রযোজ্য নয় ✓</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ধাপ ৩ (চূড়ান্ত নিশ্চিতকরণ) -->
+      <div class="step-card locked" id="step3Card">
+        <div class="step-head">
+          <span class="step-number">
+            <span class="step-icon" id="step3Icon">৩</span>
+            <span>ধাপ ৩: নিশ্চিতকরণ</span>
+          </span>
+          <span class="step-status" id="step3Status"></span>
+        </div>
+
+        <div id="step3Body">
+          <div class="field">
+            <label class="label" for="confirmTextInput">নিশ্চিত করতে <strong>মুছে ফেলুন</strong> লিখুন</label>
+            <div class="inp-wrap" id="confirmTextWrap">
+              <input type="text" id="confirmTextInput" placeholder="মুছে ফেলুন" autocomplete="off" spellcheck="false">
+            </div>
+            <div class="inp-msg" id="confirmTextMsg"></div>
+          </div>
+          <button class="btn btn-danger" id="btnDeleteAccount" disabled>আমার অ্যাকাউন্ট চিরতরে মুছুন</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- (d) লগইন ছাড়া / ম্যানুয়াল যোগাযোগ ("লগইন ছাড়া মুছতে চান?") -->
+    <section class="fallback-card" id="fallbackSection" aria-labelledby="headingFallback">
+      <h2 class="fallback-title" id="headingFallback">লগইন ছাড়া মুছতে চান?</h2>
+      <p class="fallback-text">
+        আপনার নিবন্ধিত ইমেইল ঠিকানা থেকে <strong id="supportEmailDisplay" style="color:var(--text)">support@gamoro.club</strong>-এ 'অ্যাকাউন্ট মুছুন' লিখে ইমেইল করুন। যাচাইয়ের পর আমরা অ্যাকাউন্ট ও সংশ্লিষ্ট তথ্য মুছে দেব।
+      </p>
+      <div class="fallback-actions">
+        <a class="btn btn-secondary" id="btnEmailSupport" href="mailto:support@gamoro.club?subject=%E0%A6%85%E0%A7%8D%E0%A6%AF%E0%A6%BE%E0%A6%95%E0%A6%BE%E0%A6%89%E0%A6%A8%E0%A7%8D%E0%A6%9F%20%E0%A6%AE%E0%A7%81%E0%A6%9B%E0%A7%81%E0%A6%A8">
+          ✉️ ইমেইল পাঠান
+        </a>
+        <a class="btn btn-primary" id="btnLoginDirect" href="auth.html#login">
+          লগইন করুন
+        </a>
+      </div>
+    </section>
+
+    <!-- সফলভাবে মোছার স্ক্রিন -->
+    <section class="success-card" id="successCard" aria-live="polite">
+      <div class="success-icon" aria-hidden="true">✓</div>
+      <h2 class="success-title">আপনার অ্যাকাউন্ট মুছে ফেলা হয়েছে</h2>
+      <p class="success-sub">Gamoro ব্যবহার করার জন্য ধন্যবাদ। আপনার সমস্ত ব্যক্তিগত তথ্য সফলভাবে মুছে ফেলা হয়েছে।</p>
+      <a href="index.html" class="btn btn-primary" style="display:inline-flex;width:auto;min-width:160px;margin:auto;">হোমে যান</a>
+    </section>
+
+    <!-- TEMP: প্রোডাকশনের আগে মুছতে হবে -->
+    <aside class="demo-bar" aria-label="ডেমো কন্ট্রোল">
+      <div class="demo-bar-title">ডেমো প্রিভিউ কন্ট্রোল (টেস্ট)</div>
+      <div class="demo-btn-grid">
+        <button class="demo-btn" id="demoGoogleUser">ডেমো: Google ব্যবহারকারী</button>
+        <button class="demo-btn" id="demoPasswordUser">ডেমো: পাসওয়ার্ড ব্যবহারকারী</button>
+        <button class="demo-btn" id="demoLoggedOut">ডেমো: লগইন নেই</button>
+        <button class="demo-btn" id="demoSuccessState">ডেমো: সফল</button>
+      </div>
+    </aside>
+  </main>
+</div>
+
+<!-- নিশ্চিতকরণ মডাল -->
+<div class="modal-overlay" id="confirmModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle" aria-describedby="modalDesc">
+  <div class="modal-box">
+    <h3 class="modal-title" id="modalTitle">আপনি কি নিশ্চিত? এটি ফেরানো যাবে না।</h3>
+    <p class="modal-desc" id="modalDesc">একবার মুছে ফেললে আপনার সমস্ত পয়েন্ট, ব্যালেন্স ও রেকর্ড চিরতরে হারিয়ে যাবে।</p>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="btnCancelModal">না, ফিরুন</button>
+      <button class="btn btn-danger" id="btnConfirmModalDelete">হ্যাঁ, মুছুন</button>
+    </div>
+  </div>
+</div>
+
+<!-- টোস্ট বার্তা -->
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script type="module">
+import { auth, db } from "./firebase-config.js";
+import { DELETE_ACCOUNT_URL, SUPPORT_EMAIL } from "./api-config.js";
+import {
+  onAuthStateChanged,
+  signOut,
+  GoogleAuthProvider,
+  EmailAuthProvider,
+  reauthenticateWithPopup,
+  reauthenticateWithCredential
+} from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
+
+(() => {
+  // Elements
+  const authLoading = document.getElementById('authLoading');
+  const stepperSection = document.getElementById('stepperSection');
+  const fallbackSection = document.getElementById('fallbackSection');
+  const successCard = document.getElementById('successCard');
+  const userEmailBadge = document.getElementById('userEmailBadge');
+  const supportEmailDisplay = document.getElementById('supportEmailDisplay');
+  const btnEmailSupport = document.getElementById('btnEmailSupport');
+  const btnLoginDirect = document.getElementById('btnLoginDirect');
+
+  // Step 1
+  const step1Card = document.getElementById('step1Card');
+  const step1Icon = document.getElementById('step1Icon');
+  const step1Status = document.getElementById('step1Status');
+  const step1Body = document.getElementById('step1Body');
+  const googleAuthWrap = document.getElementById('googleAuthWrap');
+  const passwordAuthWrap = document.getElementById('passwordAuthWrap');
+  const btnGoogleReauth = document.getElementById('btnGoogleReauth');
+  const btnPasswordReauth = document.getElementById('btnPasswordReauth');
+  const reauthPassword = document.getElementById('reauthPassword');
+  const reauthPasswordWrap = document.getElementById('reauthPasswordWrap');
+  const reauthPasswordErr = document.getElementById('reauthPasswordErr');
+
+  // Step 2
+  const step2Card = document.getElementById('step2Card');
+  const step2Icon = document.getElementById('step2Icon');
+  const step2Status = document.getElementById('step2Status');
+  const userPinInput = document.getElementById('userPinInput');
+  const userPinWrap = document.getElementById('userPinWrap');
+  const userPinErr = document.getElementById('userPinErr');
+  const btnConfirmPin = document.getElementById('btnConfirmPin');
+  const pinInputWrap = document.getElementById('pinInputWrap');
+  const pinNotRequiredWrap = document.getElementById('pinNotRequiredWrap');
+
+  // Step 3
+  const step3Card = document.getElementById('step3Card');
+  const step3Icon = document.getElementById('step3Icon');
+  const step3Status = document.getElementById('step3Status');
+  const confirmTextInput = document.getElementById('confirmTextInput');
+  const confirmTextWrap = document.getElementById('confirmTextWrap');
+  const btnDeleteAccount = document.getElementById('btnDeleteAccount');
+
+  // Modal
+  const confirmModal = document.getElementById('confirmModal');
+  const btnCancelModal = document.getElementById('btnCancelModal');
+  const btnConfirmModalDelete = document.getElementById('btnConfirmModalDelete');
+
+  // Toast
+  const toast = document.getElementById('toast');
+  let toastTimer = null;
+
+  function showToast(msg) {
+    if (!toast) return;
+    toast.textContent = msg;
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('show'), 3500);
+  }
+
+  // Update support email display
+  const effectiveEmail = SUPPORT_EMAIL || 'support@gamoro.club';
+  if (supportEmailDisplay) supportEmailDisplay.textContent = effectiveEmail;
+  if (btnEmailSupport) {
+    btnEmailSupport.href = `mailto:${effectiveEmail}?subject=${encodeURIComponent('অ্যাকাউন্ট মুছুন')}&body=${encodeURIComponent('Gamoro অ্যাকাউন্ট মুছে ফেলার অনুরোধ।\nনিবন্ধিত ইমেইল: ')}`;
+  }
+
+  // State
+  let currentUser = null;
+  let isGoogleUser = false;
+  let hasPinSet = false;
+  let step1Done = false;
+  let step2Done = false;
+  let enteredPin = '';
+  let isDemoMode = false;
+
+  function resetSteps() {
+    step1Done = false;
+    step2Done = false;
+    enteredPin = '';
+
+    // Step 1 reset
+    step1Card.className = 'step-card active';
+    step1Icon.textContent = '১';
+    step1Status.textContent = '';
+    step1Body.style.display = 'block';
+    reauthPassword.value = '';
+    reauthPasswordWrap.classList.remove('bad');
+    reauthPasswordErr.textContent = '';
+
+    // Step 2 reset
+    step2Card.className = 'step-card locked';
+    step2Icon.textContent = '২';
+    step2Status.textContent = '';
+    userPinInput.value = '';
+    userPinWrap.classList.remove('bad');
+    userPinErr.textContent = '';
+
+    // Step 3 reset
+    step3Card.className = 'step-card locked';
+    step3Icon.textContent = '৩';
+    step3Status.textContent = '';
+    confirmTextInput.value = '';
+    confirmTextWrap.classList.remove('bad');
+    btnDeleteAccount.disabled = true;
+    btnDeleteAccount.textContent = 'আমার অ্যাকাউন্ট চিরতরে মুছুন';
+  }
+
+  // Step 1 Success
+  function markStep1Complete() {
+    step1Done = true;
+    step1Card.className = 'step-card completed';
+    step1Icon.textContent = '✓';
+    step1Status.textContent = 'যাচাই সম্পন্ন ✓';
+    step1Body.style.display = 'none';
+
+    // Proceed to Step 2
+    step2Card.classList.remove('locked');
+    step2Card.classList.add('active');
+
+    if (!hasPinSet) {
+      // Pin not required, auto complete Step 2
+      markStep2Complete(true);
+    }
+  }
+
+  // Step 2 Success
+  function markStep2Complete(skipped = false) {
+    step2Done = true;
+    step2Card.className = 'step-card completed';
+    step2Icon.textContent = '✓';
+    if (skipped) {
+      step2Status.textContent = 'প্রযোজ্য নয় ✓';
+      pinInputWrap.style.display = 'none';
+      pinNotRequiredWrap.style.display = 'block';
+    } else {
+      step2Status.textContent = 'পিন গৃহীত ✓';
+      pinInputWrap.style.display = 'none';
+    }
+
+    // Unlock Step 3
+    step3Card.classList.remove('locked');
+    step3Card.classList.add('active');
+    confirmTextInput.focus();
+  }
+
+  // Set up view for authenticated user
+  async function setupUserView(user) {
+    currentUser = user;
+    authLoading.style.display = 'none';
+    successCard.style.display = 'none';
+    stepperSection.style.display = 'block';
+    if (btnLoginDirect) btnLoginDirect.style.display = 'none';
+
+    userEmailBadge.textContent = user.email || 'লগইনকৃত';
+    userEmailBadge.title = user.email || '';
+
+    // Provider check
+    const providers = user.providerData || [];
+    isGoogleUser = providers.some(p => p.providerId === 'google.com');
+
+    if (isGoogleUser) {
+      googleAuthWrap.style.display = 'block';
+      passwordAuthWrap.style.display = 'none';
+    } else {
+      googleAuthWrap.style.display = 'none';
+      passwordAuthWrap.style.display = 'block';
+    }
+
+    resetSteps();
+
+    // Check pinSet from Firestore
+    try {
+      const snap = await getDoc(doc(db, 'users', user.uid));
+      if (snap.exists()) {
+        const d = snap.data();
+        hasPinSet = (d.pinSet === true);
+      } else {
+        hasPinSet = false;
+      }
+    } catch (e) {
+      hasPinSet = false;
+    }
+
+    if (hasPinSet) {
+      pinInputWrap.style.display = 'block';
+      pinNotRequiredWrap.style.display = 'none';
+    } else {
+      pinInputWrap.style.display = 'none';
+      pinNotRequiredWrap.style.display = 'block';
+    }
+  }
+
+  // Set up view for unauthenticated / guest
+  function setupGuestView() {
+    currentUser = null;
+    authLoading.style.display = 'none';
+    stepperSection.style.display = 'none';
+    successCard.style.display = 'none';
+    fallbackSection.style.display = 'block';
+    if (btnLoginDirect) btnLoginDirect.style.display = 'inline-flex';
+  }
+
+  // Setup view for successful deletion
+  function showSuccessView() {
+    authLoading.style.display = 'none';
+    stepperSection.style.display = 'none';
+    fallbackSection.style.display = 'none';
+    successCard.style.display = 'block';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // Google Re-authentication
+  btnGoogleReauth.addEventListener('click', async () => {
+    if (isDemoMode) {
+      markStep1Complete();
+      showToast('ডেমো: পরিচয় সফলভাবে নিশ্চিত হয়েছে ✓');
+      return;
+    }
+
+    btnGoogleReauth.disabled = true;
+    try {
+      const provider = new GoogleAuthProvider();
+      await reauthenticateWithPopup(auth.currentUser, provider);
+      markStep1Complete();
+      showToast('Google দিয়ে পরিচয় যাচাই সম্পন্ন হয়েছে ✓');
+    } catch (err) {
+      console.error(err);
+      showToast('পুনরায় যাচাই ব্যর্থ হয়েছে। আবার চেষ্টা করুন।');
+    } finally {
+      btnGoogleReauth.disabled = false;
+    }
+  });
+
+  // Password Re-authentication
+  btnPasswordReauth.addEventListener('click', async () => {
+    const pw = reauthPassword.value.trim();
+    if (!pw) {
+      reauthPasswordWrap.classList.add('bad');
+      reauthPasswordErr.textContent = 'আপনার পাসওয়ার্ড লিখুন।';
+      return;
+    }
+
+    if (isDemoMode) {
+      markStep1Complete();
+      showToast('ডেমো: পরিচয় সফলভাবে নিশ্চিত হয়েছে ✓');
+      return;
+    }
+
+    btnPasswordReauth.disabled = true;
+    reauthPasswordWrap.classList.remove('bad');
+    reauthPasswordErr.textContent = '';
+
+    try {
+      const user = auth.currentUser;
+      const credential = EmailAuthProvider.credential(user.email, pw);
+      await reauthenticateWithCredential(user, credential);
+      markStep1Complete();
+      showToast('পাসওয়ার্ড যাচাই সম্পন্ন হয়েছে ✓');
+    } catch (err) {
+      console.error(err);
+      reauthPasswordWrap.classList.add('bad');
+      reauthPasswordErr.textContent = 'পাসওয়ার্ড ভুল হয়েছে।';
+      showToast('পাসওয়ার্ড ভুল হয়েছে');
+    } finally {
+      btnPasswordReauth.disabled = false;
+    }
+  });
+
+  // PIN Confirmation (Step 2)
+  btnConfirmPin.addEventListener('click', () => {
+    const pin = userPinInput.value.trim();
+    if (pin.length !== 6 || !/^\d{6}$/.test(pin)) {
+      userPinWrap.classList.add('bad');
+      userPinErr.textContent = 'সঠিক ৬ সংখ্যার পিন দিন।';
+      return;
+    }
+    userPinWrap.classList.remove('bad');
+    userPinErr.textContent = '';
+    enteredPin = pin;
+    markStep2Complete(false);
+    showToast('পিন নিশ্চিত হয়েছে ✓');
+  });
+
+  userPinInput.addEventListener('input', () => {
+    userPinWrap.classList.remove('bad');
+    userPinErr.textContent = '';
+  });
+
+  // Step 3 Validation: only enabled when exactly "মুছে ফেলুন"
+  confirmTextInput.addEventListener('input', () => {
+    const val = confirmTextInput.value.trim();
+    if (val === 'মুছে ফেলুন') {
+      confirmTextWrap.classList.remove('bad');
+      btnDeleteAccount.disabled = false;
+    } else {
+      btnDeleteAccount.disabled = true;
+    }
+  });
+
+  // Open confirmation modal
+  btnDeleteAccount.addEventListener('click', () => {
+    if (confirmTextInput.value.trim() !== 'মুছে ফেলুন') return;
+    confirmModal.classList.add('open');
+    btnCancelModal.focus();
+  });
+
+  // Modal actions
+  function closeModal() {
+    confirmModal.classList.remove('open');
+  }
+
+  btnCancelModal.addEventListener('click', closeModal);
+  confirmModal.addEventListener('click', (e) => {
+    if (e.target === confirmModal) closeModal();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && confirmModal.classList.contains('open')) {
+      closeModal();
+    }
+  });
+
+  // Modal Confirm Deletion
+  btnConfirmModalDelete.addEventListener('click', async () => {
+    closeModal();
+
+    if (isDemoMode) {
+      showSuccessView();
+      showToast('ডেমো: অ্যাকাউন্ট সফলভাবে মুছে ফেলা হয়েছে');
+      return;
+    }
+
+    // Disable delete button to prevent double-click
+    btnDeleteAccount.disabled = true;
+    btnDeleteAccount.textContent = 'মুছে ফেলা হচ্ছে...';
+
+    // Check if endpoint is configured
+    if (!DELETE_ACCOUNT_URL || DELETE_ACCOUNT_URL.trim() === '') {
+      showToast('অ্যাকাউন্ট মোছা শীঘ্রই চালু হবে।');
+      btnDeleteAccount.disabled = false;
+      btnDeleteAccount.textContent = 'আমার অ্যাকাউন্ট চিরতরে মুছুন';
+      return;
+    }
+
+    try {
+      const user = auth.currentUser;
+      if (!user) {
+        showToast('কোনো সক্রিয় অ্যাকাউন্ট পাওয়া যায়নি।');
+        btnDeleteAccount.disabled = false;
+        btnDeleteAccount.textContent = 'আমার অ্যাকাউন্ট চিরতরে মুছুন';
+        return;
+      }
+
+      // Refresh token
+      const idToken = await user.getIdToken(true);
+
+      const res = await fetch(DELETE_ACCOUNT_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${idToken}`
+        },
+        body: JSON.stringify({
+          confirm: true,
+          pin: enteredPin || undefined
+        })
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (res.ok && data.ok) {
+        await signOut(auth);
+        showSuccessView();
+      } else {
+        const errKey = data.error || data.message || '';
+        let msg = 'সমস্যা হয়েছে, পরে আবার চেষ্টা করুন।';
+        if (errKey === 'wrong_pin') {
+          msg = 'পিন ভুল';
+        } else if (errKey === 'pin_locked') {
+          msg = '১ ঘণ্টা পরে চেষ্টা করুন';
+        } else if (errKey === 'pending_payout') {
+          msg = 'অপেক্ষমাণ টাকা তোলার আবেদন আছে, সেটি শেষ হওয়ার পর আবার চেষ্টা করুন';
+        } else if (errKey === 'recent_login_required') {
+          msg = 'নিরাপত্তার জন্য আবার লগইন করে চেষ্টা করুন';
+        }
+        showToast(msg);
+        btnDeleteAccount.disabled = false;
+        btnDeleteAccount.textContent = 'আমার অ্যাকাউন্ট চিরতরে মুছুন';
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('সমস্যা হয়েছে, পরে আবার চেষ্টা করুন।');
+      btnDeleteAccount.disabled = false;
+      btnDeleteAccount.textContent = 'আমার অ্যাকাউন্ট চিরতরে মুছুন';
+    }
+  });
+
+  // Auth state listener
+  onAuthStateChanged(auth, (user) => {
+    if (isDemoMode) return;
+    if (user) {
+      setupUserView(user);
+    } else {
+      setupGuestView();
+    }
+  });
+
+  // Demo Controls
+  document.getElementById('demoGoogleUser').addEventListener('click', () => {
+    isDemoMode = true;
+    fallbackSection.style.display = 'none';
+    setupUserView({
+      email: 'demo.user@gmail.com',
+      uid: 'demo_uid_google',
+      providerData: [{ providerId: 'google.com' }]
+    });
+    hasPinSet = true;
+    pinInputWrap.style.display = 'block';
+    pinNotRequiredWrap.style.display = 'none';
+    showToast('সক্রিয়: ডেমো Google ব্যবহারকারী');
+  });
+
+  document.getElementById('demoPasswordUser').addEventListener('click', () => {
+    isDemoMode = true;
+    fallbackSection.style.display = 'none';
+    setupUserView({
+      email: 'demo.user@gamoro.club',
+      uid: 'demo_uid_password',
+      providerData: [{ providerId: 'password' }]
+    });
+    hasPinSet = true;
+    pinInputWrap.style.display = 'block';
+    pinNotRequiredWrap.style.display = 'none';
+    showToast('সক্রিয়: ডেমো পাসওয়ার্ড ব্যবহারকারী');
+  });
+
+  document.getElementById('demoLoggedOut').addEventListener('click', () => {
+    isDemoMode = true;
+    setupGuestView();
+    showToast('সক্রিয়: ডেমো লগইন নেই');
+  });
+
+  document.getElementById('demoSuccessState').addEventListener('click', () => {
+    isDemoMode = true;
+    showSuccessView();
+    showToast('সক্রিয়: ডেমো সফল স্ক্রিন');
+  });
+
+})();
+</script>
+</body>
+</html>

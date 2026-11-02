@@ -18,3 +18,6 @@ export const ADMIN_API_URL = "/.netlify/functions/admin";
 // লাইভ করার আগে অবশ্যই true করতে হবে
 export const ADMIN_PRODUCTION = false;
 
+export const DELETE_ACCOUNT_URL = "/.netlify/functions/delete-account";
+export const SUPPORT_EMAIL = "support@gamoro.club";
+
