@@ -1,5 +1,5 @@
 <!--
-সার্ভার নিয়ম (ভবিষ্যতে Netlify Function): (ক) সাইন আপের পর ownCode তৈরি; (খ) referralCode যাচাই: কোড বিদ্যমান কি না, নিজের কোড কি না, একই মোবাইল/IP/ডিভাইস কি না; (গ) Y-এর email_verified ও totalActiveMinutes সার্ভারে যাচাই; (ঘ) X ও Y দুজনের ইমেইল ভেরিফাইড এবং Y ৩০ ঘণ্টা পার করলে status=review, ৭ দিন পরে অ্যাডমিন অনুমোদনে qualified ও পয়েন্ট যোগ; (ঙ) আগে বোনাস পেয়ে থাকলে দ্বিতীয়বার নয়।
+সার্ভার নিয়ম (Cloudflare Pages Function): (ক) সাইন আপের পর ownCode তৈরি; (খ) referralCode যাচাই: কোড বিদ্যমান কি না, নিজের কোড কি না, একই মোবাইল/IP/ডিভাইস কি না; (গ) Y-এর email_verified ও totalActiveSec সার্ভারে যাচাই; (ঘ) X ও Y দুজনের ইমেইল ভেরিফাইড এবং Y ২৫ ঘণ্টা পার করলে status=review, অ্যাডমিন অনুমোদনে qualified ও পয়েন্ট যোগ; (ঙ) আগে বোনাস পেয়ে থাকলে দ্বিতীয়বার নয়।
 -->
 <!DOCTYPE html>
 <html lang="bn" data-theme="light">
@@ -713,6 +713,7 @@ button:focus-visible,a:focus-visible{
 
 <script type="module">
 import { auth, db } from "./firebase-config.js";
+import { REFERRAL_API_URL } from "./api-config.js";
 import { onAuthStateChanged, sendEmailVerification } from "firebase/auth";
 import { doc, getDoc, collection, query, orderBy, limit, getDocs } from "firebase/firestore";
 
@@ -932,7 +933,8 @@ import { doc, getDoc, collection, query, orderBy, limit, getDocs } from "firebas
 
   // Render Referral Item Row
   function renderReferralRow(item, reqHours) {
-    const playedMinutes = Number(item.playedMinutes || 0);
+    const rawSec = item.activeSec ?? item.playedSec ?? item.totalActiveSec;
+    const playedMinutes = rawSec !== undefined && rawSec !== null ? Number(rawSec) / 60 : Number(item.playedMinutes || 0);
     const playedHrsNum = (playedMinutes / 60);
     const playedHrsStr = playedHrsNum.toFixed(1).replace('.0', '');
     const percent = Math.min(100, Math.round((playedHrsNum / reqHours) * 100));
@@ -1143,9 +1145,30 @@ import { doc, getDoc, collection, query, orderBy, limit, getDocs } from "firebas
 
       updateConfigUI();
 
-      // 2. Fetch User Profile
-      const userDocSnap = await getDoc(doc(db, 'users', user.uid));
-      const userData = userDocSnap.exists() ? userDocSnap.data() : {};
+      // 2. Fetch User Profile (and ensure server-side ownCode & referral sync)
+      let userDocSnap = await getDoc(doc(db, 'users', user.uid));
+      let userData = userDocSnap.exists() ? userDocSnap.data() : {};
+
+      if (userDocSnap.exists() && REFERRAL_API_URL && (!userData.ownCode || (userData.referralCode && !userData.referralProcessed) || userData.referredBy)) {
+        try {
+          const token = await user.getIdToken();
+          const refInitRes = await fetch(REFERRAL_API_URL, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ' + token
+            },
+            body: JSON.stringify({ action: 'init' })
+          });
+          if (refInitRes.ok) {
+            const refInitData = await refInitRes.json().catch(() => null);
+            if (refInitData && refInitData.ok) {
+              if (refInitData.ownCode) userData.ownCode = refInitData.ownCode;
+              if (refInitData.referredByMasked) userData.referredByMasked = refInitData.referredByMasked;
+            }
+          }
+        } catch (_) {}
+      }
 
       secCode.style.display = 'block';
       secGuest.style.display = 'none';
@@ -1182,7 +1205,11 @@ import { doc, getDoc, collection, query, orderBy, limit, getDocs } from "firebas
 
       // 4. Section G (if referredByMasked exists)
       if (userData.referredByMasked) {
-        renderReferredBy(userData.referredByMasked, isEmailVerified, userData.totalActiveMinutes || 0);
+        const totalSec = userData.totalActiveSec ?? userData.activeSec;
+        const activeMins = totalSec !== undefined && totalSec !== null
+          ? Number(totalSec) / 60
+          : (userData.totalActiveMinutes || 0);
+        renderReferredBy(userData.referredByMasked, isEmailVerified, activeMins);
       } else {
         secReferredByWrap.style.display = 'none';
       }

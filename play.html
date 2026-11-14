@@ -130,6 +130,17 @@ button:focus-visible, a:focus-visible, input:focus-visible {
   align-items: center;
   gap: 4px;
 }
+.points-chip[hidden] {
+  display: none;
+}
+.points-login-chip {
+  text-decoration: none;
+  cursor: pointer;
+  transition: background .15s;
+}
+.points-login-chip:hover {
+  background: rgba(233,168,32,0.34);
+}
 .theme-btn {
   width: 34px;
   height: 34px;
@@ -141,6 +152,51 @@ button:focus-visible, a:focus-visible, input:focus-visible {
   display: grid;
   place-items: center;
   flex: none;
+}
+
+/* Guest Banner */
+.guest-banner {
+  background: linear-gradient(90deg, rgba(233,168,32,0.16), rgba(12,74,52,0.08));
+  border-bottom: 1px solid var(--line);
+  color: var(--text);
+  padding: 8px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  flex: none;
+}
+.guest-banner[hidden] {
+  display: none;
+}
+:root[data-theme=dark] .guest-banner {
+  background: linear-gradient(90deg, rgba(233,168,32,0.14), rgba(37,56,46,0.92));
+}
+.guest-banner-text {
+  flex: 1;
+  min-width: 0;
+  line-height: 1.35;
+}
+.guest-banner-btn {
+  flex: none;
+  background: var(--green);
+  color: #fff;
+  text-decoration: none;
+  padding: 5px 13px;
+  border-radius: 99px;
+  font-size: 12.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  transition: filter .15s;
+}
+.guest-banner-btn:hover {
+  filter: brightness(1.1);
+}
+:root[data-theme=dark] .guest-banner-btn {
+  background: var(--gold);
+  color: #17372B;
 }
 
 /* Simulation Test Bar */
@@ -178,7 +234,7 @@ button:focus-visible, a:focus-visible, input:focus-visible {
   border-color: var(--green-2);
 }
 
-/* Thin Ad Slot */
+/* Ad Slot */
 .ad-slot-wrapper {
   background: var(--surface);
   border-bottom: 1px solid var(--line);
@@ -189,7 +245,6 @@ button:focus-visible, a:focus-visible, input:focus-visible {
   flex: none;
   min-height: 58px;
 }
-/* আসল বিজ্ঞাপনের স্ক্রিপ্ট লোড সফল হলে এই div-এ data-loaded='true' বসাতে হবে। */
 #gamoro-ad {
   width: 100%;
   max-width: 320px;
@@ -204,11 +259,6 @@ button:focus-visible, a:focus-visible, input:focus-visible {
   color: var(--muted);
   font-weight: 600;
   letter-spacing: 0.3px;
-  transition: border-color .2s;
-}
-#gamoro-ad[data-loaded="true"] {
-  border-color: var(--green-2);
-  color: var(--green-2);
 }
 
 /* Status Line */
@@ -252,16 +302,39 @@ button:focus-visible, a:focus-visible, input:focus-visible {
   display: inline-block;
 }
 
-/* Ads Blocked Polite Warning */
-.blocked-notice {
-  background: rgba(214,64,59,0.12);
-  border-bottom: 1px solid rgba(214,64,59,0.3);
-  color: var(--coral);
-  font-size: 12px;
-  font-weight: 600;
-  padding: 6px 14px;
-  text-align: center;
+/* Rewarded Ad Action Bar */
+.reward-ad-bar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  padding: 7px 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
   flex: none;
+}
+.reward-ad-btn {
+  width: 100%;
+  max-width: 340px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--surface2);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: not-allowed;
+  opacity: 0.78;
+}
+.reward-ad-note {
+  font-size: 11.5px;
+  color: var(--muted);
+  font-weight: 600;
+  line-height: 1.2;
 }
 
 /* Main Game Area */
@@ -429,28 +502,34 @@ button:focus-visible, a:focus-visible, input:focus-visible {
       <h1 class="game-title" id="gameTitle">গেম খেলুন</h1>
     </div>
     <div class="nav-right">
-      <div class="points-chip" id="pointsChip" title="আপনার চলতি মাসের পয়েন্ট">
+      <div class="points-chip" id="pointsChip" title="আপনার চলতি মাসের পয়েন্ট" hidden>
         ★ <span id="pointsValue">০</span>
       </div>
+      <a href="auth.html" class="points-chip points-login-chip" id="guestLoginChip" title="পয়েন্ট পেতে লগইন করুন">
+        লগইন
+      </a>
       <button class="theme-btn" id="themeBtn" aria-label="থিম পরিবর্তন">🌙</button>
     </div>
   </header>
+
+  <!-- Guest Login Banner -->
+  <div class="guest-banner" id="guestBanner" role="region" aria-label="লগইন বিজ্ঞপ্তি">
+    <span class="guest-banner-text">🎮 লগইন করলে খেলার পয়েন্ট পাবেন</span>
+    <a href="auth.html" class="guest-banner-btn" id="guestBannerLoginBtn">লগইন</a>
+  </div>
 
   <!-- TEMP: প্রোডাকশনের আগে মুছতে হবে -->
   <div class="test-bar" id="testBar">
     <span class="test-label">সিমুলেশন ও টেস্ট মোড</span>
     <div class="test-btn-group">
       <button type="button" class="test-btn" id="demoQuestionBtn">ডেমো: প্রশ্ন</button>
-      <button type="button" class="test-btn" id="demoAdBlockBtn">ডেমো: বিজ্ঞাপন ব্লক</button>
       <button type="button" class="test-btn" id="demoActiveToggleBtn">ডেমো: সক্রিয়/নিষ্ক্রিয়</button>
-      <button type="button" class="test-btn" id="demoAdToggleBtn">ডেমো: বিজ্ঞাপন অন/অফ</button>
     </div>
   </div>
 
-  <!-- Thin Ad Slot -->
-  <!-- আসল বিজ্ঞাপনের স্ক্রিপ্ট লোড সফল হলে এই div-এ data-loaded="true" বসাতে হবে। -->
+  <!-- Display Ad Slot -->
   <div class="ad-slot-wrapper">
-    <div id="gamoro-ad" data-loaded="false">
+    <div id="gamoro-ad">
       বিজ্ঞাপন (320 × 50)
     </div>
   </div>
@@ -464,9 +543,12 @@ button:focus-visible, a:focus-visible, input:focus-visible {
     <a href="auth.html#login" class="status-login-btn" id="statusLoginBtn" style="display:none">লগইন করুন</a>
   </div>
 
-  <!-- Ads Blocked Warning -->
-  <div id="adsBlockedNotice" class="blocked-notice" style="display:none">
-    বিজ্ঞাপন ব্লক থাকলে পয়েন্ট জমে না। ব্লকার বন্ধ করে পেজ রিলোড করুন।
+  <!-- Rewarded Ad Button (App Only) -->
+  <div class="reward-ad-bar" aria-label="পুরস্কার বোনাস">
+    <button type="button" class="reward-ad-btn" id="rewardAdBtn" disabled>
+      🎁 বিজ্ঞাপন দেখে +২০ পয়েন্ট
+    </button>
+    <span class="reward-ad-note">অ্যাপে চালু হবে</span>
   </div>
 
   <!-- Main Game Container / Iframe -->
@@ -495,7 +577,7 @@ button:focus-visible, a:focus-visible, input:focus-visible {
 
 <script type="module">
 import { auth, db } from "./firebase-config.js";
-import { SESSION_URL } from "./api-config.js";
+import { HEARTBEAT_URL } from "./api-config.js";
 import { startGamoroSession } from "./gamoro-session.js";
 import { GAMES, getGameById } from "./games.js";
 import { onAuthStateChanged } from "firebase/auth";
@@ -554,25 +636,12 @@ if (!matchedGame) {
   document.title = `Gamoro – ${matchedGame.name}`;
 }
 
-/* Ad Element & Demo Simulation */
-const adEl = document.getElementById('gamoro-ad');
-
-// TEMP: প্রোডাকশনের আগে মুছতে হবে
-const DEMO_AD_LOADED = true;
-if (DEMO_AD_LOADED) {
-  setTimeout(() => {
-    if (adEl) {
-      adEl.dataset.loaded = "true";
-      updateStatusLine();
-    }
-  }, 1500);
-}
-
 /* Activity Tracking */
 let lastUserActivity = Date.now();
 let isSimulatedInactive = false;
 
 function markActivity() {
+  if (!currentUser && !isDemoParam) return;
   if (isSimulatedInactive) isSimulatedInactive = false;
   lastUserActivity = Date.now();
   updateStatusLine();
@@ -590,12 +659,20 @@ window.addEventListener('message', (e) => {
 /* Points & Auth State */
 let currentUser = null;
 let currentPoints = isDemoParam ? 1250 : 0;
+const pointsChip = document.getElementById('pointsChip');
+const guestLoginChip = document.getElementById('guestLoginChip');
+const guestBanner = document.getElementById('guestBanner');
 const pointsValue = document.getElementById('pointsValue');
 
 function updatePointsDisplay(pts) {
   pointsValue.textContent = toBn(pts);
 }
 updatePointsDisplay(currentPoints);
+if (isDemoParam) {
+  if (pointsChip) pointsChip.hidden = false;
+  if (guestLoginChip) guestLoginChip.hidden = true;
+  if (guestBanner) guestBanner.hidden = true;
+}
 
 /* Get Asia/Dhaka Current Period (YYYY-MM) */
 function getDhakaPeriod() {
@@ -616,28 +693,34 @@ function getDhakaPeriod() {
 const statusDot = document.getElementById('statusDot');
 const statusText = document.getElementById('statusText');
 const statusLoginBtn = document.getElementById('statusLoginBtn');
+let dailyCapReached = false;
 
 function updateStatusLine() {
   if (!currentUser && !isDemoParam) {
     statusDot.className = 'status-dot dot-gray';
-    statusText.textContent = 'লগইন ছাড়া পয়েন্ট জমবে না';
-    statusLoginBtn.style.display = 'inline-block';
+    statusText.textContent = 'লগইন ছাড়া পয়েন্ট ও সময় কাউন্ট হবে না';
+    statusLoginBtn.style.display = 'none';
     return;
   }
 
   statusLoginBtn.style.display = 'none';
 
-  const isAdLoaded = adEl && adEl.dataset.loaded === 'true';
-  if (!isAdLoaded) {
+  if (currentUser && currentUser.emailVerified === false) {
     statusDot.className = 'status-dot dot-orange';
-    statusText.textContent = 'বিজ্ঞাপন লোড হয়নি, পয়েন্ট জমছে না';
+    statusText.textContent = 'পয়েন্ট পেতে ইমেইল ভেরিফাই করুন';
+    return;
+  }
+
+  if (dailyCapReached) {
+    statusDot.className = 'status-dot dot-orange';
+    statusText.textContent = 'আজকের খেলার দৈনিক সীমা পূর্ণ হয়েছে';
     return;
   }
 
   const isRecentlyActive = !isSimulatedInactive && (Date.now() - lastUserActivity <= 60000);
   if (isRecentlyActive) {
     statusDot.className = 'status-dot dot-green';
-    statusText.textContent = 'সক্রিয়, পয়েন্ট জমছে';
+    statusText.textContent = 'সক্রিয়, প্রতি ২ মিনিটে ১ পয়েন্ট';
   } else {
     statusDot.className = 'status-dot dot-gray';
     statusText.textContent = 'নিষ্ক্রিয়, খেলা শুরু করুন';
@@ -729,25 +812,11 @@ document.getElementById('demoQuestionBtn').addEventListener('click', () => {
   });
 });
 
-document.getElementById('demoAdBlockBtn').addEventListener('click', () => {
-  const notice = document.getElementById('adsBlockedNotice');
-  const isHidden = notice.style.display === 'none';
-  notice.style.display = isHidden ? 'block' : 'none';
-  showToast(isHidden ? 'বিজ্ঞাপন ব্লক বার্তা দেখানো হচ্ছে' : 'বিজ্ঞাপন ব্লক বার্তা সরানো হয়েছে');
-});
-
 document.getElementById('demoActiveToggleBtn').addEventListener('click', () => {
   isSimulatedInactive = !isSimulatedInactive;
   if (!isSimulatedInactive) lastUserActivity = Date.now();
   updateStatusLine();
   showToast(isSimulatedInactive ? 'অবস্থা: নিষ্ক্রিয়' : 'অবস্থা: সক্রিয়');
-});
-
-document.getElementById('demoAdToggleBtn').addEventListener('click', () => {
-  const isLoaded = adEl.dataset.loaded === 'true';
-  adEl.dataset.loaded = isLoaded ? 'false' : 'true';
-  updateStatusLine();
-  showToast(isLoaded ? 'বিজ্ঞাপন আনলোড করা হয়েছে' : 'বিজ্ঞাপন লোড করা হয়েছে');
 });
 
 /* Session Management */
@@ -760,25 +829,32 @@ function initSessionForUser(user) {
   sessionInstance = startGamoroSession({
     auth,
     gameId: matchedGame.id,
-    apiUrl: SESSION_URL,
-    adSelector: '#gamoro-ad',
-    onPoints: (points, creditedSec) => {
+    apiUrl: HEARTBEAT_URL,
+    onPoints: (points, addedPoints, info) => {
       currentPoints = points;
       updatePointsDisplay(points);
-      if (creditedSec && creditedSec > 0) {
-        const mins = (creditedSec / 60).toFixed(1);
-        showToast(`+${toBn(mins)} মিনিট যোগ হয়েছে`);
+      if (info && info.capReached) {
+        dailyCapReached = true;
+        updateStatusLine();
+      }
+      if (addedPoints && addedPoints > 0) {
+        showToast(`+${toBn(addedPoints)} পয়েন্ট যোগ হয়েছে`);
+      }
+    },
+    onHeartbeat: (data) => {
+      if (data && data.capReached) {
+        dailyCapReached = true;
+        updateStatusLine();
       }
     },
     onChallenge: (ch, submitFn) => {
       showChallengeModal(ch, submitFn);
     },
-    onAdsBlocked: () => {
-      const notice = document.getElementById('adsBlockedNotice');
-      if (notice) notice.style.display = 'block';
-      updateStatusLine();
-    },
     onError: (err) => {
+      if (err === 'verify-email') {
+        updateStatusLine();
+        return;
+      }
       if (!hasReportedError) {
         showToast('সার্ভারের সাথে সংযোগ হয়নি, পয়েন্ট জমছে না।');
         hasReportedError = true;
@@ -793,6 +869,11 @@ onAuthStateChanged(auth, async (user) => {
   updateStatusLine();
 
   if (user) {
+    if (guestBanner) guestBanner.hidden = true;
+    if (guestLoginChip) guestLoginChip.hidden = true;
+    if (pointsChip) pointsChip.hidden = false;
+    lastUserActivity = Date.now();
+
     try {
       const snap = await getDoc(doc(db, 'users', user.uid));
       if (snap.exists()) {
@@ -820,9 +901,15 @@ onAuthStateChanged(auth, async (user) => {
       sessionInstance = null;
     }
     if (isDemoParam) {
+      if (guestBanner) guestBanner.hidden = true;
+      if (guestLoginChip) guestLoginChip.hidden = true;
+      if (pointsChip) pointsChip.hidden = false;
       currentPoints = 1250;
       updatePointsDisplay(currentPoints);
     } else {
+      if (guestBanner) guestBanner.hidden = false;
+      if (guestLoginChip) guestLoginChip.hidden = false;
+      if (pointsChip) pointsChip.hidden = true;
       currentPoints = 0;
       updatePointsDisplay(0);
     }

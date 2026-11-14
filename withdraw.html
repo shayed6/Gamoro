@@ -1,5 +1,5 @@
 <!--
-সার্ভার নিয়ম (ভবিষ্যতে Netlify Function): (ক) আবেদনে verified, country, ন্যূনতম সীমা ও balanceUsd সার্ভারে যাচাই; (খ) Binance Pay শুধু country == INTL, বাংলাদেশি পদ্ধতি শুধু BD; (গ) মোবাইল রিচার্জ শুধু প্রোফাইলের নিজের নম্বরে; (ঘ) আবেদনের সময় balanceUsd একটি ট্রানজ্যাকশনে কমিয়ে payouts/{id} তৈরি; (ঙ) ১ ডলারের কম ব্যালেন্স আগামী মাসে থাকবে; (চ) অটো উইথড্র চালু থাকলে মাসের হিসাব শেষে আবেদন নিজে তৈরি, পেমেন্ট অ্যাডমিন ম্যানুয়ালি করবে; (ছ) ডলার রেট config/withdraw থেকে।
+সার্ভার নিয়ম (Cloudflare Pages Function): (ক) আবেদনে verified, country, ন্যূনতম সীমা ও balanceUsd সার্ভারে যাচাই; (খ) Binance Pay শুধু country == INTL, বাংলাদেশি পদ্ধতি শুধু BD; (গ) মোবাইল রিচার্জ শুধু প্রোফাইলের নিজের নম্বরে; (ঘ) আবেদনের সময় balanceUsd একটি ট্রানজ্যাকশনে কমিয়ে withdrawals/{id} তৈরি; (ঙ) ১ ডলারের কম ব্যালেন্স আগামী মাসে থাকবে; (চ) অটো উইথড্র চালু থাকলে মাসের হিসাব শেষে আবেদন নিজে তৈরি, পেমেন্ট অ্যাডমিন ম্যানুয়ালি করবে; (ছ) ডলার রেট config/withdraw থেকে।
 -->
 <!DOCTYPE html>
 <html lang="bn" data-theme="light">
@@ -1081,7 +1081,7 @@ maxBtn.addEventListener('click', () => {
     return;
   }
   let maxUsd = userState.balanceUsd;
-  if(userState.country === 'BD' && selectedMethod === 'মোবাইল রিচার্জ'){
+  if(userState.country === 'BD' && selectedMethod === 'recharge'){
     maxUsd = Math.min(userState.balanceUsd, 19.99);
   }
   amountUsdInput.value = maxUsd.toFixed(2);
@@ -1110,7 +1110,7 @@ async function loadConfig(){
 function getErrorMessage(code, defaultMsg){
   const map = {
     'wrong_pin': 'পিন ভুল',
-    'pin_locked': '১ ঘণ্টা পরে চেষ্টা করুন',
+    'pin_locked': '১৫ মিনিট পরে চেষ্টা করুন',
     'no_pin': 'আগে পিন সেট করুন',
     'weak_pin': 'সহজ পিন দেওয়া যাবে না, অন্য পিন দিন',
     'pin_exists': 'আপনার পিন আগে থেকেই আছে',

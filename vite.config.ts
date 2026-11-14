@@ -16,10 +16,13 @@ export default defineConfig(() => {
         input: {
           main: path.resolve(__dirname, 'index.html'),
           auth: path.resolve(__dirname, 'auth.html'),
+          play: path.resolve(__dirname, 'play.html'),
           leaderboard: path.resolve(__dirname, 'leaderboard.html'),
           verify: path.resolve(__dirname, 'verify.html'),
           referral: path.resolve(__dirname, 'referral.html'),
           withdraw: path.resolve(__dirname, 'withdraw.html'),
+          admin: path.resolve(__dirname, 'admin.html'),
+          deleteAccount: path.resolve(__dirname, 'delete-account.html'),
         },
       },
     },

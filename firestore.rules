@@ -99,8 +99,13 @@ service cloud.firestore {
       }
     }
 
+    match /withdrawals/{withdrawalId} {
+      allow get, list: if isSignedIn() && resource.data.uid == request.auth.uid;
+      allow write: if false;
+    }
+
     match /config/{docId} {
-      allow get: if docId == 'referral' || docId == 'withdraw';
+      allow get: if docId == 'referral' || docId == 'withdraw' || docId == 'announcement' || docId == 'games';
       allow list: if false;
       allow write: if false;
     }

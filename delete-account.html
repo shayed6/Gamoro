@@ -1,4 +1,4 @@
-<!-- সার্ভার ফাংশন (Netlify): টোকেন যাচাই, পিন যাচাই (সেট থাকলে), অপেক্ষমাণ payoutRequests থাকলে মুছতে না দেওয়া, তারপর users/{uid} ও সাবকালেকশন, pins/{uid}, activeSessions/{uid} মুছে Firebase Auth ইউজার মুছে ফেলা। payoutRequests রেখে uid বদলে অজ্ঞাত করা, payoutAccounts-এ শুধু হ্যাশ রাখা। -->
+<!-- সার্ভার ফাংশন (Cloudflare Pages): টোকেন যাচাই, পিন যাচাই (সেট থাকলে), অপেক্ষমাণ withdrawals থাকলে মুছতে না দেওয়া, তারপর users/{uid} ও সাবকালেকশন, pins/{uid}, activeSessions/{uid} মুছে Firebase Auth ইউজার মুছে ফেলা। withdrawals রেখে uid বদলে অজ্ঞাত করা, payoutAccounts-এ শুধু হ্যাশ রাখা। -->
 <!DOCTYPE html>
 <html lang="bn" data-theme="light">
 <head>
@@ -1167,7 +1167,7 @@ import { doc, getDoc } from "firebase/firestore";
         if (errKey === 'wrong_pin') {
           msg = 'পিন ভুল';
         } else if (errKey === 'pin_locked') {
-          msg = '১ ঘণ্টা পরে চেষ্টা করুন';
+          msg = '১৫ মিনিট পরে চেষ্টা করুন';
         } else if (errKey === 'pending_payout') {
           msg = 'অপেক্ষমাণ টাকা তোলার আবেদন আছে, সেটি শেষ হওয়ার পর আবার চেষ্টা করুন';
         } else if (errKey === 'recent_login_required') {

@@ -188,6 +188,7 @@ label small{font-weight:400;color:var(--muted)}
 
 <script type="module">
 import { auth, db, handleFirestoreError, isFirebaseConfigured } from "./firebase-config.js";
+import { REFERRAL_API_URL } from "./api-config.js";
 import { 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
@@ -474,6 +475,21 @@ import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
         throw new Error('PROFILE_CREATION_FAILED');
       }
 
+      // সার্ভারে ownCode তৈরি ও রেফারেল কোড যাচাই
+      if (REFERRAL_API_URL) {
+        try {
+          const token = await user.getIdToken();
+          await fetch(REFERRAL_API_URL, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ' + token
+            },
+            body: JSON.stringify({ action: 'init' })
+          });
+        } catch (_) {}
+      }
+
       // ইমেইল ভেরিফিকেশন পাঠানো
       try {
         await sendEmailVerification(user);
@@ -535,6 +551,20 @@ import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
       } catch (dbErr) {
         handleFirestoreError(dbErr, 'create', 'users/' + pendingAuthUser.uid);
         throw dbErr;
+      }
+
+      if (REFERRAL_API_URL) {
+        try {
+          const token = await pendingAuthUser.getIdToken();
+          await fetch(REFERRAL_API_URL, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ' + token
+            },
+            body: JSON.stringify({ action: 'init' })
+          });
+        } catch (_) {}
       }
 
       say('প্রোফাইল সম্পন্ন হয়েছে!');
