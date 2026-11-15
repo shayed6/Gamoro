@@ -1,5 +1,5 @@
 // functions/api/withdraw.js  →  POST /api/withdraw
-// Cloudflare Pages Function: উইথড্রয়াল আবেদন (পিন, ইমেইল, দেশ, সীমা, ডুপ্লিকেট অ্যাকাউন্ট ও ব্যালেন্স যাচাই)
+// Cloudflare Pages Function: উইথড্রয়াল আবেদন (mobile_recharge, binance, gift_card, donation)
 
 import {
   json,
@@ -24,10 +24,9 @@ const OPERATORS = {
   teletalk: 'টেলিটক',
 };
 
-const MFS_LABELS = {
-  bkash: 'বিকাশ',
-  nagad: 'নগদ',
-  rocket: 'রকেট',
+const GIFT_CARD_BRANDS = {
+  google_play: 'Google Play গিফট কার্ড',
+  other: 'অন্যান্য গিফট কার্ড',
 };
 
 function randomId(prefix = 'wd') {
@@ -69,89 +68,75 @@ export async function onRequestPost({ request, env }) {
       return json({ ok: false, error: pinCheck.error }, pinCheck.status || 403);
     }
 
+    // পিন রিসেটের ২৪ ঘণ্টার মধ্যে উইথড্র নিষিদ্ধ (pin_cooldown)
+    const pinDoc = pinCheck.pinDoc || {};
+    if (pinDoc.pinResetAt) {
+      const resetMs = Date.parse(pinDoc.pinResetAt) || 0;
+      if (resetMs > 0 && Date.now() - resetMs < 24 * 60 * 60 * 1000) {
+        return json({ ok: false, error: 'pin_cooldown' }, 403);
+      }
+    }
+
     const uProfile = pinCheck.userDoc || {};
     if (uProfile.status === 'suspended') {
       return json({ ok: false, error: 'suspended', message: 'আপনার অ্যাকাউন্ট স্থগিত করা হয়েছে' }, 403);
     }
 
-    // ২) কনফিগ লোড (config/withdraw)
-    const cfgRes = await fsGet(ctx, 'config/withdraw');
+    // ২) কনফিগ লোড (config/withdraw ও config/donation)
+    const [cfgRes, donationCfgRes] = await Promise.all([
+      fsGet(ctx, 'config/withdraw'),
+      method === 'donation' ? fsGet(ctx, 'config/donation') : Promise.resolve({ exists: false, data: null }),
+    ]);
     const cfgData = cfgRes.data || {};
     const cfg = {
       usdToBdt: Number(cfgData.usdToBdt || 110),
       carryBelowUsd: Number(cfgData.carryBelowUsd ?? 1),
       mobileRechargeMin: Number(cfgData.mobileRechargeMin ?? 1),
-      mobileRechargeMaxExclusive: Number(cfgData.mobileRechargeMaxExclusive ?? 20),
-      bankWalletMin: Number(cfgData.bankWalletMin ?? 20),
+      mobileRechargeMax: Number(
+        cfgData.mobileRechargeMax ??
+          (cfgData.mobileRechargeMaxExclusive !== undefined
+            ? Number(cfgData.mobileRechargeMaxExclusive) - 0.01
+            : 19.99)
+      ),
       binanceMin: Number(cfgData.binanceMin ?? 10),
-      maxPendingWithdrawals: Number(cfgData.maxPendingWithdrawals ?? 1),
+      giftCardMin: Number(cfgData.giftCardMin ?? 20),
+      donationMin: Number(cfgData.donationMin ?? 1),
+      maxPending: Number(cfgData.maxPending ?? cfgData.maxPendingWithdrawals ?? 1),
     };
 
     const country = uProfile.country === 'INTL' ? 'INTL' : 'BD';
     let methodLabel = '';
-    let accountNo = '';
-    let accountDetails = '';
+    let userFacingLabel = '';
     let identifierKey = '';
     let cleanDetails = {};
+    let checkAccountHash = false;
 
     // ৩) দেশ, পদ্ধতি, সীমা ও বিবরণ যাচাই
-    if (country === 'BD') {
-      if (method === 'mobile_recharge') {
-        if (amountUsd < cfg.mobileRechargeMin) {
-          return json({ ok: false, error: 'below_min' }, 400);
-        }
-        if (amountUsd >= cfg.mobileRechargeMaxExclusive) {
-          return json({ ok: false, error: 'method_not_allowed' }, 400);
-        }
-        const operator = String(details.operator || '').trim().toLowerCase();
-        if (!OPERATORS[operator]) {
-          return json({ ok: false, error: 'bad_details' }, 400);
-        }
-        const profileMobile = String(uProfile.mobile || '').trim();
-        if (!/^\+8801[3-9]\d{8}$/.test(profileMobile)) {
-          return json({ ok: false, error: 'bad_details' }, 400);
-        }
-        methodLabel = 'মোবাইল রিচার্জ';
-        accountNo = profileMobile;
-        accountDetails = `${OPERATORS[operator]} (${profileMobile})`;
-        identifierKey = `mobile_recharge:${profileMobile}`;
-        cleanDetails = { operator, mobile: profileMobile };
-      } else if (method === 'bkash' || method === 'nagad' || method === 'rocket') {
-        if (amountUsd < cfg.bankWalletMin) {
-          return json({ ok: false, error: 'below_min' }, 400);
-        }
-        const accNum = String(details.accountNumber || '').trim();
-        if (!/^01[3-9]\d{8}$/.test(accNum)) {
-          return json({ ok: false, error: 'bad_details' }, 400);
-        }
-        methodLabel = MFS_LABELS[method];
-        accountNo = accNum;
-        accountDetails = `${accNum} (পার্সোনাল)`;
-        identifierKey = `${method}:${accNum}`;
-        cleanDetails = { accountNumber: accNum, accountType: 'personal' };
-      } else if (method === 'bank') {
-        if (amountUsd < cfg.bankWalletMin) {
-          return json({ ok: false, error: 'below_min' }, 400);
-        }
-        const bankName = String(details.bankName || '').trim().slice(0, 100);
-        const branch = String(details.branch || '').trim().slice(0, 100);
-        const accountName = String(details.accountName || '').trim().slice(0, 100);
-        const accNum = String(details.accountNumber || '').trim().slice(0, 50);
-        const routing = String(details.routing || '').trim().slice(0, 30);
-        if (!bankName || !branch || !accountName || !accNum) {
-          return json({ ok: false, error: 'bad_details' }, 400);
-        }
-        methodLabel = 'ব্যাংক ট্রান্সফার';
-        accountNo = `${bankName} · ${accNum}`;
-        accountDetails = `${bankName}, ${branch} (হি: ${accNum})`;
-        identifierKey = `bank:${bankName.toLowerCase()}:${accNum.toLowerCase()}`;
-        cleanDetails = { bankName, branch, accountName, accountNumber: accNum, routing };
-      } else {
+    if (method === 'mobile_recharge') {
+      if (country !== 'BD') {
         return json({ ok: false, error: 'method_not_allowed' }, 400);
       }
-    } else {
-      // INTL: শুধু Binance Pay
-      if (method !== 'binance') {
+      if (amountUsd < cfg.mobileRechargeMin) {
+        return json({ ok: false, error: 'below_min' }, 400);
+      }
+      if (amountUsd > cfg.mobileRechargeMax) {
+        return json({ ok: false, error: 'method_not_allowed' }, 400);
+      }
+      const operator = String(details.operator || '').trim().toLowerCase();
+      if (!OPERATORS[operator]) {
+        return json({ ok: false, error: 'bad_details' }, 400);
+      }
+      const profileMobile = String(uProfile.mobile || '').trim();
+      if (!/^\+8801[3-9]\d{8}$/.test(profileMobile)) {
+        return json({ ok: false, error: 'bad_details' }, 400);
+      }
+      methodLabel = 'মোবাইল রিচার্জ';
+      userFacingLabel = `${OPERATORS[operator]} (${profileMobile})`;
+      identifierKey = `mobile_recharge:${profileMobile}`;
+      cleanDetails = { operator, mobile: profileMobile };
+      checkAccountHash = true;
+    } else if (method === 'binance') {
+      if (country !== 'INTL') {
         return json({ ok: false, error: 'method_not_allowed' }, 400);
       }
       if (amountUsd < cfg.binanceMin) {
@@ -162,13 +147,49 @@ export async function onRequestPost({ request, env }) {
         return json({ ok: false, error: 'bad_details' }, 400);
       }
       methodLabel = 'Binance Pay';
-      accountNo = binanceId;
-      accountDetails = `Pay ID: ${binanceId}`;
+      userFacingLabel = `Pay ID: ${binanceId}`;
       identifierKey = `binance:${binanceId.toLowerCase()}`;
       cleanDetails = { binanceId };
+      checkAccountHash = true;
+    } else if (method === 'gift_card') {
+      if (amountUsd < cfg.giftCardMin) {
+        return json({ ok: false, error: 'below_min' }, 400);
+      }
+      const brand = String(details.brand || '').trim().toLowerCase();
+      if (!GIFT_CARD_BRANDS[brand]) {
+        return json({ ok: false, error: 'bad_details' }, 400);
+      }
+      const deliveryEmail = String(uProfile.email || user.email || '').trim();
+      if (!deliveryEmail) {
+        return json({ ok: false, error: 'bad_details' }, 400);
+      }
+      methodLabel = 'গিফট কার্ড';
+      userFacingLabel = GIFT_CARD_BRANDS[brand];
+      cleanDetails = { brand, deliveryEmail };
+      checkAccountHash = false;
+    } else if (method === 'donation') {
+      if (amountUsd < cfg.donationMin) {
+        return json({ ok: false, error: 'below_min' }, 400);
+      }
+      const orgId = String(details.orgId || '').trim();
+      const orgs = Array.isArray(donationCfgRes.data?.orgs) ? donationCfgRes.data.orgs : [];
+      const matchedOrg = orgs.find(
+        (o) => o && String(o.id || '').trim() === orgId && o.active === true
+      );
+      if (!orgId || !matchedOrg) {
+        return json({ ok: false, error: 'bad_details' }, 400);
+      }
+      const orgName = String(matchedOrg.name || orgId).trim();
+      methodLabel = 'ডোনেশন';
+      userFacingLabel = orgName;
+      cleanDetails = { orgId, orgName };
+      checkAccountHash = false;
+    } else {
+      return json({ ok: false, error: 'method_not_allowed' }, 400);
     }
 
-    // ৪) অপেক্ষমাণ আবেদনের সীমা যাচাই
+    // ৪) অপেক্ষমাণ আবেদনের সীমা যাচাই (সর্বোচ্চ maxPending)
+    const maxPending = Math.max(1, cfg.maxPending);
     const pendingList = await fsRunQuery(ctx, {
       from: [{ collectionId: 'withdrawals' }],
       where: {
@@ -192,32 +213,32 @@ export async function onRequestPost({ request, env }) {
           ],
         },
       },
-      limit: Math.max(1, cfg.maxPendingWithdrawals),
+      limit: maxPending,
     });
 
-    if (pendingList.length >= cfg.maxPendingWithdrawals) {
+    if (pendingList.length >= maxPending) {
       return json(
         {
           ok: false,
-          error: 'too_fast',
-          message: 'আপনার একটি অপেক্ষমাণ আবেদন ইতিমধ্যেই রয়েছে।',
+          error: 'pending_exists',
+          message: 'আপনার একটি আবেদন আগে থেকেই অপেক্ষমাণ।',
         },
         409
       );
     }
 
-    const accountHash = await sha256Hex(identifierKey);
+    const accountHash = checkAccountHash ? await sha256Hex(identifierKey) : '';
     const userPath = `users/${user.sub}`;
-    const accountPath = `payoutAccounts/${accountHash}`;
+    const accountPath = accountHash ? `payoutAccounts/${accountHash}` : '';
     const payoutId = randomId('wd');
     const withdrawalPath = `withdrawals/${payoutId}`;
     const userPayoutPath = `users/${user.sub}/payouts/${payoutId}`;
 
-    // ৫) ট্রানজ্যাকশন: ডুপ্লিকেট অ্যাকাউন্ট + ব্যালেন্স কেটে আবেদন তৈরি
+    // ৫) ট্রানজ্যাকশন: ডুপ্লিকেট অ্যাকাউন্ট (recharge ও binance) + ব্যালেন্স কেটে আবেদন তৈরি
     tx = await fsBeginTx(ctx, true);
     const [uTxRes, accTxRes] = await Promise.all([
       fsGet(ctx, userPath, tx),
-      fsGet(ctx, accountPath, tx),
+      accountPath ? fsGet(ctx, accountPath, tx) : Promise.resolve({ exists: false, data: null }),
     ]);
 
     if (!uTxRes.exists) {
@@ -225,7 +246,12 @@ export async function onRequestPost({ request, env }) {
       return json({ ok: false, error: 'no-profile' }, 404);
     }
 
-    if (accTxRes.exists && accTxRes.data?.ownerUid && accTxRes.data.ownerUid !== user.sub) {
+    if (
+      checkAccountHash &&
+      accTxRes.exists &&
+      accTxRes.data?.ownerUid &&
+      accTxRes.data.ownerUid !== user.sub
+    ) {
       await fsRollbackTx(ctx, tx);
       return json({ ok: false, error: 'account_used' }, 409);
     }
@@ -244,6 +270,37 @@ export async function onRequestPost({ request, env }) {
     const amountBdt = Math.round(amountUsd * cfg.usdToBdt);
     const nowIso = new Date().toISOString();
 
+    const wdFields = {
+      uid: user.sub,
+      userName: uTxRes.data?.name || '',
+      userEmail: uTxRes.data?.email || user.email || '',
+      country,
+      method,
+      methodLabel,
+      label: userFacingLabel,
+      accountNo: userFacingLabel,
+      accountDetails: userFacingLabel,
+      accountHash,
+      details: cleanDetails,
+      amountUsd,
+      amountBdt,
+      auto,
+      status: 'pending',
+      createdAt: tsValue(nowIso),
+    };
+
+    // ইউজার-ফেসিং পেআউট ডকুমেন্টে শুধু label থাকবে (ইমেইল/আইপি/ফ্ল্যাগ নয়)
+    const userPayoutFields = {
+      method: methodLabel,
+      methodKey: method,
+      label: userFacingLabel,
+      accountDetails: userFacingLabel,
+      amountUsd,
+      amountBdt,
+      status: 'pending',
+      createdAt: tsValue(nowIso),
+    };
+
     const writes = [
       txUpdateWrite(
         ctx,
@@ -257,79 +314,34 @@ export async function onRequestPost({ request, env }) {
       ),
       txUpdateWrite(
         ctx,
-        accountPath,
-        {
-          ownerUid: user.sub,
-          method,
-          updatedAt: tsValue(nowIso),
-        },
-        ['ownerUid', 'method', 'updatedAt']
-      ),
-      txUpdateWrite(
-        ctx,
         withdrawalPath,
-        {
-          uid: user.sub,
-          userName: uTxRes.data?.name || '',
-          userEmail: uTxRes.data?.email || user.email || '',
-          country,
-          method,
-          methodLabel,
-          accountNo,
-          accountDetails,
-          accountHash,
-          details: cleanDetails,
-          amountUsd,
-          amountBdt,
-          auto,
-          status: 'pending',
-          createdAt: tsValue(nowIso),
-        },
-        [
-          'uid',
-          'userName',
-          'userEmail',
-          'country',
-          'method',
-          'methodLabel',
-          'accountNo',
-          'accountDetails',
-          'accountHash',
-          'details',
-          'amountUsd',
-          'amountBdt',
-          'auto',
-          'status',
-          'createdAt',
-        ],
+        wdFields,
+        Object.keys(wdFields),
         { exists: false }
       ),
       txUpdateWrite(
         ctx,
         userPayoutPath,
-        {
-          method: methodLabel,
-          methodKey: method,
-          accountNo,
-          accountDetails,
-          amountUsd,
-          amountBdt,
-          status: 'pending',
-          createdAt: tsValue(nowIso),
-        },
-        [
-          'method',
-          'methodKey',
-          'accountNo',
-          'accountDetails',
-          'amountUsd',
-          'amountBdt',
-          'status',
-          'createdAt',
-        ],
+        userPayoutFields,
+        Object.keys(userPayoutFields),
         { exists: false }
       ),
     ];
+
+    if (checkAccountHash && accountPath) {
+      writes.push(
+        txUpdateWrite(
+          ctx,
+          accountPath,
+          {
+            ownerUid: user.sub,
+            method,
+            updatedAt: tsValue(nowIso),
+          },
+          ['ownerUid', 'method', 'updatedAt']
+        )
+      );
+    }
 
     const commitRes = await fsCommitTx(ctx, tx, writes);
     tx = null;

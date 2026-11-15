@@ -1,5 +1,5 @@
 // functions/api/heartbeat.js  →  POST /api/heartbeat
-// Cloudflare Pages Function: সক্রিয় খেলার সময় ও পয়েন্ট গণনা (সব হিসাব সার্ভারে)
+// Cloudflare Pages Function: সক্রিয় খেলার সময় ও পয়েন্ট গণনা (৫-মিনিট চেকপয়েন্ট + pagehide sendBeacon)
 //
 // Secrets (Cloudflare Pages → Settings → Variables and Secrets):
 //   FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY
@@ -11,7 +11,7 @@ import {
   AD_MAX_PER_DAY,
   json,
   bdDate,
-  requireAuth,
+  verifyIdToken,
   fsCtx,
   fsBeginTx,
   fsGet,
@@ -22,19 +22,45 @@ import {
   tsValue,
 } from '../_lib/firebase.js';
 
+const MAX_CHECKPOINT_SEC = 330;
+const ELAPSED_TOLERANCE_SEC = 10;
+
 export async function onRequestPost({ request, env }) {
   let ctx = null;
   let tx = null;
   try {
-    const authRes = await requireAuth(request, env);
-    if (!authRes.ok) return authRes.response;
-    const user = authRes.user;
+    const pid = env?.FIREBASE_PROJECT_ID;
+    if (!pid) return json({ ok: false, error: 'server' }, 500);
+
+    const rawBody = await request.text().catch(() => '');
+    let body = {};
+    try {
+      body = rawBody ? JSON.parse(rawBody) : {};
+    } catch {
+      body = {};
+    }
+    if (!body || typeof body !== 'object') body = {};
+
+    const authHeader = request.headers.get('Authorization') || '';
+    const headerToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : '';
+    const bodyToken = typeof body.token === 'string' ? body.token.trim() : '';
+    const token = headerToken || bodyToken;
+    if (!token) return json({ ok: false, error: 'login' }, 401);
+
+    let user;
+    try {
+      user = await verifyIdToken(token, pid);
+    } catch {
+      return json({ ok: false, error: 'login' }, 401);
+    }
 
     // ইমেইল ভেরিফাইড না হলে পয়েন্ট নয়
     if (!user.email_verified) return json({ ok: false, error: 'verify-email' }, 403);
 
-    const body = await request.json().catch(() => ({}));
     const gameId = typeof body.gameId === 'string' ? body.gameId.slice(0, 64) : '';
+    const rawClaim = Number(body.activeSec);
+    const claimedSec =
+      Number.isFinite(rawClaim) && rawClaim > 0 ? Math.floor(rawClaim) : 0;
 
     ctx = await fsCtx(env);
     const today = bdDate(0);
@@ -64,10 +90,11 @@ export async function onRequestPost({ request, env }) {
     let prevPointsGiven = 0;
     let lastBeatMs = 0;
     let dailyExists = false;
+    let dFields = {};
 
     if (dRes.exists) {
       dailyExists = true;
-      const dFields = dRes.fields || {};
+      dFields = dRes.fields || {};
       prevActiveSec = Number(dFields.activeSec?.integerValue || 0);
       prevPointsGiven = Number(dFields.playPointsGiven?.integerValue || 0);
       if (dFields.lastBeat?.timestampValue) {
@@ -79,36 +106,36 @@ export async function onRequestPost({ request, env }) {
 
     const nowMs = Date.now();
     const nowIso = new Date(nowMs).toISOString();
-    const delta = lastBeatMs > 0 ? Math.round((nowMs - lastBeatMs) / 1000) : null;
 
-    // delta < 20 সেকেন্ড হলে beat উপেক্ষা (বেশি ঘন ঘন)
-    if (dailyExists && delta !== null && delta < 20) {
-      await fsRollbackTx(ctx, tx);
-      tx = null;
-
-      const currentPoints =
-        (uFields.pointsPeriod?.stringValue || '') === period
-          ? Number(uFields.points?.integerValue || 0)
-          : 0;
-      return json({
-        ok: true,
-        activeSec: prevActiveSec,
-        playPointsToday: prevPointsGiven,
-        capReached: prevActiveSec >= PLAY_MAX_SEC_PER_DAY,
-        points: currentPoints,
-        ignored: true,
-      });
+    // গ্রহণযোগ্য সেকেন্ড ≤ min(দাবি, শেষ গ্রহণের পর আসল ব্যবধান + ১০ সেকেন্ড সহনীয়তা, ৩৩০)
+    let acceptedSec = 0;
+    if (claimedSec > 0) {
+      if (dailyExists && lastBeatMs > 0) {
+        const elapsedSec = Math.max(0, Math.round((nowMs - lastBeatMs) / 1000));
+        acceptedSec = Math.max(
+          0,
+          Math.min(claimedSec, elapsedSec + ELAPSED_TOLERANCE_SEC, MAX_CHECKPOINT_SEC)
+        );
+      } else {
+        acceptedSec = Math.max(0, Math.min(claimedSec, MAX_CHECKPOINT_SEC));
+      }
     }
 
-    // 20 <= delta <= 45 হলে delta সেকেন্ড যোগ, > 45 হলে শুধু lastBeat নতুন করা (idle ছিল)
-    const addSec = delta !== null && delta >= 20 && delta <= 45 ? delta : 0;
-    const newActiveSec = Math.min(PLAY_MAX_SEC_PER_DAY, prevActiveSec + addSec);
+    const newActiveSec = Math.min(PLAY_MAX_SEC_PER_DAY, prevActiveSec + acceptedSec);
     const actualAddedSec = Math.max(0, newActiveSec - prevActiveSec);
     const capReached = newActiveSec >= PLAY_MAX_SEC_PER_DAY;
 
-    // মোট প্রাপ্য পয়েন্ট = floor(activeSec / PLAY_SEC_PER_POINT) (পূর্ণসংখ্যা)
-    const totalEarnedToday = Math.floor(newActiveSec / PLAY_SEC_PER_POINT);
-    const pointsToAdd = Math.max(0, totalEarnedToday - prevPointsGiven);
+    // ১২০ সেকেন্ডে ১ পূর্ণসংখ্যা পয়েন্ট, ভাগশেষ সেকেন্ড (playRemainderSec) জমা থাকবে
+    const rawPrevRemainder = Number(
+      uFields.playRemainderSec?.integerValue ?? dFields.playRemainderSec?.integerValue ?? 0
+    );
+    const prevRemainderSec =
+      Number.isFinite(rawPrevRemainder) && rawPrevRemainder >= 0
+        ? rawPrevRemainder % PLAY_SEC_PER_POINT
+        : 0;
+    const totalCreditSec = prevRemainderSec + actualAddedSec;
+    const pointsToAdd = Math.floor(totalCreditSec / PLAY_SEC_PER_POINT);
+    const newRemainderSec = totalCreditSec % PLAY_SEC_PER_POINT;
     const newPlayPointsGiven = prevPointsGiven + pointsToAdd;
 
     const prevPeriod = uFields.pointsPeriod?.stringValue || '';
@@ -138,8 +165,17 @@ export async function onRequestPost({ request, env }) {
           lastBeat: tsValue(nowIso),
           activeSec: newActiveSec,
           playPointsGiven: newPlayPointsGiven,
+          playRemainderSec: newRemainderSec,
         },
-        ['uid', 'date', 'lastGameId', 'lastBeat', 'activeSec', 'playPointsGiven']
+        [
+          'uid',
+          'date',
+          'lastGameId',
+          'lastBeat',
+          'activeSec',
+          'playPointsGiven',
+          'playRemainderSec',
+        ]
       ),
       txUpdateWrite(
         ctx,
@@ -149,8 +185,15 @@ export async function onRequestPost({ request, env }) {
           pointsPeriod: period,
           totalActiveSec: newTotalSec,
           totalActiveMinutes: newTotalMinutes,
+          playRemainderSec: newRemainderSec,
         },
-        ['points', 'pointsPeriod', 'totalActiveSec', 'totalActiveMinutes'],
+        [
+          'points',
+          'pointsPeriod',
+          'totalActiveSec',
+          'totalActiveMinutes',
+          'playRemainderSec',
+        ],
         { exists: true }
       ),
     ];
@@ -159,7 +202,7 @@ export async function onRequestPost({ request, env }) {
     tx = null;
     if (!commitRes.ok) return json({ ok: false, error: 'busy' }, 409);
 
-    // রেফারেল অগ্রগতি হালনাগাদ (সর্বোচ্চ প্রচেষ্টা; মূল heartbeat-কে প্রভাবিত করবে না)
+    // রেফারেল অগ্রগতি হালনাগাদ
     const referrerUid = uFields.referredBy?.stringValue || '';
     if (referrerUid && actualAddedSec > 0) {
       try {
@@ -168,7 +211,7 @@ export async function onRequestPost({ request, env }) {
           fsGet(ctx, `users/${referrerUid}/referrals/${user.sub}`),
           fsGet(ctx, `referrals/${user.sub}`),
         ]);
-        const reqHours = Number(cfgRes.data?.requiredHours || 25);
+        const reqHours = Number(cfgRes.data?.requiredHours ?? 25);
         const meetsHours = newTotalSec >= reqHours * 3600;
         const emailVerified = user.email_verified === true;
 
@@ -213,7 +256,9 @@ export async function onRequestPost({ request, env }) {
     return json({
       ok: true,
       activeSec: newActiveSec,
+      acceptedSec,
       playPointsToday: newPlayPointsGiven,
+      playRemainderSec: newRemainderSec,
       capReached,
       points: newUserPoints,
       addedPoints: pointsToAdd,

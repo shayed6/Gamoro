@@ -105,7 +105,7 @@ service cloud.firestore {
     }
 
     match /config/{docId} {
-      allow get: if docId == 'referral' || docId == 'withdraw' || docId == 'announcement' || docId == 'games';
+      allow get: if docId == 'referral' || docId == 'withdraw' || docId == 'announcement' || docId == 'games' || docId == 'donation';
       allow list: if false;
       allow write: if false;
     }

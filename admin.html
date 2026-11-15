@@ -1236,22 +1236,32 @@ input:checked + .slider:before {
               </div>
               <div class="form-group">
                 <label class="form-label">মোবাইল রিচার্জ সর্বনিম্ন ($)</label>
-                <input type="number" id="cfg_mobileRechargeMin" class="form-input" value="1">
+                <input type="number" id="cfg_mobileRechargeMin" class="form-input" value="1" step="0.01">
                 <span class="form-hint">ন্যূনতম রিচার্জ সীমা</span>
               </div>
               <div class="form-group">
-                <label class="form-label">মোবাইল ওয়ালেট সর্বনিম্ন ($)</label>
-                <input type="number" id="cfg_bankWalletMin" class="form-input" value="20">
-                <span class="form-hint">বিকাশ/নগদ/রকেটে তোলার ন্যূনতম সীমা</span>
+                <label class="form-label">মোবাইল রিচার্জ সর্বোচ্চ ($)</label>
+                <input type="number" id="cfg_mobileRechargeMax" class="form-input" value="19.99" step="0.01">
+                <span class="form-hint">রিচার্জের সর্বোচ্চ সীমা</span>
               </div>
               <div class="form-group">
                 <label class="form-label">বাইন্যান্স সর্বনিম্ন ($)</label>
-                <input type="number" id="cfg_binanceMin" class="form-input" value="10">
+                <input type="number" id="cfg_binanceMin" class="form-input" value="10" step="0.01">
                 <span class="form-hint">Binance Pay-তে তোলার ন্যূনতম সীমা</span>
               </div>
               <div class="form-group">
+                <label class="form-label">গিফট কার্ড সর্বনিম্ন ($)</label>
+                <input type="number" id="cfg_giftCardMin" class="form-input" value="20" step="0.01">
+                <span class="form-hint">গিফট কার্ডের ন্যূনতম সীমা</span>
+              </div>
+              <div class="form-group">
+                <label class="form-label">দান সর্বনিম্ন ($)</label>
+                <input type="number" id="cfg_donationMin" class="form-input" value="1" step="0.01">
+                <span class="form-hint">দানের ন্যূনতম সীমা</span>
+              </div>
+              <div class="form-group">
                 <label class="form-label">পরবর্তী মাসে ট্রান্সফার সীমা ($)</label>
-                <input type="number" id="cfg_carryBelowUsd" class="form-input" value="1">
+                <input type="number" id="cfg_carryBelowUsd" class="form-input" value="1" step="0.01">
                 <span class="form-hint">এর কম হলে পরবর্তী মাসে যোগ হবে</span>
               </div>
             </div>
@@ -1278,6 +1288,11 @@ input:checked + .slider:before {
                 <label class="form-label">প্রয়োজনীয় খেলার সময় (requiredHours)</label>
                 <input type="number" id="cfg_requiredHours" class="form-input" value="25">
                 <span class="form-hint">বোনাস সক্রিয় হতে যত ঘণ্টা খেলা আবশ্যক</span>
+              </div>
+              <div class="form-group">
+                <label class="form-label">অপেক্ষার দিন (waitDays)</label>
+                <input type="number" id="cfg_waitDays" class="form-input" value="0" min="0">
+                <span class="form-hint">বোনাস অনুমোদনের আগে অপেক্ষার দিন</span>
               </div>
             </div>
 
@@ -1549,12 +1564,12 @@ const DEMO_STORE = {
     ]
   },
   payouts: [
-    { id: 'pay_01', uid: 'usr_8923', userName: 'শাকিল আহমেদ', method: 'bkash', accountNo: '01711223344', amountUsd: 20.00, amountBdt: 2200, status: 'pending', createdAt: '৩১ অক্টো ২০২৬, ০৪:১৫ অপরাহ্ন' },
-    { id: 'pay_02', uid: 'usr_5412', userName: 'তানভীর হাসান', method: 'nagad', accountNo: '01822334455', amountUsd: 25.00, amountBdt: 2750, status: 'pending', createdAt: '৩১ অক্টো ২০২৬, ০৩:১০ অপরাহ্ন' },
+    { id: 'pay_01', uid: 'usr_8923', userName: 'শাকিল আহমেদ', method: 'gift_card', accountNo: 'google_play', amountUsd: 20.00, amountBdt: 2200, status: 'pending', createdAt: '৩১ অক্টো ২০২৬, ০৪:১৫ অপরাহ্ন' },
+    { id: 'pay_02', uid: 'usr_5412', userName: 'তানভীর হাসান', method: 'donation', accountNo: 'as_sunnah', amountUsd: 5.00, amountBdt: 550, status: 'pending', createdAt: '৩১ অক্টো ২০২৬, ০৩:১০ অপরাহ্ন' },
     { id: 'pay_03', uid: 'usr_3211', userName: 'মো: আরিফুল', method: 'mobile_recharge', accountNo: '01933445566', operator: 'bl', amountUsd: 2.00, amountBdt: 220, status: 'pending', createdAt: '৩১ অক্টো ২০২৬, ০১:৪৫ অপরাহ্ন' },
     { id: 'pay_04', uid: 'usr_9981', userName: 'ফারহান চৌধুরী', method: 'binance', accountNo: '728192019', amountUsd: 15.00, amountBdt: 1650, status: 'pending', createdAt: '৩০ অক্টো ২০২৬, ০৯:২০ অপরাহ্ন' },
-    { id: 'pay_05', uid: 'usr_1029', userName: 'সুমাইয়া আক্তার', method: 'rocket', accountNo: '01655667788', amountUsd: 20.00, amountBdt: 2200, status: 'paid', txId: 'TRX98273611', createdAt: '২৯ অক্টো ২০২৬, ০২:১২ অপরাহ্ন', paidAt: '৩০ অক্টো ২০২৬' },
-    { id: 'pay_06', uid: 'usr_4432', userName: 'রাকিবুল ইসলাম', method: 'bkash', accountNo: '01799887766', amountUsd: 20.00, amountBdt: 2200, status: 'rejected', rejectReason: 'ভুল বিকাশ অ্যাকাউন্ট নম্বর', createdAt: '২৮ অক্টো ২০২৬, ১১:৩০ পূর্বাহ্ন' }
+    { id: 'pay_05', uid: 'usr_1029', userName: 'সুমাইয়া আক্তার', method: 'mobile_recharge', accountNo: '01655667788', amountUsd: 10.00, amountBdt: 1100, status: 'paid', txId: 'TRX98273611', createdAt: '২৯ অক্টো ২০২৬, ০২:১২ অপরাহ্ন', paidAt: '৩০ অক্টো ২০২৬' },
+    { id: 'pay_06', uid: 'usr_4432', userName: 'রাকিবুল ইসলাম', method: 'gift_card', accountNo: 'google_play', amountUsd: 20.00, amountBdt: 2200, status: 'rejected', rejectReason: 'অবৈধ অনুরোধ', createdAt: '২৮ অক্টো ২০২৬, ১১:৩০ পূর্বাহ্ন' }
   ],
   referrals: [
     { id: 'ref_01', referrerName: 'সাকিব আল হাসান', inviteeName: 'তাহমিদ ইসলাম', activeHours: 28, requiredHours: 25, emailVerified: true, status: 'verifying', totalBonus: 1000, referrerBonus: 800, inviteeBonus: 200, createdAt: '২৮ অক্টো ২০২৬' },
@@ -1592,13 +1607,16 @@ const DEMO_STORE = {
     challengeIntervalMin: 15,
     usdToBdt: 110,
     mobileRechargeMin: 1,
-    bankWalletMin: 20,
+    mobileRechargeMax: 19.99,
     binanceMin: 10,
+    giftCardMin: 20,
+    donationMin: 1,
     carryBelowUsd: 1,
     totalBonus: 1000,
     referrerPercent: 80,
     inviteePercent: 20,
-    requiredHours: 25
+    requiredHours: 25,
+    waitDays: 0
   },
   audit: [
     { id: 'aud_01', timestamp: '৩১ অক্টো ২০২৬, ০৪:৫০ অপরাহ্ন', admin: 'admin@gamoro.com', action: 'payout.markPaid', target: 'pay_05 (সুমাইয়া আক্তার)', details: 'পরিশোধ সম্পন্ন (TxID: TRX98273611)' },
@@ -2328,11 +2346,10 @@ async function loadPayouts(status = 'pending') {
 
 function getMethodBadge(method) {
   switch (method) {
-    case 'bkash': return `<span class="badge" style="background:#DF146E; color:#fff;">বিকাশ</span>`;
-    case 'nagad': return `<span class="badge" style="background:#F7941D; color:#fff;">নগদ</span>`;
-    case 'rocket': return `<span class="badge" style="background:#8C3494; color:#fff;">রকেট</span>`;
-    case 'binance': return `<span class="badge" style="background:#F0B90B; color:#000;">Binance Pay</span>`;
     case 'mobile_recharge': return `<span class="badge badge-muted">মোবাইল রিচার্জ</span>`;
+    case 'binance': return `<span class="badge" style="background:#F0B90B; color:#000;">Binance Pay</span>`;
+    case 'gift_card': return `<span class="badge" style="background:#0F8A5F; color:#fff;">গিফট কার্ড</span>`;
+    case 'donation': return `<span class="badge" style="background:#2563EB; color:#fff;">দান</span>`;
     default: return `<span class="badge badge-muted">${method}</span>`;
   }
 }
@@ -3168,14 +3185,17 @@ async function loadConfig() {
 
     document.getElementById('cfg_usdToBdt').value = c.usdToBdt;
     document.getElementById('cfg_mobileRechargeMin').value = c.mobileRechargeMin;
-    document.getElementById('cfg_bankWalletMin').value = c.bankWalletMin;
+    document.getElementById('cfg_mobileRechargeMax').value = c.mobileRechargeMax ?? 19.99;
     document.getElementById('cfg_binanceMin').value = c.binanceMin;
+    document.getElementById('cfg_giftCardMin').value = c.giftCardMin ?? 20;
+    document.getElementById('cfg_donationMin').value = c.donationMin ?? 1;
     document.getElementById('cfg_carryBelowUsd').value = c.carryBelowUsd;
 
     document.getElementById('cfg_totalBonus').value = c.totalBonus;
     document.getElementById('cfg_referrerPercent').value = c.referrerPercent;
     document.getElementById('cfg_inviteePercent').value = c.inviteePercent;
     document.getElementById('cfg_requiredHours').value = c.requiredHours;
+    document.getElementById('cfg_waitDays').value = c.waitDays ?? 0;
 
   } catch (err) {
     showToast(err.message, 'error');
@@ -3198,13 +3218,16 @@ document.getElementById('globalConfigForm').addEventListener('submit', async (e)
     challengeIntervalMin: parseInt(document.getElementById('cfg_challengeInterval').value),
     usdToBdt: parseFloat(document.getElementById('cfg_usdToBdt').value),
     mobileRechargeMin: parseFloat(document.getElementById('cfg_mobileRechargeMin').value),
-    bankWalletMin: parseFloat(document.getElementById('cfg_bankWalletMin').value),
+    mobileRechargeMax: parseFloat(document.getElementById('cfg_mobileRechargeMax').value),
     binanceMin: parseFloat(document.getElementById('cfg_binanceMin').value),
+    giftCardMin: parseFloat(document.getElementById('cfg_giftCardMin').value),
+    donationMin: parseFloat(document.getElementById('cfg_donationMin').value),
     carryBelowUsd: parseFloat(document.getElementById('cfg_carryBelowUsd').value),
     totalBonus: parseInt(document.getElementById('cfg_totalBonus').value),
     referrerPercent: parseInt(document.getElementById('cfg_referrerPercent').value),
     inviteePercent: parseInt(document.getElementById('cfg_inviteePercent').value),
-    requiredHours: parseInt(document.getElementById('cfg_requiredHours').value)
+    requiredHours: parseInt(document.getElementById('cfg_requiredHours').value),
+    waitDays: parseInt(document.getElementById('cfg_waitDays').value)
   };
 
   openConfirmModal({

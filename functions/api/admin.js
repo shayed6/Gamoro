@@ -27,14 +27,17 @@ const DEFAULT_CONFIG = {
   challengeIntervalMin: 15,
   usdToBdt: 110,
   mobileRechargeMin: 1,
-  mobileRechargeMaxExclusive: 20,
-  bankWalletMin: 20,
+  mobileRechargeMax: 19.99,
   binanceMin: 10,
+  giftCardMin: 20,
+  donationMin: 1,
+  maxPending: 1,
   carryBelowUsd: 1,
   totalBonus: 1000,
   referrerPercent: 80,
   inviteePercent: 20,
   requiredHours: 25,
+  waitDays: 0,
 };
 
 const DEFAULT_GAMES = [
@@ -128,12 +131,19 @@ async function loadMergedConfig(ctx) {
     fsGet(ctx, 'config/withdraw'),
     fsGet(ctx, 'config/referral'),
   ]);
-  return {
+  const wData = wRes.data || {};
+  const merged = {
     ...DEFAULT_CONFIG,
     ...(gRes.data || {}),
-    ...(wRes.data || {}),
+    ...wData,
     ...(rRes.data || {}),
   };
+  if (wData.mobileRechargeMax === undefined && wData.mobileRechargeMaxExclusive !== undefined) {
+    merged.mobileRechargeMax = Number(wData.mobileRechargeMaxExclusive) - 0.01;
+  }
+  delete merged.bankWalletMin;
+  delete merged.mobileRechargeMaxExclusive;
+  return merged;
 }
 
 export async function onRequestPost({ request, env }) {
@@ -287,7 +297,7 @@ export async function onRequestPost({ request, env }) {
           uid: p.uid || '',
           userName: p.userName || 'ব্যবহারকারী',
           method: p.method || '',
-          accountNo: p.accountNo || p.accountDetails || '',
+          accountNo: p.label || p.accountNo || p.accountDetails || '',
           amountUsd: Number(p.amountUsd || 0),
           amountBdt: Number(p.amountBdt || 0),
           status: p.status || 'pending',
@@ -334,7 +344,7 @@ export async function onRequestPost({ request, env }) {
           ),
         ];
 
-        if (wd.uid && wd.uid !== 'deleted') {
+        if (wd.uid && !String(wd.uid).startsWith('deleted')) {
           const userPayoutRes = await fsGet(ctx, `users/${wd.uid}/payouts/${id}`, tx);
           if (userPayoutRes.exists) {
             writes.push(
@@ -398,7 +408,7 @@ export async function onRequestPost({ request, env }) {
           ),
         ];
 
-        if (wd.uid && wd.uid !== 'deleted') {
+        if (wd.uid && !String(wd.uid).startsWith('deleted')) {
           const [userRes, userPayoutRes] = await Promise.all([
             fsGet(ctx, `users/${wd.uid}`, tx),
             fsGet(ctx, `users/${wd.uid}/payouts/${id}`, tx),
@@ -441,10 +451,10 @@ export async function onRequestPost({ request, env }) {
       case 'referrals.list': {
         const status = String(params.status || 'verifying');
         const [rows, cfg] = await Promise.all([fsList(ctx, 'referrals', 200), loadMergedConfig(ctx)]);
-        const reqHours = Number(cfg.requiredHours || 25);
-        const totalBonus = Number(cfg.totalBonus || 1000);
-        const refBonus = Math.round((totalBonus * Number(cfg.referrerPercent || 80)) / 100);
-        const invBonus = Math.round((totalBonus * Number(cfg.inviteePercent || 20)) / 100);
+        const reqHours = Number(cfg.requiredHours ?? 25);
+        const totalBonus = Number(cfg.totalBonus ?? 1000);
+        const refBonus = Math.round((totalBonus * Number(cfg.referrerPercent ?? 80)) / 100);
+        const invBonus = Math.round((totalBonus * Number(cfg.inviteePercent ?? 20)) / 100);
 
         const filtered = rows.filter((r) => {
           const st = r.status || 'pending';
@@ -455,7 +465,7 @@ export async function onRequestPost({ request, env }) {
 
         filtered.sort((a, b) => Date.parse(b.createdAt || 0) - Date.parse(a.createdAt || 0));
         const referrals = filtered.map((r) => {
-          const sec = Number(r.activeSec ?? (Number(r.playedMinutes || 0) * 60));
+          const sec = Number(r.activeSec ?? Number(r.playedMinutes || 0) * 60);
           const activeHours = Number((sec / 3600).toFixed(1));
           const normalizedStatus =
             r.status === 'review' || r.status === 'pending'
@@ -486,10 +496,10 @@ export async function onRequestPost({ request, env }) {
         if (!id) return json({ ok: false, error: 'missing_id' }, 400);
 
         const cfg = await loadMergedConfig(ctx);
-        const reqHours = Number(cfg.requiredHours || 25);
-        const totalBonus = Number(cfg.totalBonus || 1000);
-        const refBonus = Math.round((totalBonus * Number(cfg.referrerPercent || 80)) / 100);
-        const invBonus = Math.round((totalBonus * Number(cfg.inviteePercent || 20)) / 100);
+        const reqHours = Number(cfg.requiredHours ?? 25);
+        const totalBonus = Number(cfg.totalBonus ?? 1000);
+        const refBonus = Math.round((totalBonus * Number(cfg.referrerPercent ?? 80)) / 100);
+        const invBonus = Math.round((totalBonus * Number(cfg.inviteePercent ?? 20)) / 100);
 
         tx = await fsBeginTx(ctx, true);
         const refTopRes = await fsGet(ctx, `referrals/${id}`, tx);
@@ -526,10 +536,7 @@ export async function onRequestPost({ request, env }) {
         }
         if (refData.emailVerified !== true) {
           await fsRollbackTx(ctx, tx);
-          return json(
-            { ok: false, error: 'ইমেইল ভেরিফাই সম্পন্ন হয়নি' },
-            400
-          );
+          return json({ ok: false, error: 'ইমেইল ভেরিফাই সম্পন্ন হয়নি' }, 400);
         }
 
         const nowIso = new Date().toISOString();
@@ -655,7 +662,6 @@ export async function onRequestPost({ request, env }) {
         const q = String(params.query || '').trim();
         if (!q) return json({ ok: true, users: [] });
 
-        // প্রথমে সরাসরি UID দিয়ে খোঁজা
         const exact = await fsGet(ctx, `users/${q}`);
         if (exact.exists) {
           return json({ ok: true, users: [mapUserSummary(exact.data, period)] });
@@ -908,7 +914,6 @@ export async function onRequestPost({ request, env }) {
         const totalPoints = eligibleUsers.reduce((sum, u) => sum + Number(u.points || 0), 0);
         const nowIso = new Date().toISOString();
 
-        // ইউজারদের পয়েন্ট থেকে USD ব্যালেন্সে রূপান্তর (ট্রানজ্যাকশনাল প্রতি ব্যাচ)
         let convertedUsers = 0;
         if (totalPoints > 0 && userPoolUsd > 0) {
           for (let i = 0; i < eligibleUsers.length; i += 20) {
@@ -1081,38 +1086,75 @@ export async function onRequestPost({ request, env }) {
         const reason = String(params.reason || '').trim().slice(0, 240) || 'উল্লেখ নেই';
         const nowIso = new Date().toISOString();
 
+        const allowedNumericKeys = [
+          'pointsPerSec',
+          'idleSec',
+          'challengeIntervalMin',
+          'usdToBdt',
+          'carryBelowUsd',
+          'mobileRechargeMin',
+          'mobileRechargeMax',
+          'binanceMin',
+          'giftCardMin',
+          'donationMin',
+          'maxPending',
+          'totalBonus',
+          'referrerPercent',
+          'inviteePercent',
+          'requiredHours',
+          'waitDays',
+        ];
+
+        const clean = {};
+        for (const key of allowedNumericKeys) {
+          const val = c[key] !== undefined ? Number(c[key]) : DEFAULT_CONFIG[key];
+          if (!Number.isFinite(val) || val < 0) {
+            return json({ ok: false, error: `অবৈধ কনফিগ মান: ${key}` }, 400);
+          }
+          clean[key] = val;
+        }
+        if (clean.mobileRechargeMax < clean.mobileRechargeMin) {
+          return json(
+            { ok: false, error: 'mobileRechargeMax অবশ্যই mobileRechargeMin-এর চেয়ে কম হতে পারবে না' },
+            400
+          );
+        }
+
         const withdrawCfg = {
-          usdToBdt: Number(c.usdToBdt ?? DEFAULT_CONFIG.usdToBdt),
-          carryBelowUsd: Number(c.carryBelowUsd ?? DEFAULT_CONFIG.carryBelowUsd),
-          mobileRechargeMin: Number(c.mobileRechargeMin ?? DEFAULT_CONFIG.mobileRechargeMin),
-          mobileRechargeMaxExclusive: Number(
-            c.mobileRechargeMaxExclusive ?? DEFAULT_CONFIG.mobileRechargeMaxExclusive
-          ),
-          bankWalletMin: Number(c.bankWalletMin ?? DEFAULT_CONFIG.bankWalletMin),
-          binanceMin: Number(c.binanceMin ?? DEFAULT_CONFIG.binanceMin),
+          usdToBdt: clean.usdToBdt,
+          carryBelowUsd: clean.carryBelowUsd,
+          mobileRechargeMin: clean.mobileRechargeMin,
+          mobileRechargeMax: clean.mobileRechargeMax,
+          binanceMin: clean.binanceMin,
+          giftCardMin: clean.giftCardMin,
+          donationMin: clean.donationMin,
+          maxPending: Math.max(1, Math.floor(clean.maxPending)),
           updatedAt: tsValue(nowIso),
         };
         const referralCfg = {
-          totalBonus: Number(c.totalBonus ?? DEFAULT_CONFIG.totalBonus),
-          referrerPercent: Number(c.referrerPercent ?? DEFAULT_CONFIG.referrerPercent),
-          inviteePercent: Number(c.inviteePercent ?? DEFAULT_CONFIG.inviteePercent),
-          requiredHours: Number(c.requiredHours ?? DEFAULT_CONFIG.requiredHours),
+          totalBonus: clean.totalBonus,
+          referrerPercent: clean.referrerPercent,
+          inviteePercent: clean.inviteePercent,
+          requiredHours: clean.requiredHours,
+          waitDays: clean.waitDays,
           updatedAt: tsValue(nowIso),
         };
         const globalCfg = {
-          pointsPerSec: Number(c.pointsPerSec ?? DEFAULT_CONFIG.pointsPerSec),
-          idleSec: Number(c.idleSec ?? DEFAULT_CONFIG.idleSec),
-          challengeIntervalMin: Number(
-            c.challengeIntervalMin ?? DEFAULT_CONFIG.challengeIntervalMin
-          ),
+          pointsPerSec: clean.pointsPerSec,
+          idleSec: clean.idleSec,
+          challengeIntervalMin: clean.challengeIntervalMin,
           playSecPerPoint: PLAY_SEC_PER_POINT,
           updatedAt: tsValue(nowIso),
         };
 
         await Promise.all([
-          fsPatch(ctx, 'config/withdraw', withdrawCfg),
-          fsPatch(ctx, 'config/referral', referralCfg),
-          fsPatch(ctx, 'config/global', globalCfg),
+          fsPatch(ctx, 'config/withdraw', withdrawCfg, [
+            ...Object.keys(withdrawCfg),
+            'bankWalletMin',
+            'mobileRechargeMaxExclusive',
+          ]),
+          fsPatch(ctx, 'config/referral', referralCfg, Object.keys(referralCfg)),
+          fsPatch(ctx, 'config/global', globalCfg, Object.keys(globalCfg)),
         ]);
         await writeAudit(
           ctx,

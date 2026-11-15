@@ -796,6 +796,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{
         <div id="currentPinGroup" style="display:none">
           <label class="field-label" for="currentPinInput">বর্তমান পিন</label>
           <input type="password" inputmode="numeric" maxlength="6" class="field-input" id="currentPinInput" placeholder="••••••">
+          <button type="button" class="forgot-pin-trigger" style="background:none;border:0;padding:4px 0 0;color:var(--green-2);font-size:12.5px;font-weight:600;text-decoration:underline;cursor:pointer;">পিন ভুলে গেছেন?</button>
         </div>
         <div>
           <label class="field-label" for="newPinInput" id="newPinLabel">৬ ডিজিটের পিন</label>
@@ -806,8 +807,14 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{
           <input type="password" inputmode="numeric" maxlength="6" class="field-input" id="confirmPinInput" placeholder="••••••">
         </div>
         <button type="button" class="submit-btn" style="padding:10px 14px;font-size:14.5px" id="savePinBtn">পিন সেট করুন</button>
-        <div style="font-size:12px;color:var(--muted);margin-top:2px">এই পিন কাউকে জানাবেন না। ভুলে গেলে অ্যাডমিনের সাথে যোগাযোগ করতে হবে।</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">এই পিন কাউকে জানাবেন না। ভুলে গেলে পিন রিসেট করতে পারবেন।</div>
       </div>
+    </div>
+
+    <!-- PIN Lock Warning Banner (shown when pin_locked occurs) -->
+    <div class="verify-warning" id="pinLockAlert" style="display:none; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+      <span>১৫ মিনিট পরে চেষ্টা করুন — ভুল পিনের কারণে সাময়িক লক হয়েছে।</span>
+      <button type="button" class="action-btn-sm forgot-pin-trigger" style="white-space:nowrap;">পিন ভুলে গেছেন?</button>
     </div>
 
     <!-- Threshold Notice (when balance is below withdraw threshold) -->
@@ -849,49 +856,39 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{
           </div>
         </div>
 
-        <!-- Fields: MFS (bKash / Rocket / Nagad) -->
-        <div id="fieldsMfs" style="display:none; flex-direction:column; gap:12px;">
-          <div class="field-group">
-            <label class="field-label" for="mfsNumber">অ্যাকাউন্ট নম্বর (১১ ডিজিট)</label>
-            <input type="tel" class="field-input" id="mfsNumber" placeholder="01XXXXXXXXX" maxlength="11">
-            <span class="field-hint">০১ দিয়ে শুরু হওয়া ১১ ডিজিটের মোবাইল ব্যাংকিং নম্বর দিন।</span>
-          </div>
-          <div class="field-group">
-            <label class="field-label" for="mfsType">অ্যাকাউন্টের ধরন</label>
-            <input type="text" class="field-input" id="mfsType" readonly value="পার্সোনাল">
-          </div>
-        </div>
-
-        <!-- Fields: Bank -->
-        <div id="fieldsBank" style="display:none; flex-direction:column; gap:12px;">
-          <div class="field-group">
-            <label class="field-label" for="bankName">ব্যাংকের নাম</label>
-            <input type="text" class="field-input" id="bankName" placeholder="যেমন: ডাচ-বাংলা ব্যাংক">
-          </div>
-          <div class="field-group">
-            <label class="field-label" for="bankBranch">শাখা (Branch)</label>
-            <input type="text" class="field-input" id="bankBranch" placeholder="যেমন: ধানমন্ডি শাখা">
-          </div>
-          <div class="field-group">
-            <label class="field-label" for="bankAccName">হিসাবধারীর নাম (Account Name)</label>
-            <input type="text" class="field-input" id="bankAccName" placeholder="ব্যাংক অ্যাকাউন্টের পুরো নাম">
-          </div>
-          <div class="field-group">
-            <label class="field-label" for="bankAccNumber">অ্যাকাউন্ট নম্বর</label>
-            <input type="text" class="field-input" id="bankAccNumber" placeholder="অ্যাকাউন্ট নম্বর লিখুন">
-          </div>
-          <div class="field-group">
-            <label class="field-label" for="bankRouting">রাউটিং নম্বর (ঐচ্ছিক)</label>
-            <input type="text" class="field-input" id="bankRouting" placeholder="৯ ডিজিটের রাউটিং নম্বর">
-          </div>
-        </div>
-
         <!-- Fields: Binance Pay -->
         <div id="fieldsBinance" style="display:none; flex-direction:column; gap:12px;">
           <div class="field-group">
             <label class="field-label" for="binanceId">Binance Pay ID / UID</label>
             <input type="text" class="field-input" id="binanceId" placeholder="আপনার Binance Pay ID লিখুন">
             <span class="field-hint">নাম ও আইডি দুবার মিলিয়ে নিন, ভুল আইডিতে পাঠানো টাকা ফেরত পাওয়া যায় না।</span>
+          </div>
+        </div>
+
+        <!-- Fields: Gift Card -->
+        <div id="fieldsGiftCard" style="display:none; flex-direction:column; gap:12px;">
+          <div class="field-group">
+            <label class="field-label" for="giftCardBrand">গিফট কার্ড ব্র্যান্ড</label>
+            <select class="field-select" id="giftCardBrand">
+              <option value="google_play">Google Play</option>
+              <option value="other">অন্যান্য</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="giftCardEmail">ডেলিভারি ইমেইল</label>
+            <input type="text" class="field-input" id="giftCardEmail" readonly value="">
+            <span class="field-hint">গিফট কার্ড শুধু আপনার নিবন্ধিত ইমেইলে পাঠানো হবে।</span>
+          </div>
+        </div>
+
+        <!-- Fields: Donation -->
+        <div id="fieldsDonation" style="display:none; flex-direction:column; gap:12px;">
+          <div class="field-group">
+            <label class="field-label" for="donationOrgSelect">সংস্থা নির্বাচন করুন</label>
+            <select class="field-select" id="donationOrgSelect">
+              <option value="">লোড হচ্ছে...</option>
+            </select>
+            <span class="field-hint">শুধুমাত্র অনুমোদিত ও সক্রিয় সংস্থায় দান করা যাবে।</span>
           </div>
         </div>
       </section>
@@ -971,7 +968,10 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{
       <div class="modal-row" style="flex-direction:column;align-items:flex-start;gap:6px;border-top:1px dashed var(--line);padding-top:10px;margin-top:6px">
         <label class="modal-row-label" for="modalPinInput" style="font-weight:600">টাকা তোলার পিন (৬ ডিজিট):</label>
         <input type="password" inputmode="numeric" maxlength="6" class="field-input" id="modalPinInput" placeholder="••••••" style="width:100%">
-        <span style="font-size:11.5px;color:var(--muted)">আবেদন নিশ্চিত করতে আপনার ৬ ডিজিটের পিন দিন।</span>
+        <div style="display:flex;justify-content:space-between;align-items:center;width:100%;gap:8px;flex-wrap:wrap">
+          <span style="font-size:11.5px;color:var(--muted)">আবেদন নিশ্চিত করতে আপনার ৬ ডিজিটের পিন দিন।</span>
+          <button type="button" class="forgot-pin-trigger" style="background:none;border:0;padding:0;color:var(--green-2);font-size:12px;font-weight:600;text-decoration:underline;cursor:pointer;">পিন ভুলে গেছেন?</button>
+        </div>
       </div>
     </div>
     <div class="modal-actions">
@@ -981,13 +981,59 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{
   </div>
 </div>
 
+<!-- Reset PIN Modal (পিন ভুলে গেছেন?) -->
+<div class="modal-overlay" id="resetPinModal">
+  <div class="modal-card">
+    <h3 class="modal-title">ভুলে যাওয়া পিন রিসেট</h3>
+    <div style="font-size:12.5px;color:var(--muted);line-height:1.5;">
+      নতুন পিন সেট করার আগে আপনার অ্যাকাউন্টের পরিচয় যাচাই করুন। রিসেটের পর নিরাপত্তার জন্য ২৪ ঘণ্টা টাকা তোলা বন্ধ থাকবে।
+    </div>
+
+    <!-- Step A: Reauthenticate -->
+    <div id="resetStepReauth" style="display:flex;flex-direction:column;gap:10px;">
+      <div id="resetGoogleWrap" style="display:none;flex-direction:column;gap:8px;">
+        <button type="button" class="submit-btn" id="btnResetGoogleReauth">Google দিয়ে পরিচয় যাচাই করুন</button>
+      </div>
+      <div id="resetPasswordWrap" style="display:none;flex-direction:column;gap:8px;">
+        <label class="field-label" for="resetReauthPassword">আপনার লগইন পাসওয়ার্ড দিন</label>
+        <input type="password" class="field-input" id="resetReauthPassword" placeholder="লগইন পাসওয়ার্ড" autocomplete="current-password">
+        <button type="button" class="submit-btn" id="btnResetPasswordReauth">পরিচয় যাচাই করুন</button>
+      </div>
+    </div>
+
+    <!-- Step B: New PIN twice -->
+    <div id="resetStepNewPin" style="display:none;flex-direction:column;gap:10px;">
+      <div>
+        <label class="field-label" for="resetNewPinInput">নতুন ৬ ডিজিটের পিন</label>
+        <input type="password" inputmode="numeric" maxlength="6" class="field-input" id="resetNewPinInput" placeholder="••••••">
+      </div>
+      <div>
+        <label class="field-label" for="resetConfirmPinInput">নতুন পিন পুনরায় লিখুন</label>
+        <input type="password" inputmode="numeric" maxlength="6" class="field-input" id="resetConfirmPinInput" placeholder="••••••">
+      </div>
+      <button type="button" class="submit-btn" id="btnSubmitResetPin">নতুন পিন সংরক্ষণ করুন</button>
+    </div>
+
+    <div class="modal-actions">
+      <button type="button" class="modal-btn modal-cancel" id="resetPinCancelBtn">বন্ধ করুন</button>
+    </div>
+  </div>
+</div>
+
 <!-- Toast -->
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script type="module">
 import { auth, db } from "./firebase-config.js";
-import { WITHDRAW_URL, SET_PIN_URL } from "./api-config.js";
-import { onAuthStateChanged, sendEmailVerification } from "firebase/auth";
+import { WITHDRAW_URL, SET_PIN_URL, RESET_PIN_URL } from "./api-config.js";
+import {
+  onAuthStateChanged,
+  sendEmailVerification,
+  GoogleAuthProvider,
+  EmailAuthProvider,
+  reauthenticateWithPopup,
+  reauthenticateWithCredential
+} from "firebase/auth";
 import { doc, getDoc, collection, query, orderBy, limit, getDocs } from "firebase/firestore";
 
 /* Bengali Number Helper */
@@ -1001,10 +1047,18 @@ let config = {
   usdToBdt: 110,
   carryBelowUsd: 1,
   mobileRechargeMin: 1,
-  mobileRechargeMaxExclusive: 20,
-  bankWalletMin: 20,
-  binanceMin: 10
+  mobileRechargeMax: 19.99,
+  binanceMin: 10,
+  giftCardMin: 20,
+  donationMin: 1
 };
+
+let realDonationOrgs = [];
+let donationOrgs = [];
+const DEMO_DONATION_ORGS = [
+  { id: 'as_sunnah', name: 'আস-সুন্নাহ ফাউন্ডেশন', active: true },
+  { id: 'bidyanondo', name: 'বিদ্যানন্দ ফাউন্ডেশন', active: true }
+];
 
 let userState = {
   uid: null,
@@ -1018,7 +1072,6 @@ let userState = {
 };
 
 let selectedMethod = '';
-let selectedMfsType = 'পার্সোনাল';
 let isDemoMode = false;
 
 /* Theme Toggle */
@@ -1082,24 +1135,42 @@ maxBtn.addEventListener('click', () => {
   }
   let maxUsd = userState.balanceUsd;
   if(userState.country === 'BD' && selectedMethod === 'recharge'){
-    maxUsd = Math.min(userState.balanceUsd, 19.99);
+    maxUsd = Math.min(userState.balanceUsd, config.mobileRechargeMax);
   }
   amountUsdInput.value = maxUsd.toFixed(2);
   updateBdtPreview();
 });
 
-/* Load Configuration from Firestore config/withdraw */
+/* Load Configuration from Firestore config/withdraw and config/donation */
 async function loadConfig(){
   try{
-    const snap = await getDoc(doc(db, 'config', 'withdraw'));
-    if(snap.exists()){
-      const d = snap.data();
+    const [wSnap, dSnap] = await Promise.all([
+      getDoc(doc(db, 'config', 'withdraw')),
+      getDoc(doc(db, 'config', 'donation')).catch(() => null)
+    ]);
+    if(wSnap && wSnap.exists()){
+      const d = wSnap.data();
       if(d.usdToBdt) config.usdToBdt = Number(d.usdToBdt);
       if(d.carryBelowUsd !== undefined) config.carryBelowUsd = Number(d.carryBelowUsd);
       if(d.mobileRechargeMin !== undefined) config.mobileRechargeMin = Number(d.mobileRechargeMin);
-      if(d.mobileRechargeMaxExclusive !== undefined) config.mobileRechargeMaxExclusive = Number(d.mobileRechargeMaxExclusive);
-      if(d.bankWalletMin !== undefined) config.bankWalletMin = Number(d.bankWalletMin);
+      if(d.mobileRechargeMax !== undefined){
+        config.mobileRechargeMax = Number(d.mobileRechargeMax);
+      } else if(d.mobileRechargeMaxExclusive !== undefined){
+        config.mobileRechargeMax = Number((Number(d.mobileRechargeMaxExclusive) - 0.01).toFixed(2));
+      }
       if(d.binanceMin !== undefined) config.binanceMin = Number(d.binanceMin);
+      if(d.giftCardMin !== undefined) config.giftCardMin = Number(d.giftCardMin);
+      if(d.donationMin !== undefined) config.donationMin = Number(d.donationMin);
+    }
+    if(dSnap && dSnap.exists()){
+      const dd = dSnap.data();
+      const orgs = Array.isArray(dd.orgs) ? dd.orgs : [];
+      realDonationOrgs = orgs.filter(o => o && o.id && o.name && o.active === true);
+    } else {
+      realDonationOrgs = [];
+    }
+    if(!isDemoMode){
+      donationOrgs = realDonationOrgs;
     }
   }catch(err){
     // default config remains intact
@@ -1111,7 +1182,13 @@ function getErrorMessage(code, defaultMsg){
   const map = {
     'wrong_pin': 'পিন ভুল',
     'pin_locked': '১৫ মিনিট পরে চেষ্টা করুন',
+    'pin_cooldown': 'পিন বদলানোর ২৪ ঘণ্টার মধ্যে টাকা তোলা যাবে না',
+    'reset_limit': 'আজ আর পিন রিসেট করা যাবে না, কাল আবার চেষ্টা করুন',
+    'confirm_required': 'নিশ্চিত করতে "মুছে ফেলুন" লিখুন',
     'no_pin': 'আগে পিন সেট করুন',
+    'pin_required': 'আগে পিন সেট করুন',
+    'pending_exists': 'আপনার একটি আবেদন আগে থেকেই অপেক্ষমাণ',
+    'recent_login_required': 'নিরাপত্তার জন্য আবার লগইন করুন',
     'weak_pin': 'সহজ পিন দেওয়া যাবে না, অন্য পিন দিন',
     'pin_exists': 'আপনার পিন আগে থেকেই আছে',
     'email_not_verified': 'ইমেইল ভেরিফাই করুন',
@@ -1172,14 +1249,18 @@ function renderUI(){
 
   // 3. Balance Threshold Gating
   const isBd = userState.country === 'BD';
-  const minThreshold = isBd ? config.carryBelowUsd : config.binanceMin;
+  const minThreshold = Math.min(
+    config.carryBelowUsd,
+    isBd ? config.mobileRechargeMin : config.binanceMin,
+    config.donationMin
+  );
 
   if(userState.balanceUsd < minThreshold){
     thresholdNotice.style.display = 'block';
     if(isBd){
-      thresholdSubText.innerHTML = 'ন্যূনতম সীমা: $' + toBn(config.mobileRechargeMin) + ' (মোবাইল রিচার্জ) বা $' + toBn(config.bankWalletMin) + ' (বিকাশ/নগদ/রকেট/ব্যাংক)। এটি আগামী মাসে জমা থাকবে।';
+      thresholdSubText.innerHTML = 'ন্যূনতম সীমা: $' + toBn(config.mobileRechargeMin) + ' (মোবাইল রিচার্জ/দান) বা $' + toBn(config.giftCardMin) + ' (গিফট কার্ড)। এটি আগামী মাসে জমা থাকবে।';
     } else {
-      thresholdSubText.innerHTML = 'ন্যূনতম সীমা: $' + toBn(config.binanceMin) + ' (Binance Pay)। এটি আগামী মাসে জমা থাকবে।';
+      thresholdSubText.innerHTML = 'ন্যূনতম সীমা: $' + toBn(config.donationMin) + ' (দান), $' + toBn(config.binanceMin) + ' (Binance Pay) বা $' + toBn(config.giftCardMin) + ' (গিফট কার্ড)। এটি আগামী মাসে জমা থাকবে।';
     }
     withdrawForm.style.display = 'none';
     return;
@@ -1320,10 +1401,16 @@ document.getElementById('savePinBtn').addEventListener('click', async () => {
     const data = await res.json().catch(() => ({}));
     if (!res.ok || data.ok === false) {
       const code = data.error || data.code || '';
+      if (code === 'pin_locked') {
+        const lockAlert = document.getElementById('pinLockAlert');
+        if (lockAlert) lockAlert.style.display = 'flex';
+      }
       showToast(getErrorMessage(code, data.message));
       return;
     }
 
+    const lockAlert = document.getElementById('pinLockAlert');
+    if (lockAlert) lockAlert.style.display = 'none';
     userState.pinSet = true;
     showToast(isChanging ? 'পিন সফলভাবে পরিবর্তন হয়েছে!' : 'পিন সফলভাবে সেট করা হয়েছে!');
     document.getElementById('newPinInput').value = '';
@@ -1343,61 +1430,239 @@ document.getElementById('savePinBtn').addEventListener('click', async () => {
   }
 });
 
+/* Forgot PIN Reset Flow */
+const resetPinModal = document.getElementById('resetPinModal');
+const resetStepReauth = document.getElementById('resetStepReauth');
+const resetStepNewPin = document.getElementById('resetStepNewPin');
+const resetGoogleWrap = document.getElementById('resetGoogleWrap');
+const resetPasswordWrap = document.getElementById('resetPasswordWrap');
+const resetReauthPassword = document.getElementById('resetReauthPassword');
+const resetNewPinInput = document.getElementById('resetNewPinInput');
+const resetConfirmPinInput = document.getElementById('resetConfirmPinInput');
+const btnResetGoogleReauth = document.getElementById('btnResetGoogleReauth');
+const btnResetPasswordReauth = document.getElementById('btnResetPasswordReauth');
+const btnSubmitResetPin = document.getElementById('btnSubmitResetPin');
+const resetPinCancelBtn = document.getElementById('resetPinCancelBtn');
+
+function openResetPinModal() {
+  if (!isDemoMode && !auth.currentUser) {
+    showToast('অনুগ্রহ করে লগইন করুন।');
+    return;
+  }
+  const cModal = document.getElementById('confirmModal');
+  if (cModal) cModal.classList.remove('open');
+
+  resetStepReauth.style.display = 'flex';
+  resetStepNewPin.style.display = 'none';
+  resetReauthPassword.value = '';
+  resetNewPinInput.value = '';
+  resetConfirmPinInput.value = '';
+
+  if (isDemoMode) {
+    resetGoogleWrap.style.display = 'none';
+    resetPasswordWrap.style.display = 'flex';
+  } else {
+    const providers = auth.currentUser.providerData || [];
+    const isGoogle = providers.some(p => p.providerId === 'google.com');
+    resetGoogleWrap.style.display = isGoogle ? 'flex' : 'none';
+    resetPasswordWrap.style.display = isGoogle ? 'none' : 'flex';
+  }
+  resetPinModal.classList.add('open');
+}
+
+function closeResetPinModal() {
+  resetPinModal.classList.remove('open');
+}
+
+document.querySelectorAll('.forgot-pin-trigger').forEach(btn => {
+  btn.addEventListener('click', openResetPinModal);
+});
+resetPinCancelBtn.addEventListener('click', closeResetPinModal);
+resetPinModal.addEventListener('click', (e) => {
+  if (e.target === resetPinModal) closeResetPinModal();
+});
+
+btnResetGoogleReauth.addEventListener('click', async () => {
+  if (isDemoMode) {
+    resetStepReauth.style.display = 'none';
+    resetStepNewPin.style.display = 'flex';
+    resetNewPinInput.focus();
+    return;
+  }
+  if (!auth.currentUser) return;
+  btnResetGoogleReauth.disabled = true;
+  try {
+    const provider = new GoogleAuthProvider();
+    await reauthenticateWithPopup(auth.currentUser, provider);
+    resetStepReauth.style.display = 'none';
+    resetStepNewPin.style.display = 'flex';
+    resetNewPinInput.focus();
+    showToast('পরিচয় যাচাই সম্পন্ন হয়েছে ✓');
+  } catch {
+    showToast('পরিচয় যাচাই ব্যর্থ হয়েছে। আবার চেষ্টা করুন।');
+  } finally {
+    btnResetGoogleReauth.disabled = false;
+  }
+});
+
+btnResetPasswordReauth.addEventListener('click', async () => {
+  const pw = resetReauthPassword.value;
+  if (!pw) {
+    showToast('আপনার পাসওয়ার্ড লিখুন।');
+    return;
+  }
+  if (isDemoMode) {
+    resetStepReauth.style.display = 'none';
+    resetStepNewPin.style.display = 'flex';
+    resetNewPinInput.focus();
+    return;
+  }
+  if (!auth.currentUser) return;
+  btnResetPasswordReauth.disabled = true;
+  try {
+    const cred = EmailAuthProvider.credential(auth.currentUser.email, pw);
+    await reauthenticateWithCredential(auth.currentUser, cred);
+    resetStepReauth.style.display = 'none';
+    resetStepNewPin.style.display = 'flex';
+    resetNewPinInput.focus();
+    showToast('পরিচয় যাচাই সম্পন্ন হয়েছে ✓');
+  } catch {
+    showToast('পাসওয়ার্ড ভুল হয়েছে।');
+  } finally {
+    btnResetPasswordReauth.disabled = false;
+  }
+});
+
+btnSubmitResetPin.addEventListener('click', async () => {
+  const p1 = resetNewPinInput.value.trim();
+  const p2 = resetConfirmPinInput.value.trim();
+  if (!/^\d{6}$/.test(p1)) {
+    showToast('নতুন পিন অবশ্যই ৬ সংখ্যার হতে হবে।');
+    return;
+  }
+  if (p1 !== p2) {
+    showToast('দুটি পিন মিলছে না।');
+    return;
+  }
+
+  if (isDemoMode) {
+    userState.pinSet = true;
+    const lockAlert = document.getElementById('pinLockAlert');
+    if (lockAlert) lockAlert.style.display = 'none';
+    closeResetPinModal();
+    showToast('পিন বদলানো হয়েছে। নিরাপত্তার জন্য ২৪ ঘণ্টা টাকা তোলা বন্ধ থাকবে।');
+    renderUI();
+    return;
+  }
+
+  if (!RESET_PIN_URL || RESET_PIN_URL.trim() === '') {
+    showToast('শীঘ্রই চালু হবে।');
+    return;
+  }
+
+  btnSubmitResetPin.disabled = true;
+  const origText = btnSubmitResetPin.textContent;
+  btnSubmitResetPin.textContent = 'সংরক্ষণ হচ্ছে...';
+  try {
+    const token = await auth.currentUser.getIdToken(true);
+    const res = await fetch(RESET_PIN_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + token
+      },
+      body: JSON.stringify({ newPin: p1 })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || data.ok === false) {
+      const code = data.error || data.code || '';
+      if (code === 'recent_login_required') {
+        resetStepNewPin.style.display = 'none';
+        resetStepReauth.style.display = 'flex';
+      }
+      showToast(getErrorMessage(code, data.message));
+      return;
+    }
+
+    const lockAlert = document.getElementById('pinLockAlert');
+    if (lockAlert) lockAlert.style.display = 'none';
+    document.getElementById('pinSetupCard').style.display = 'none';
+    userState.pinSet = true;
+    closeResetPinModal();
+    showToast('পিন বদলানো হয়েছে। নিরাপত্তার জন্য ২৪ ঘণ্টা টাকা তোলা বন্ধ থাকবে।');
+    if (auth.currentUser) {
+      await loadUserData(auth.currentUser);
+    } else {
+      renderUI();
+    }
+  } catch {
+    showToast('সমস্যা হয়েছে, পরে আবার চেষ্টা করুন');
+  } finally {
+    btnSubmitResetPin.disabled = false;
+    btnSubmitResetPin.textContent = origText;
+  }
+});
+
 /* Render Payment Methods Grid */
 function renderMethods(){
   const grid = document.getElementById('methodsGrid');
   grid.innerHTML = '';
   const isBd = userState.country === 'BD';
   const bal = userState.balanceUsd;
+  const activeOrgs = donationOrgs.filter(o => o && o.active === true);
+  const giftCardActive = bal >= config.giftCardMin;
+  const donationActive = bal >= config.donationMin && activeOrgs.length > 0;
 
   let methods = [];
 
   if(isBd){
-    // BD Methods: Mobile Recharge, bKash, Rocket, Nagad, Bank
-    const rechargeActive = bal >= config.mobileRechargeMin && bal < config.mobileRechargeMaxExclusive;
-    const largeActive = bal >= config.bankWalletMin;
-
+    const rechargeActive = bal >= config.mobileRechargeMin && bal <= config.mobileRechargeMax;
     methods = [
       {
         id: 'recharge',
         name: 'মোবাইল রিচার্জ',
         active: rechargeActive,
-        note: rechargeActive ? '$' + toBn(config.mobileRechargeMin) + ' – $' + toBn(config.mobileRechargeMaxExclusive) : (bal >= config.mobileRechargeMaxExclusive ? 'শুধু ২০ ডলারের কম ব্যালেন্সে' : 'ন্যূনতম $১ লাগবে')
+        note: rechargeActive
+          ? '$' + toBn(config.mobileRechargeMin) + ' – $' + toBn(config.mobileRechargeMax)
+          : (bal > config.mobileRechargeMax ? 'শুধু $' + toBn(config.mobileRechargeMax) + ' পর্যন্ত' : 'ন্যূনতম $' + toBn(config.mobileRechargeMin) + ' লাগবে')
       },
       {
-        id: 'bkash',
-        name: 'বিকাশ (bKash)',
-        active: largeActive,
-        note: largeActive ? 'ন্যূনতম $' + toBn(config.bankWalletMin) : '২০ ডলার বা বেশি হলে চালু হবে'
+        id: 'gift_card',
+        name: 'গিফট কার্ড',
+        active: giftCardActive,
+        note: giftCardActive ? 'ন্যূনতম $' + toBn(config.giftCardMin) : 'ন্যূনতম $' + toBn(config.giftCardMin) + ' লাগবে'
       },
       {
-        id: 'nagad',
-        name: 'নগদ (Nagad)',
-        active: largeActive,
-        note: largeActive ? 'ন্যূনতম $' + toBn(config.bankWalletMin) : '২০ ডলার বা বেশি হলে চালু হবে'
-      },
-      {
-        id: 'rocket',
-        name: 'রকেট (Rocket)',
-        active: largeActive,
-        note: largeActive ? 'ন্যূনতম $' + toBn(config.bankWalletMin) : '২০ ডলার বা বেশি হলে চালু হবে'
-      },
-      {
-        id: 'bank',
-        name: 'ব্যাংক (Bank)',
-        active: largeActive,
-        note: largeActive ? 'ন্যূনতম $' + toBn(config.bankWalletMin) : '২০ ডলার বা বেশি হলে চালু হবে'
+        id: 'donation',
+        name: 'দান (Donation)',
+        active: donationActive,
+        note: activeOrgs.length === 0
+          ? 'বর্তমানে কোনো সংস্থা চালু নেই'
+          : (donationActive ? 'ন্যূনতম $' + toBn(config.donationMin) : 'ন্যূনতম $' + toBn(config.donationMin) + ' লাগবে')
       }
     ];
   } else {
-    // INTL Method: ONLY Binance Pay
     const binanceActive = bal >= config.binanceMin;
     methods = [
       {
         id: 'binance',
         name: 'Binance Pay',
         active: binanceActive,
-        note: binanceActive ? 'ন্যূনতম $' + toBn(config.binanceMin) : 'ন্যূনতম $১০ প্রয়োজন'
+        note: binanceActive ? 'ন্যূনতম $' + toBn(config.binanceMin) : 'ন্যূনতম $' + toBn(config.binanceMin) + ' প্রয়োজন'
+      },
+      {
+        id: 'gift_card',
+        name: 'গিফট কার্ড',
+        active: giftCardActive,
+        note: giftCardActive ? 'ন্যূনতম $' + toBn(config.giftCardMin) : 'ন্যূনতম $' + toBn(config.giftCardMin) + ' লাগবে'
+      },
+      {
+        id: 'donation',
+        name: 'দান (Donation)',
+        active: donationActive,
+        note: activeOrgs.length === 0
+          ? 'বর্তমানে কোনো সংস্থা চালু নেই'
+          : (donationActive ? 'ন্যূনতম $' + toBn(config.donationMin) : 'ন্যূনতম $' + toBn(config.donationMin) + ' লাগবে')
       }
     ];
   }
@@ -1434,15 +1699,15 @@ function renderMethods(){
 function updateMethodFields(){
   const sec = document.getElementById('methodFieldsSection');
   const fRecharge = document.getElementById('fieldsRecharge');
-  const fMfs = document.getElementById('fieldsMfs');
-  const fBank = document.getElementById('fieldsBank');
   const fBinance = document.getElementById('fieldsBinance');
+  const fGiftCard = document.getElementById('fieldsGiftCard');
+  const fDonation = document.getElementById('fieldsDonation');
   const hint = document.getElementById('amountRuleHint');
 
   fRecharge.style.display = 'none';
-  fMfs.style.display = 'none';
-  fBank.style.display = 'none';
   fBinance.style.display = 'none';
+  fGiftCard.style.display = 'none';
+  fDonation.style.display = 'none';
 
   if(!selectedMethod){
     sec.style.display = 'none';
@@ -1453,16 +1718,37 @@ function updateMethodFields(){
   if(selectedMethod === 'recharge'){
     fRecharge.style.display = 'flex';
     document.getElementById('rechargeNumber').value = userState.mobile || '+8801XXXXXXXXX';
-    hint.textContent = 'মোবাইল রিচার্জ: $' + toBn(config.mobileRechargeMin) + ' থেকে $' + toBn(config.mobileRechargeMaxExclusive - 0.01) + ' পর্যন্ত।';
-  } else if(selectedMethod === 'bkash' || selectedMethod === 'nagad' || selectedMethod === 'rocket'){
-    fMfs.style.display = 'flex';
-    hint.textContent = 'ন্যূনতম উত্তোলন $' + toBn(config.bankWalletMin) + ' (≈ ৳' + toBn(config.bankWalletMin * config.usdToBdt) + ')।';
-  } else if(selectedMethod === 'bank'){
-    fBank.style.display = 'flex';
-    hint.textContent = 'ব্যাংক উত্তোলন: ন্যূনতম $' + toBn(config.bankWalletMin) + ' (≈ ৳' + toBn(config.bankWalletMin * config.usdToBdt) + ')।';
+    hint.textContent = 'মোবাইল রিচার্জ: $' + toBn(config.mobileRechargeMin) + ' থেকে $' + toBn(config.mobileRechargeMax) + ' পর্যন্ত।';
   } else if(selectedMethod === 'binance'){
     fBinance.style.display = 'flex';
     hint.textContent = 'Binance Pay: ন্যূনতম উত্তোলন $' + toBn(config.binanceMin) + '।';
+  } else if(selectedMethod === 'gift_card'){
+    fGiftCard.style.display = 'flex';
+    document.getElementById('giftCardEmail').value = userState.email || '';
+    hint.textContent = 'গিফট কার্ড: ন্যূনতম উত্তোলন $' + toBn(config.giftCardMin) + '।';
+  } else if(selectedMethod === 'donation'){
+    fDonation.style.display = 'flex';
+    const sel = document.getElementById('donationOrgSelect');
+    const prevVal = sel.value;
+    sel.innerHTML = '';
+    const activeOrgs = donationOrgs.filter(o => o && o.active === true);
+    if(activeOrgs.length === 0){
+      const opt = document.createElement('option');
+      opt.value = '';
+      opt.textContent = 'কোনো সক্রিয় সংস্থা নেই';
+      sel.appendChild(opt);
+    } else {
+      activeOrgs.forEach(o => {
+        const opt = document.createElement('option');
+        opt.value = o.id;
+        opt.textContent = o.name;
+        sel.appendChild(opt);
+      });
+      if(prevVal && activeOrgs.some(o => o.id === prevVal)){
+        sel.value = prevVal;
+      }
+    }
+    hint.textContent = 'দান: ন্যূনতম $' + toBn(config.donationMin) + '।';
   }
 }
 
@@ -1560,8 +1846,8 @@ function validateAndOpenModal(){
   let detailsObj = {};
 
   if(selectedMethod === 'recharge'){
-    if(amt < config.mobileRechargeMin || amt >= config.mobileRechargeMaxExclusive){
-      showToast('মোবাইল রিচার্জ $' + toBn(config.mobileRechargeMin) + ' থেকে $' + toBn(config.mobileRechargeMaxExclusive - 0.01) + ' পর্যন্ত প্রযোজ্য।');
+    if(amt < config.mobileRechargeMin || amt > config.mobileRechargeMax){
+      showToast('মোবাইল রিচার্জ $' + toBn(config.mobileRechargeMin) + ' থেকে $' + toBn(config.mobileRechargeMax) + ' পর্যন্ত প্রযোজ্য।');
       return;
     }
     const opSelect = document.getElementById('rechargeOperator');
@@ -1571,44 +1857,6 @@ function validateAndOpenModal(){
     methodDisplayName = 'মোবাইল রিচার্জ';
     detailsText = opText + ' (' + num + ')';
     detailsObj = { operator: opVal };
-  } else if(selectedMethod === 'bkash' || selectedMethod === 'nagad' || selectedMethod === 'rocket'){
-    if(amt < config.bankWalletMin){
-      showToast('ন্যূনতম উত্তোলন $' + toBn(config.bankWalletMin) + ' হতে হবে।');
-      return;
-    }
-    const num = document.getElementById('mfsNumber').value.trim();
-    if(!/^01[3-9]\d{8}$/.test(num)){
-      showToast('সঠিক ১১ ডিজিটের মোবাইল অ্যাকাউন্ট নম্বর দিন (০১XXXXXXXXX)।');
-      return;
-    }
-    const mNames = { bkash: 'বিকাশ', nagad: 'নগদ', rocket: 'রকেট' };
-    methodDisplayName = mNames[selectedMethod];
-    detailsText = num + ' (পার্সোনাল)';
-    detailsObj = { accountNumber: num, accountType: 'personal' };
-  } else if(selectedMethod === 'bank'){
-    if(amt < config.bankWalletMin){
-      showToast('ব্যাংক উত্তোলনে ন্যূনতম $' + toBn(config.bankWalletMin) + ' হতে হবে।');
-      return;
-    }
-    const bName = document.getElementById('bankName').value.trim();
-    const bBranch = document.getElementById('bankBranch').value.trim();
-    const bAccName = document.getElementById('bankAccName').value.trim();
-    const bAccNum = document.getElementById('bankAccNumber').value.trim();
-    const bRouting = document.getElementById('bankRouting').value.trim();
-
-    if(!bName || !bBranch || !bAccName || !bAccNum){
-      showToast('ব্যাংকের সকল প্রয়োজনীয় ঘর পূরণ করুন।');
-      return;
-    }
-    methodDisplayName = 'ব্যাংক ট্রান্সফার';
-    detailsText = bName + ', ' + bBranch + ' (হি: ' + bAccNum + ')';
-    detailsObj = {
-      bankName: bName,
-      branch: bBranch,
-      accountName: bAccName,
-      accountNumber: bAccNum,
-      routing: bRouting
-    };
   } else if(selectedMethod === 'binance'){
     if(amt < config.binanceMin){
       showToast('Binance Pay-এ ন্যূনতম উত্তোলন $' + toBn(config.binanceMin) + ' হতে হবে।');
@@ -1622,6 +1870,36 @@ function validateAndOpenModal(){
     methodDisplayName = 'Binance Pay';
     detailsText = 'Pay ID: ' + bId;
     detailsObj = { binanceId: bId };
+  } else if(selectedMethod === 'gift_card'){
+    if(amt < config.giftCardMin){
+      showToast('গিফট কার্ডে ন্যূনতম উত্তোলন $' + toBn(config.giftCardMin) + ' হতে হবে।');
+      return;
+    }
+    if(!userState.email){
+      showToast('প্রোফাইলে ইমেইল পাওয়া যায়নি।');
+      return;
+    }
+    const brandSelect = document.getElementById('giftCardBrand');
+    const brandVal = brandSelect.value;
+    const brandLabel = brandSelect.options[brandSelect.selectedIndex]?.text || brandVal;
+    methodDisplayName = 'গিফট কার্ড';
+    detailsText = brandLabel + ' (' + userState.email + ')';
+    detailsObj = { brand: brandVal };
+  } else if(selectedMethod === 'donation'){
+    if(amt < config.donationMin){
+      showToast('দানের ন্যূনতম পরিমাণ $' + toBn(config.donationMin) + ' হতে হবে।');
+      return;
+    }
+    const orgSel = document.getElementById('donationOrgSelect');
+    const orgId = orgSel.value;
+    const activeOrg = donationOrgs.find(o => o && o.id === orgId && o.active === true);
+    if(!activeOrg){
+      showToast('একটি সক্রিয় সংস্থা নির্বাচন করুন।');
+      return;
+    }
+    methodDisplayName = 'দান (Donation)';
+    detailsText = activeOrg.name;
+    detailsObj = { orgId: activeOrg.id };
   }
 
   const amtBdt = Math.round(amt * config.usdToBdt);
@@ -1713,10 +1991,16 @@ modalConfirmBtn.addEventListener('click', async () => {
     const data = await res.json().catch(() => ({}));
     if(!res.ok || data.ok === false){
       const code = data.error || data.code || '';
+      if (code === 'pin_locked') {
+        const lockAlert = document.getElementById('pinLockAlert');
+        if (lockAlert) lockAlert.style.display = 'flex';
+      }
       showToast(getErrorMessage(code, data.message));
       return;
     }
 
+    const lockAlert = document.getElementById('pinLockAlert');
+    if (lockAlert) lockAlert.style.display = 'none';
     showToast('আবেদন জমা হয়েছে');
     amountUsdInput.value = '';
     updateBdtPreview();
@@ -1735,18 +2019,18 @@ modalConfirmBtn.addEventListener('click', async () => {
 const demoBadge = document.getElementById('demoBadge');
 const demoPayoutsSample = [
   {
-    method: 'বিকাশ',
-    accountDetails: '01712345678 (পার্সোনাল)',
-    amountUsd: 10,
-    amountBdt: 1100,
+    method: 'গিফট কার্ড',
+    accountDetails: 'Google Play',
+    amountUsd: 20,
+    amountBdt: 2200,
     status: 'pending',
     createdAt: new Date(Date.now() - 2 * 3600 * 1000)
   },
   {
-    method: 'ব্যাংক ট্রান্সফার',
-    accountDetails: 'ডাচ-বাংলা ব্যাংক (হি: ১২৩.৪৫৬)',
-    amountUsd: 35,
-    amountBdt: 3850,
+    method: 'দান',
+    accountDetails: 'আস-সুন্নাহ ফাউন্ডেশন',
+    amountUsd: 5,
+    amountBdt: 550,
     status: 'paid',
     createdAt: new Date(Date.now() - 3 * 86400 * 1000)
   },
@@ -1762,6 +2046,9 @@ const demoPayoutsSample = [
 
 function applyScenario(sc){
   isDemoMode = true;
+  if(realDonationOrgs.length === 0){
+    donationOrgs = DEMO_DONATION_ORGS;
+  }
   demoBadge.style.display = 'block';
   document.querySelectorAll('.test-btn').forEach(b => b.classList.remove('active'));
 
@@ -1772,6 +2059,7 @@ function applyScenario(sc){
     userState = {
       uid: 'demo_bd_8',
       name: 'আরিফুল ইসলাম',
+      email: 'ariful@example.com',
       country: 'BD',
       mobile: '+8801712345678',
       emailVerified: true,
@@ -1782,6 +2070,7 @@ function applyScenario(sc){
     userState = {
       uid: 'demo_bd_25',
       name: 'মাহমুদুল হাসান',
+      email: 'mahmudul@example.com',
       country: 'BD',
       mobile: '+8801712345678',
       emailVerified: true,
@@ -1792,6 +2081,7 @@ function applyScenario(sc){
     userState = {
       uid: 'demo_intl_12',
       name: 'Alexandre Costa',
+      email: 'alex@example.com',
       country: 'INTL',
       mobile: '',
       emailVerified: true,
@@ -1802,6 +2092,7 @@ function applyScenario(sc){
     userState = {
       uid: 'demo_intl_6',
       name: 'Sarah Connor',
+      email: 'sarah@example.com',
       country: 'INTL',
       mobile: '',
       emailVerified: true,
@@ -1812,6 +2103,7 @@ function applyScenario(sc){
     userState = {
       uid: 'demo_low',
       name: 'তানভীর আহমেদ',
+      email: 'tanvir@example.com',
       country: 'BD',
       mobile: '+8801712345678',
       emailVerified: true,
@@ -1822,6 +2114,7 @@ function applyScenario(sc){
     userState = {
       uid: 'demo_unv_email',
       name: 'ইমরান খান',
+      email: 'imran@example.com',
       country: 'BD',
       mobile: '+8801712345678',
       emailVerified: false,
@@ -1832,6 +2125,7 @@ function applyScenario(sc){
     userState = {
       uid: 'demo_unpin',
       name: 'রাশেদ চৌধুরী',
+      email: 'rashed@example.com',
       country: 'BD',
       mobile: '+8801712345678',
       emailVerified: true,
@@ -1854,6 +2148,7 @@ document.querySelectorAll('[data-scenario]').forEach(b => {
 /* Reset to Real Data */
 document.getElementById('realDataBtn').addEventListener('click', async () => {
   isDemoMode = false;
+  donationOrgs = realDonationOrgs;
   demoBadge.style.display = 'none';
   document.querySelectorAll('.test-btn').forEach(b => b.classList.remove('active'));
 
@@ -1864,6 +2159,7 @@ document.getElementById('realDataBtn').addEventListener('click', async () => {
     userState = {
       uid: null,
       name: '',
+      email: '',
       country: 'BD',
       mobile: '',
       emailVerified: false,

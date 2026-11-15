@@ -606,7 +606,7 @@ export async function verifyAndTrackUserPin(ctx, uid, pin) {
       await fsRollbackTx(ctx, tx);
     }
 
-    return { ok: true, userDoc: uRes.data };
+    return { ok: true, userDoc: uRes.data, pinDoc };
   } catch (err) {
     await fsRollbackTx(ctx, tx);
     throw err;

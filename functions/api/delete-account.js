@@ -1,5 +1,5 @@
 // functions/api/delete-account.js  →  POST /api/delete-account
-// Cloudflare Pages Function: অ্যাকাউন্ট স্থায়ীভাবে মুছে ফেলা
+// Cloudflare Pages Function: অ্যাকাউন্ট স্থায়ীভাবে মুছে ফেলা (পিন সেট থাকলে যাচাই, না থাকলে ছাড়া)
 
 import {
   json,
@@ -24,7 +24,7 @@ export async function onRequestPost({ request, env }) {
     const user = authRes.user;
 
     const body = await request.json().catch(() => ({}));
-    if (body.confirm !== true) {
+    if (String(body.confirmText || '').trim() !== 'মুছে ফেলুন') {
       return json({ ok: false, error: 'confirm_required' }, 400);
     }
 
@@ -46,9 +46,9 @@ export async function onRequestPost({ request, env }) {
     ]);
 
     const uData = uRes.data || {};
-    const hasPin = uData.pinSet === true || (pRes.exists && pRes.data?.pinHash);
+    const hasPin = uData.pinSet === true && pRes.exists && pRes.data?.pinHash && pRes.data?.pinSalt;
 
-    // ২) পিন সেট থাকলে পিন যাচাই
+    // ২) পিন সেট থাকলে পিন বাধ্যতামূলক ও যাচাই (ভুলে ৫ বার ১৫ মিনিট লক); পিন না থাকলে লাগবে না
     if (hasPin) {
       const pinCheck = await verifyAndTrackUserPin(ctx, uid, body.pin);
       if (!pinCheck.ok) {
@@ -105,7 +105,7 @@ export async function onRequestPost({ request, env }) {
     }
     await Promise.all(deletes);
 
-    // ৬) withdrawals / payoutAccounts অজ্ঞাত (anonymize) করা — হ্যাশ ও হিসাব রেকর্ড রাখা
+    // ৬) withdrawals পরিচয়হীন (anonymize) করা — uid বদলে অজ্ঞাত চিহ্ন, ইমেইল/মোবাইল/আইপি/details মুছে ফেলা
     const nowIso = new Date().toISOString();
     const userWithdrawals = await fsRunQuery(ctx, {
       from: [{ collectionId: 'withdrawals' }],
@@ -126,24 +126,28 @@ export async function onRequestPost({ request, env }) {
         {
           uid: 'deleted',
           userName: 'মুছে ফেলা অ্যাকাউন্ট',
-          userEmail: '',
           accountNo: '[anonymized]',
           accountDetails: '[anonymized]',
-          details: { anonymized: true },
+          label: '[anonymized]',
           anonymizedAt: tsValue(nowIso),
         },
         [
           'uid',
           'userName',
           'userEmail',
+          'mobile',
+          'ip',
+          'ipHash',
+          'details',
           'accountNo',
           'accountDetails',
-          'details',
+          'label',
           'anonymizedAt',
         ]
       );
     }
 
+    // payoutAccounts-এ হ্যাশ রাখা (ownerUid বদলে অজ্ঞাত করা)
     const ownedPayoutAccounts = await fsRunQuery(ctx, {
       from: [{ collectionId: 'payoutAccounts' }],
       where: {
