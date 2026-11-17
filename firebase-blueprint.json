@@ -2,168 +2,133 @@
   "entities": {
     "UserProfile": {
       "title": "UserProfile",
-      "description": "User profile data stored at /users/{uid}. Created on signup or profile completion.",
+      "description": "User profile stored at /users/{uid}. Financial, points, streak, and mission counters are server-managed.",
       "type": "object",
       "properties": {
-        "name": {
-          "type": "string",
-          "description": "Full name of the user",
-          "minLength": 1,
-          "maxLength": 100
-        },
-        "country": {
-          "type": "string",
-          "description": "Country of the user ('BD' or 'INTL')",
-          "enum": ["BD", "INTL"]
-        },
-        "mobile": {
-          "type": "string",
-          "description": "Mobile phone number with +88 prefix (only for BD)",
-          "pattern": "^\\+8801[3-9]\\d{8}$",
-          "maxLength": 20
-        },
-        "email": {
-          "type": "string",
-          "description": "Email address of the user",
-          "format": "email",
-          "maxLength": 120
-        },
-        "referralCode": {
-          "type": "string",
-          "description": "Optional referral code provided during registration",
-          "maxLength": 50
-        },
-        "verified": {
-          "type": "boolean",
-          "description": "Whether the user account is verified (server-side only)"
-        },
-        "verifyMethod": {
-          "type": "string",
-          "description": "Method of verification ('mobile' or 'telegram', server-side only)"
-        },
-        "createdAt": {
-          "type": "string",
-          "description": "Server timestamp when the user profile was created"
-        },
-        "rank": {
-          "type": "number",
-          "description": "Server-calculated rank of the user"
-        },
-        "rankPoints": {
-          "type": "number",
-          "description": "Points evaluated during server leaderboard run"
-        },
-        "rankUpdatedAt": {
-          "type": "string",
-          "description": "Server timestamp when the user rank was updated"
-        },
-        "ownCode": {
-          "type": "string",
-          "description": "Unique referral code generated server-side for the user"
-        },
-        "referredByMasked": {
-          "type": "string",
-          "description": "Masked name of the referrer who invited this user"
-        },
-        "totalActiveMinutes": {
-          "type": "number",
-          "description": "Total active playtime in minutes tracked server-side"
-        }
+        "name": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "country": { "type": "string", "enum": ["BD", "INTL"] },
+        "mobile": { "type": "string", "pattern": "^\\+8801[3-9]\\d{8}$" },
+        "email": { "type": "string", "format": "email", "maxLength": 120 },
+        "referralCode": { "type": "string", "maxLength": 50 },
+        "points": { "type": "number" },
+        "pointsPeriod": { "type": "string" },
+        "balanceUsd": { "type": "number" },
+        "streak": { "type": "number" },
+        "lastClaimDate": { "type": "string" },
+        "totalActiveSec": { "type": "number" },
+        "totalActiveMinutes": { "type": "number" },
+        "ownCode": { "type": "string" },
+        "referredByMasked": { "type": "string" },
+        "status": { "type": "string", "enum": ["active", "suspended"] },
+        "createdAt": { "type": "string" }
       },
       "required": ["name", "email", "country", "createdAt"]
     },
-    "ReferralItem": {
-      "title": "ReferralItem",
-      "description": "Invitee referral tracking doc at /users/{uid}/referrals/{inviteeId}",
+    "WeeklyMission": {
+      "title": "WeeklyMission",
+      "description": "Weekly mission progress doc at /users/{uid}/missions/{weekId}. Written only on day checkpoint or completion.",
       "type": "object",
       "properties": {
-        "maskedName": { "type": "string" },
-        "verified": { "type": "boolean" },
-        "playedMinutes": { "type": "number" },
-        "status": { "type": "string", "enum": ["pending", "qualified"] },
-        "referrerReward": { "type": "number" },
+        "weekId": { "type": "string" },
+        "missionId": { "type": "string" },
+        "daysPlayed": { "type": "array" },
+        "targetDays": { "type": "number" },
+        "completed": { "type": "boolean" },
+        "rewardClaimed": { "type": "boolean" },
+        "rewardPoints": { "type": "number" },
+        "badgeId": { "type": "string" },
+        "completedAt": { "type": "string" }
+      }
+    },
+    "NotificationItem": {
+      "title": "NotificationItem",
+      "description": "In-app notification doc at /notifications/{uid}/items/{notifId}. Read status is tracked client-side in localStorage.",
+      "type": "object",
+      "properties": {
+        "type": { "type": "string", "enum": ["withdrawal", "streak", "mission", "referral", "system"] },
+        "title": { "type": "string" },
+        "body": { "type": "string" },
+        "refId": { "type": "string" },
         "createdAt": { "type": "string" }
       }
     },
-    "ReferralConfig": {
-      "title": "ReferralConfig",
-      "description": "Platform referral bonus configuration at /config/referral",
+    "GameRatingSummary": {
+      "title": "GameRatingSummary",
+      "description": "Single aggregate rating document at /games/{gameId}/ratings/summary.",
       "type": "object",
       "properties": {
-        "totalBonus": { "type": "number" },
-        "referrerPercent": { "type": "number" },
-        "inviteePercent": { "type": "number" },
-        "requiredHours": { "type": "number" }
+        "gameId": { "type": "string" },
+        "upvotes": { "type": "number" },
+        "ratingSum": { "type": "number" },
+        "ratingCount": { "type": "number" },
+        "averageRating": { "type": "number" },
+        "updatedAt": { "type": "string" }
       }
     },
-    "Leaderboard": {
-      "title": "Leaderboard",
-      "description": "Monthly leaderboard document stored at /leaderboards/{period}",
+    "WithdrawalItem": {
+      "title": "WithdrawalItem",
+      "description": "Withdrawal tracker doc at /withdrawals/{withdrawalId}.",
       "type": "object",
       "properties": {
-        "updatedAt": {
-          "type": "string",
-          "description": "Timestamp when the leaderboard was calculated"
-        },
-        "top": {
-          "type": "array",
-          "description": "Top 10 leaderboard entries sorted by points descending"
-        }
-      },
-      "required": ["updatedAt", "top"]
-    },
-    "WithdrawConfig": {
-      "title": "WithdrawConfig",
-      "description": "Platform withdrawal parameters stored at /config/withdraw",
-      "type": "object",
-      "properties": {
-        "usdToBdt": { "type": "number" },
-        "carryBelowUsd": { "type": "number" },
-        "mobileRechargeMin": { "type": "number" },
-        "mobileRechargeMaxExclusive": { "type": "number" },
-        "bankWalletMin": { "type": "number" },
-        "binanceMin": { "type": "number" }
-      }
-    },
-    "PayoutItem": {
-      "title": "PayoutItem",
-      "description": "User payout withdrawal record at /users/{uid}/payouts/{payoutId}",
-      "type": "object",
-      "properties": {
+        "uid": { "type": "string" },
         "method": { "type": "string" },
-        "accountDetails": { "type": "string" },
+        "methodLabel": { "type": "string" },
+        "label": { "type": "string" },
         "amountUsd": { "type": "number" },
         "amountBdt": { "type": "number" },
-        "status": { "type": "string", "enum": ["pending", "paid", "rejected"] },
+        "status": { "type": "string", "enum": ["pending", "submitted", "verifying", "approved", "sent", "paid", "rejected"] },
+        "txId": { "type": "string" },
+        "rejectReason": { "type": "string" },
+        "submittedAt": { "type": "string" },
+        "verifyingAt": { "type": "string" },
+        "approvedAt": { "type": "string" },
+        "sentAt": { "type": "string" },
         "createdAt": { "type": "string" }
-      },
-      "required": ["method", "amountUsd", "amountBdt", "status", "createdAt"]
-    }
-  },
-  "firestore": {
-    "/users/{uid}": {
-      "schema": "UserProfile",
-      "description": "Stores user account details. Strictly enforces that points, sessions, payouts, balance, verified, verifyMethod, and rank fields cannot be written from client SDK."
+      }
     },
-    "/users/{uid}/referrals/{inviteeId}": {
-      "schema": "ReferralItem",
-      "description": "Invited user status maintained server-side, read-only for owner."
+    "SupportTicket": {
+      "title": "SupportTicket",
+      "description": "Support ticket submitted from FAQ page at /support_tickets/{ticketId}.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "subject": { "type": "string" },
+        "category": { "type": "string" },
+        "message": { "type": "string" },
+        "status": { "type": "string", "enum": ["open", "resolved"] },
+        "createdAt": { "type": "string" }
+      }
     },
-    "/users/{uid}/payouts/{payoutId}": {
-      "schema": "PayoutItem",
-      "description": "Payout record maintained server-side, read-only for user."
+    "DailyAnalytics": {
+      "title": "DailyAnalytics",
+      "description": "Pre-aggregated daily stats written by scheduled worker at /analytics_daily/{YYYY-MM-DD}.",
+      "type": "object",
+      "properties": {
+        "date": { "type": "string" },
+        "newUsers": { "type": "number" },
+        "dau": { "type": "number" },
+        "mau": { "type": "number" },
+        "totalPayoutsUsd": { "type": "number" },
+        "pendingWithdrawalsCount": { "type": "number" },
+        "pendingWithdrawalsUsd": { "type": "number" },
+        "generatedAt": { "type": "string" }
+      }
     },
-    "/config/referral": {
-      "schema": "ReferralConfig",
-      "description": "Referral program settings, read-only for all."
-    },
-    "/config/withdraw": {
-      "schema": "WithdrawConfig",
-      "description": "Platform withdrawal settings, read-only for all."
-    },
-    "/leaderboards/{period}": {
-      "schema": "Leaderboard",
-      "description": "Read-only monthly leaderboard calculated server-side."
+    "SuspiciousAlert": {
+      "title": "SuspiciousAlert",
+      "description": "Suspicious activity alert doc at /alerts/{alertId} (admin-only).",
+      "type": "object",
+      "properties": {
+        "type": { "type": "string", "enum": ["multi_account_ip", "high_playtime", "rapid_withdrawal_new_account", "referral_abuse"] },
+        "severity": { "type": "string", "enum": ["low", "medium", "high"] },
+        "uid": { "type": "string" },
+        "userName": { "type": "string" },
+        "details": { "type": "string" },
+        "status": { "type": "string", "enum": ["open", "reviewed", "dismissed"] },
+        "createdAt": { "type": "string" }
+      }
     }
   }
 }

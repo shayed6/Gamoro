@@ -1,8 +1,6 @@
 // functions/api/heartbeat.js  →  POST /api/heartbeat
 // Cloudflare Pages Function: সক্রিয় খেলার সময় ও পয়েন্ট গণনা (৫-মিনিট চেকপয়েন্ট + pagehide sendBeacon)
-//
-// Secrets (Cloudflare Pages → Settings → Variables and Secrets):
-//   FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY
+// + সাপ্তাহিক মিশন (দিন সম্পূর্ণ হলে ও মিশন কমপ্লিট হলেই ন্যূনতম রাইট) + সন্দেহজনক অতিরিক্ত খেলার সতর্কতা
 
 import {
   PLAY_SEC_PER_POINT,
@@ -11,6 +9,7 @@ import {
   AD_MAX_PER_DAY,
   json,
   bdDate,
+  bdWeekId,
   verifyIdToken,
   fsCtx,
   fsBeginTx,
@@ -24,6 +23,12 @@ import {
 
 const MAX_CHECKPOINT_SEC = 330;
 const ELAPSED_TOLERANCE_SEC = 10;
+const WEEKLY_MISSION_ID = 'weekly-play-3-days';
+const WEEKLY_MISSION_TITLE = 'এই সপ্তাহে ৩ দিন খেলুন';
+const WEEKLY_MISSION_TARGET_DAYS = 3;
+const WEEKLY_MISSION_REWARD_POINTS = 150;
+const WEEKLY_MISSION_BADGE_ID = 'weekly-warrior';
+const HIGH_PLAYTIME_ALERT_SEC = 28800; // ৮ ঘণ্টা/দিন
 
 export async function onRequestPost({ request, env }) {
   let ctx = null;
@@ -54,7 +59,6 @@ export async function onRequestPost({ request, env }) {
       return json({ ok: false, error: 'login' }, 401);
     }
 
-    // ইমেইল ভেরিফাইড না হলে পয়েন্ট নয়
     if (!user.email_verified) return json({ ok: false, error: 'verify-email' }, 403);
 
     const gameId = typeof body.gameId === 'string' ? body.gameId.slice(0, 64) : '';
@@ -65,14 +69,17 @@ export async function onRequestPost({ request, env }) {
     ctx = await fsCtx(env);
     const today = bdDate(0);
     const period = today.slice(0, 7);
+    const weekId = bdWeekId(0);
     const userPath = `users/${user.sub}`;
     const dailyPath = `playDaily/${user.sub}_${today}`;
+    const missionPath = `users/${user.sub}/missions/${weekId}`;
 
     tx = await fsBeginTx(ctx, true);
 
-    const [uRes, dRes] = await Promise.all([
+    const [uRes, dRes, mRes] = await Promise.all([
       fsGet(ctx, userPath, tx),
       fsGet(ctx, dailyPath, tx),
+      fsGet(ctx, missionPath, tx),
     ]);
 
     if (!uRes.exists) {
@@ -107,7 +114,6 @@ export async function onRequestPost({ request, env }) {
     const nowMs = Date.now();
     const nowIso = new Date(nowMs).toISOString();
 
-    // গ্রহণযোগ্য সেকেন্ড ≤ min(দাবি, শেষ গ্রহণের পর আসল ব্যবধান + ১০ সেকেন্ড সহনীয়তা, ৩৩০)
     let acceptedSec = 0;
     if (claimedSec > 0) {
       if (dailyExists && lastBeatMs > 0) {
@@ -125,7 +131,6 @@ export async function onRequestPost({ request, env }) {
     const actualAddedSec = Math.max(0, newActiveSec - prevActiveSec);
     const capReached = newActiveSec >= PLAY_MAX_SEC_PER_DAY;
 
-    // ১২০ সেকেন্ডে ১ পূর্ণসংখ্যা পয়েন্ট, ভাগশেষ সেকেন্ড (playRemainderSec) জমা থাকবে
     const rawPrevRemainder = Number(
       uFields.playRemainderSec?.integerValue ?? dFields.playRemainderSec?.integerValue ?? 0
     );
@@ -134,12 +139,80 @@ export async function onRequestPost({ request, env }) {
         ? rawPrevRemainder % PLAY_SEC_PER_POINT
         : 0;
     const totalCreditSec = prevRemainderSec + actualAddedSec;
-    const pointsToAdd = Math.floor(totalCreditSec / PLAY_SEC_PER_POINT);
+    let pointsToAdd = Math.floor(totalCreditSec / PLAY_SEC_PER_POINT);
     const newRemainderSec = totalCreditSec % PLAY_SEC_PER_POINT;
     const newPlayPointsGiven = prevPointsGiven + pointsToAdd;
 
+    // সাপ্তাহিক মিশন: দিনে অন্তত ১ মিনিট সক্রিয় খেললে আজকের তারিখ যুক্ত হয়; ৩ দিন হলে একবারেই +১৫০ পয়েন্ট + ব্যাজ
+    const existingMission = mRes.data || {};
+    const prevDays = Array.isArray(existingMission.daysPlayed) ? existingMission.daysPlayed : [];
+    const alreadyCompleted = Boolean(existingMission.completed);
+    let missionBonus = 0;
+    let missionJustCompleted = false;
+
     const prevPeriod = uFields.pointsPeriod?.stringValue || '';
     const prevPoints = prevPeriod === period ? Number(uFields.points?.integerValue || 0) : 0;
+
+    const writes = [];
+    if (!alreadyCompleted && newActiveSec >= 60 && !prevDays.includes(today)) {
+      const nextDays = [...prevDays, today];
+      const completedNow = nextDays.length >= WEEKLY_MISSION_TARGET_DAYS;
+      if (completedNow) {
+        missionBonus = WEEKLY_MISSION_REWARD_POINTS;
+        missionJustCompleted = true;
+        pointsToAdd += missionBonus;
+      }
+      writes.push(
+        txUpdateWrite(
+          ctx,
+          missionPath,
+          {
+            weekId,
+            missionId: WEEKLY_MISSION_ID,
+            title: WEEKLY_MISSION_TITLE,
+            daysPlayed: nextDays,
+            targetDays: WEEKLY_MISSION_TARGET_DAYS,
+            completed: completedNow,
+            rewardClaimed: completedNow,
+            rewardPoints: WEEKLY_MISSION_REWARD_POINTS,
+            badgeId: WEEKLY_MISSION_BADGE_ID,
+            completedAt: completedNow ? tsValue(nowIso) : null,
+            updatedAt: tsValue(nowIso),
+          },
+          [
+            'weekId',
+            'missionId',
+            'title',
+            'daysPlayed',
+            'targetDays',
+            'completed',
+            'rewardClaimed',
+            'rewardPoints',
+            'badgeId',
+            'completedAt',
+            'updatedAt',
+          ]
+        )
+      );
+
+      if (missionJustCompleted) {
+        writes.push(
+          txUpdateWrite(
+            ctx,
+            `notifications/${user.sub}/items/mission_${weekId}`,
+            {
+              type: 'mission',
+              title: 'সাপ্তাহিক মিশন সম্পন্ন!',
+              body: `"${WEEKLY_MISSION_TITLE}" মিশন সম্পন্ন করায় +${WEEKLY_MISSION_REWARD_POINTS} পয়েন্ট ও "সাপ্তাহিক যোদ্ধা" ব্যাজ পেয়েছেন।`,
+              refId: weekId,
+              createdAt: tsValue(nowIso),
+            },
+            ['type', 'title', 'body', 'refId', 'createdAt']
+          )
+        );
+      }
+    }
+
     const newUserPoints = prevPoints + pointsToAdd;
     const prevTotalSec = Number(
       uFields.totalActiveSec?.integerValue ??
@@ -154,7 +227,7 @@ export async function onRequestPost({ request, env }) {
     const newTotalSec = prevTotalSec + actualAddedSec;
     const newTotalMinutes = Number((newTotalSec / 60).toFixed(2));
 
-    const writes = [
+    writes.push(
       txUpdateWrite(
         ctx,
         dailyPath,
@@ -186,6 +259,7 @@ export async function onRequestPost({ request, env }) {
           totalActiveSec: newTotalSec,
           totalActiveMinutes: newTotalMinutes,
           playRemainderSec: newRemainderSec,
+          lastActiveDate: today,
         },
         [
           'points',
@@ -193,14 +267,37 @@ export async function onRequestPost({ request, env }) {
           'totalActiveSec',
           'totalActiveMinutes',
           'playRemainderSec',
+          'lastActiveDate',
         ],
         { exists: true }
-      ),
-    ];
+      )
+    );
 
     const commitRes = await fsCommitTx(ctx, tx, writes);
     tx = null;
     if (!commitRes.ok) return json({ ok: false, error: 'busy' }, 409);
+
+    // অস্বাভাবিক বেশি খেলার সময় (৮ ঘণ্টা+) হলে দিনে একবার সতর্কতা তৈরি
+    if (prevActiveSec < HIGH_PLAYTIME_ALERT_SEC && newActiveSec >= HIGH_PLAYTIME_ALERT_SEC) {
+      try {
+        await fsPatch(
+          ctx,
+          `alerts/highplay_${user.sub}_${today}`,
+          {
+            type: 'high_playtime',
+            severity: 'medium',
+            uid: user.sub,
+            userName: uFields.name?.stringValue || 'ব্যবহারকারী',
+            details: `একদিনে অস্বাভাবিক দীর্ঘ খেলার সময় শনাক্ত (${Math.round(newActiveSec / 3600)} ঘণ্টা)`,
+            status: 'open',
+            createdAt: tsValue(nowIso),
+          },
+          ['type', 'severity', 'uid', 'userName', 'details', 'status', 'createdAt']
+        );
+      } catch {
+        // non-fatal
+      }
+    }
 
     // রেফারেল অগ্রগতি হালনাগাদ
     const referrerUid = uFields.referredBy?.stringValue || '';
@@ -262,6 +359,8 @@ export async function onRequestPost({ request, env }) {
       capReached,
       points: newUserPoints,
       addedPoints: pointsToAdd,
+      missionJustCompleted,
+      missionBonus,
       adConfig: { AD_REWARD_POINTS, AD_MAX_PER_DAY },
     });
   } catch {

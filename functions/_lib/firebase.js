@@ -7,10 +7,6 @@ export const PLAY_MAX_SEC_PER_DAY = 35000;
 export const AD_REWARD_POINTS = 20;
 export const AD_MAX_PER_DAY = 5;
 
-export const PIN_PBKDF2_ITERATIONS = 100000;
-export const PIN_MAX_FAILS = 5;
-export const PIN_LOCK_MS = 15 * 60 * 1000;
-
 const enc = new TextEncoder();
 const dec = new TextDecoder();
 
@@ -40,11 +36,6 @@ export function b64uToBytes(s) {
   return out;
 }
 
-export function bytesToB64(bytes) {
-  let bin = '';
-  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
-  return btoa(bin);
-}
 
 export function b64ToBytes(b64) {
   const bin = atob(b64);
@@ -246,56 +237,7 @@ export async function deleteAuthUser(env, uid) {
   return true;
 }
 
-// ৩) PIN PBKDF2 WebCrypto Helpers
-export function isWeakPin(pin) {
-  if (!/^\d{6}$/.test(pin)) return true;
-  if (/^(\d)\1{5}$/.test(pin)) return true; // 000000, 111111, etc.
-  if ('0123456789'.includes(pin)) return true; // 012345, 123456, etc.
-  if ('9876543210'.includes(pin)) return true; // 987654, 654321, etc.
-  if (/^(\d{2})\1\1$/.test(pin)) return true; // 121212, 101010
-  if (/^(\d{3})\1$/.test(pin)) return true; // 123123
-  if (/^(\d)\1(\d)\2(\d)\3$/.test(pin)) return true; // 112233, 001122
-  if (['123321', '654456', '102030', '696969', '159753'].includes(pin)) return true;
-  return false;
-}
-
-export function randomSaltB64(len = 16) {
-  const bytes = new Uint8Array(len);
-  crypto.getRandomValues(bytes);
-  return bytesToB64(bytes);
-}
-
-export async function hashPin(pin, saltB64) {
-  const keyMaterial = await crypto.subtle.importKey(
-    'raw',
-    enc.encode(String(pin)),
-    { name: 'PBKDF2' },
-    false,
-    ['deriveBits']
-  );
-  const bits = await crypto.subtle.deriveBits(
-    {
-      name: 'PBKDF2',
-      salt: b64ToBytes(saltB64),
-      iterations: PIN_PBKDF2_ITERATIONS,
-      hash: 'SHA-256',
-    },
-    keyMaterial,
-    256
-  );
-  return bytesToB64(new Uint8Array(bits));
-}
-
-export function constantTimeEqual(a, b) {
-  const ba = enc.encode(String(a || ''));
-  const bb = enc.encode(String(b || ''));
-  if (ba.length !== bb.length) return false;
-  let diff = 0;
-  for (let i = 0; i < ba.length; i++) diff |= ba[i] ^ bb[i];
-  return diff === 0;
-}
-
-// ৪) Firestore REST Value Converters & CRUD Helpers
+// ৩) Firestore REST Value Converters & CRUD Helpers
 export function toFsValue(val) {
   if (val === null || val === undefined) return { nullValue: null };
   if (typeof val === 'boolean') return { booleanValue: val };
@@ -533,82 +475,26 @@ export function txDeleteWrite(ctx, docPath) {
   return { delete: `${ctx.dbName}/documents/${docPath}` };
 }
 
-// ৫) PIN যাচাই + ৫ বার ভুলে ১৫ মিনিট লক (Transaction-safe)
-export async function verifyAndTrackUserPin(ctx, uid, pin) {
-  if (!/^\d{6}$/.test(String(pin || ''))) {
-    return { ok: false, error: 'wrong_pin', status: 400 };
-  }
+export function randomNotifId() {
+  const bytes = new Uint8Array(5);
+  crypto.getRandomValues(bytes);
+  return `ntf_${Date.now()}_${Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('')}`;
+}
 
-  const pinPath = `pins/${uid}`;
-  const userPath = `users/${uid}`;
-  const tx = await fsBeginTx(ctx, true);
-
-  try {
-    const [uRes, pRes] = await Promise.all([
-      fsGet(ctx, userPath, tx),
-      fsGet(ctx, pinPath, tx),
-    ]);
-
-    if (!uRes.exists) {
-      await fsRollbackTx(ctx, tx);
-      return { ok: false, error: 'no-profile', status: 404 };
-    }
-
-    const pinDoc = pRes.data;
-    const hasPin = uRes.data.pinSet === true && pinDoc && pinDoc.pinHash && pinDoc.pinSalt;
-    if (!hasPin) {
-      await fsRollbackTx(ctx, tx);
-      return { ok: false, error: 'no_pin', status: 400 };
-    }
-
-    const nowMs = Date.now();
-    const lockedUntilMs = pinDoc.pinLockedUntil ? Date.parse(pinDoc.pinLockedUntil) || 0 : 0;
-    if (lockedUntilMs > nowMs) {
-      await fsRollbackTx(ctx, tx);
-      return { ok: false, error: 'pin_locked', status: 423 };
-    }
-
-    const computed = await hashPin(pin, pinDoc.pinSalt);
-    const matches = constantTimeEqual(computed, pinDoc.pinHash);
-
-    if (!matches) {
-      const nextFails = (Number(pinDoc.pinFailCount) || 0) + 1;
-      const shouldLock = nextFails >= PIN_MAX_FAILS;
-      const updateData = {
-        pinFailCount: shouldLock ? 0 : nextFails,
-        pinLockedUntil: shouldLock ? tsValue(new Date(nowMs + PIN_LOCK_MS).toISOString()) : null,
-        updatedAt: tsValue(new Date(nowMs).toISOString()),
-      };
-      const commitRes = await fsCommitTx(ctx, tx, [
-        txUpdateWrite(ctx, pinPath, updateData, ['pinFailCount', 'pinLockedUntil', 'updatedAt'], { exists: true }),
-      ]);
-      if (!commitRes.ok) return { ok: false, error: 'busy', status: 409 };
-      return {
-        ok: false,
-        error: shouldLock ? 'pin_locked' : 'wrong_pin',
-        status: shouldLock ? 423 : 403,
-      };
-    }
-
-    // Success: reset fail counter if needed
-    if ((Number(pinDoc.pinFailCount) || 0) > 0 || pinDoc.pinLockedUntil) {
-      const commitRes = await fsCommitTx(ctx, tx, [
-        txUpdateWrite(
-          ctx,
-          pinPath,
-          { pinFailCount: 0, pinLockedUntil: null, updatedAt: tsValue(new Date(nowMs).toISOString()) },
-          ['pinFailCount', 'pinLockedUntil', 'updatedAt'],
-          { exists: true }
-        ),
-      ]);
-      if (!commitRes.ok) return { ok: false, error: 'busy', status: 409 };
-    } else {
-      await fsRollbackTx(ctx, tx);
-    }
-
-    return { ok: true, userDoc: uRes.data, pinDoc };
-  } catch (err) {
-    await fsRollbackTx(ctx, tx);
-    throw err;
-  }
+export function makeNotificationDocWrite(ctx, uid, { type, title, body, link, nowIso }) {
+  const id = randomNotifId();
+  const ts = tsValue(nowIso || new Date().toISOString());
+  return txUpdateWrite(
+    ctx,
+    `users/${uid}/notifications/${id}`,
+    {
+      type: String(type || ''),
+      title: String(title || ''),
+      body: String(body || ''),
+      link: String(link || ''),
+      createdAt: ts,
+    },
+    ['type', 'title', 'body', 'link', 'createdAt'],
+    { exists: false }
+  );
 }

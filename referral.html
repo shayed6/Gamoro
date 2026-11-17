@@ -107,15 +107,6 @@ button:focus-visible,a:focus-visible{
   font-weight:700;
   flex:1;
 }
-.demo-badge{
-  background:#FFE6A5;
-  color:#4A3500;
-  font-size:11px;
-  font-weight:700;
-  padding:3px 9px;
-  border-radius:99px;
-  flex:none;
-}
 .theme-btn{
   width:36px;
   height:36px;
@@ -127,26 +118,6 @@ button:focus-visible,a:focus-visible{
   display:grid;
   place-items:center;
   flex:none;
-}
-
-/* Preview test bar */
-.test-bar{
-  background:var(--surface2);
-  padding:8px 16px;
-  font-size:12px;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  border-bottom:1px solid var(--line);
-  color:var(--muted);
-}
-.test-btn{
-  background:transparent;
-  border:1px solid var(--muted);
-  border-radius:6px;
-  padding:2px 8px;
-  color:inherit;
-  font-size:12px;
 }
 
 /* Main card */
@@ -205,7 +176,8 @@ button:focus-visible,a:focus-visible{
 }
 .code-actions{
   display:flex;
-  gap:10px;
+  flex-wrap:wrap;
+  gap:8px;
   justify-content:center;
 }
 .btn{
@@ -213,7 +185,7 @@ button:focus-visible,a:focus-visible{
   align-items:center;
   justify-content:center;
   gap:6px;
-  padding:10px 20px;
+  padding:10px 14px;
   border-radius:12px;
   font-weight:600;
   font-size:15px;
@@ -567,15 +539,8 @@ button:focus-visible,a:focus-visible{
   <header class="top">
     <button class="back" id="backBtn" aria-label="ফিরে যান">←</button>
     <h1 class="top-title">রেফারেল</h1>
-    <span class="demo-badge" id="demoBadge" style="display:none">ডেমো ডেটা</span>
     <button class="theme-btn" id="themeToggle" aria-label="থিম পরিবর্তন">🌙</button>
   </header>
-
-  <!-- TEMP: প্রোডাকশনের আগে মুছতে হবে -->
-  <div class="test-bar">
-    <span>প্রিভিউ টেস্ট:</span>
-    <button id="toggleDemoBtn" class="test-btn">ডেমো দেখুন</button>
-  </div>
 
   <main class="main-content">
     <!-- Loading skeleton -->
@@ -595,15 +560,18 @@ button:focus-visible,a:focus-visible{
     <!-- Main Container -->
     <div id="mainCard" class="card">
       
-      <!-- (খ) আপনার রেফারেল কোড (লগইন থাকলে বা ডেমোতে) -->
+      <!-- (খ) আপনার রেফারেল কোড (লগইন থাকলে) -->
       <section id="secCode" aria-labelledby="labelRefCode">
         <div class="sec-label" id="labelRefCode">আপনার রেফারেল কোড</div>
         <div class="code-wrap">
           <div id="codeDisplayWrap">
             <div class="code-display" id="ownCodeText">------</div>
             <div class="code-actions" id="codeActionBtns">
-              <button class="btn btn-outline" id="copyCodeBtn">কপি</button>
-              <button class="btn btn-primary" id="shareCodeBtn">শেয়ার করুন</button>
+              <a class="btn btn-primary" id="shareWaBtn" target="_blank" rel="noopener noreferrer">WhatsApp-এ পাঠান</a>
+              <a class="btn btn-outline" id="shareMsgBtn" target="_blank" rel="noopener noreferrer">Messenger-এ পাঠান</a>
+              <button class="btn btn-outline" id="copyLinkBtn" type="button">লিংক কপি</button>
+              <button class="btn btn-outline" id="copyCodeBtn" type="button">কোড কপি</button>
+              <button class="btn btn-primary" id="shareCodeBtn" type="button" style="display:none">শেয়ার করুন</button>
             </div>
           </div>
           <p class="pending-notice" id="ownCodePending" style="display:none">আপনার কোড তৈরি হচ্ছে, কিছুক্ষণ পরে আবার দেখুন।</p>
@@ -641,7 +609,7 @@ button:focus-visible,a:focus-visible{
             </div>
           </div>
         </div>
-        <p class="cond-footnote">শর্ত পূরণের পর যাচাইয়ের জন্য ৭ দিন সময় লাগে, তারপর বোনাস যোগ হয়।</p>
+        <p class="cond-footnote" id="condFootnote">শর্ত পূরণ হলে যাচাইয়ের পর বোনাস যোগ হয়।</p>
       </section>
 
       <hr class="divider">
@@ -721,8 +689,6 @@ import { doc, getDoc, collection, query, orderBy, limit, getDocs } from "firebas
   const root = document.documentElement;
   const backBtn = document.getElementById('backBtn');
   const themeToggle = document.getElementById('themeToggle');
-  const toggleDemoBtn = document.getElementById('toggleDemoBtn');
-  const demoBadge = document.getElementById('demoBadge');
   const toast = document.getElementById('toast');
   const retryBtn = document.getElementById('retryBtn');
 
@@ -736,6 +702,9 @@ import { doc, getDoc, collection, query, orderBy, limit, getDocs } from "firebas
   const codeActionBtns = document.getElementById('codeActionBtns');
   const ownCodePending = document.getElementById('ownCodePending');
   const copyCodeBtn = document.getElementById('copyCodeBtn');
+  const copyLinkBtn = document.getElementById('copyLinkBtn');
+  const shareWaBtn = document.getElementById('shareWaBtn');
+  const shareMsgBtn = document.getElementById('shareMsgBtn');
   const shareCodeBtn = document.getElementById('shareCodeBtn');
 
   const condReqHours = document.getElementById('condReqHours');
@@ -744,6 +713,7 @@ import { doc, getDoc, collection, query, orderBy, limit, getDocs } from "firebas
   const condRefPoints = document.getElementById('condRefPoints');
   const condInvPercent = document.getElementById('condInvPercent');
   const condInvPoints = document.getElementById('condInvPoints');
+  const condFootnote = document.getElementById('condFootnote');
 
   const splitBarP1 = document.getElementById('splitBarP1');
   const splitBarP2 = document.getElementById('splitBarP2');
@@ -815,8 +785,25 @@ import { doc, getDoc, collection, query, orderBy, limit, getDocs } from "firebas
     totalBonus: 1000,
     referrerPercent: 80,
     inviteePercent: 20,
-    requiredHours: 25
+    requiredHours: 25,
+    waitDays: 0
   };
+
+  async function loadReferralConfig() {
+    try {
+      const cfgDoc = await getDoc(doc(db, 'config', 'referral'));
+      if (cfgDoc.exists()) {
+        const cd = cfgDoc.data() || {};
+        if (cd.totalBonus !== undefined && !isNaN(Number(cd.totalBonus))) config.totalBonus = Number(cd.totalBonus);
+        if (cd.referrerPercent !== undefined && !isNaN(Number(cd.referrerPercent))) config.referrerPercent = Number(cd.referrerPercent);
+        if (cd.inviteePercent !== undefined && !isNaN(Number(cd.inviteePercent))) config.inviteePercent = Number(cd.inviteePercent);
+        if (cd.requiredHours !== undefined && !isNaN(Number(cd.requiredHours))) config.requiredHours = Number(cd.requiredHours);
+        if (cd.waitDays !== undefined && !isNaN(Number(cd.waitDays)) && Number(cd.waitDays) >= 0) config.waitDays = Number(cd.waitDays);
+      }
+    } catch (err) {
+      console.log('Referral config doc error (using defaults):', err.message);
+    }
+  }
 
   function updateConfigUI() {
     const refPoints = Math.round((config.totalBonus * config.referrerPercent) / 100);
@@ -829,36 +816,46 @@ import { doc, getDoc, collection, query, orderBy, limit, getDocs } from "firebas
     condInvPercent.textContent = toBn(config.inviteePercent);
     condInvPoints.textContent = toBn(invPoints);
 
+    if (condFootnote) {
+      const waitDays = Number(config.waitDays || 0);
+      if (waitDays <= 0) {
+        condFootnote.textContent = 'শর্ত পূরণ হলে যাচাইয়ের পর বোনাস যোগ হয়।';
+      } else {
+        condFootnote.textContent = `শর্ত পূরণের পর যাচাইয়ের জন্য ${toBn(waitDays)} দিন সময় লাগে, তারপর বোনাস যোগ হয়।`;
+      }
+    }
+
     splitBarP1.style.width = `${config.referrerPercent}%`;
     splitBarP2.style.width = `${config.inviteePercent}%`;
     legendP1.textContent = `আপনি: ${toBn(config.referrerPercent)}% (${toBn(refPoints)} পয়েন্ট)`;
     legendP2.textContent = `বন্ধু: ${toBn(config.inviteePercent)}% (${toBn(invPoints)} পয়েন্ট)`;
   }
 
-  // Check Demo Mode
-  const urlParams = new URLSearchParams(window.location.search);
-  const isDemo = urlParams.get('demo') === '1';
-
-  toggleDemoBtn.textContent = isDemo ? 'আসল মোডে ফিরুন' : 'ডেমো দেখুন';
-  toggleDemoBtn.addEventListener('click', () => {
-    if (isDemo) {
-      urlParams.delete('demo');
-    } else {
-      urlParams.set('demo', '1');
-    }
-    const search = urlParams.toString();
-    window.location.search = search ? `?${search}` : '';
-  });
-
   let currentCode = '';
+
+  function getReferralShareData(code) {
+    const link = `${window.location.origin}/auth.html?ref=${encodeURIComponent(code)}#signup`;
+    const shareText = `Gamoro-তে মজার গেম খেলুন। আমার লিংকে সাইন আপ করুন: ${link}`;
+    return { link, shareText };
+  }
 
   function setupCodeActions(code) {
     currentCode = code;
     if (code) {
+      const { link, shareText } = getReferralShareData(code);
       ownCodeText.textContent = code;
       ownCodePending.style.display = 'none';
       codeActionBtns.style.display = 'flex';
       ownCodeText.style.display = 'inline-block';
+      if (shareWaBtn) {
+        shareWaBtn.href = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
+      }
+      if (shareMsgBtn) {
+        shareMsgBtn.href = `fb-messenger://share/?link=${encodeURIComponent(link)}`;
+      }
+      if (shareCodeBtn) {
+        shareCodeBtn.style.display = typeof navigator.share === 'function' ? 'inline-flex' : 'none';
+      }
     } else {
       ownCodeText.style.display = 'none';
       codeActionBtns.style.display = 'none';
@@ -871,33 +868,35 @@ import { doc, getDoc, collection, query, orderBy, limit, getDocs } from "firebas
     if (!currentCode) return;
     try {
       await navigator.clipboard.writeText(currentCode);
-      showToast('কপি হয়েছে');
+      showToast('কোড কপি হয়েছে');
     } catch {
       showToast('কপি ব্যর্থ হয়েছে');
     }
   });
 
-  // Share code
-  shareCodeBtn.addEventListener('click', async () => {
-    if (!currentCode) return;
-    const link = `${window.location.origin}/auth.html?ref=${encodeURIComponent(currentCode)}#signup`;
-    const shareText = `Gamoro-তে গেম খেলে পয়েন্ট জমান! আমার কোড: ${currentCode} — ${link}`;
+  // Copy link
+  if (copyLinkBtn) {
+    copyLinkBtn.addEventListener('click', async () => {
+      if (!currentCode) return;
+      const { link } = getReferralShareData(currentCode);
+      await copyFallback(link);
+    });
+  }
 
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: 'Gamoro',
-          text: shareText,
-          url: link
-        });
-      } catch (err) {
-        if (err.name !== 'AbortError') {
-          // Fallback to clipboard
-          copyFallback(link);
-        }
+  // Native Web Share (shown only when navigator.share exists)
+  shareCodeBtn.addEventListener('click', async () => {
+    if (!currentCode || typeof navigator.share !== 'function') return;
+    const { link, shareText } = getReferralShareData(currentCode);
+    try {
+      await navigator.share({
+        title: 'Gamoro',
+        text: shareText,
+        url: link
+      });
+    } catch (err) {
+      if (err && err.name !== 'AbortError') {
+        await copyFallback(link);
       }
-    } else {
-      copyFallback(link);
     }
   });
 
@@ -914,10 +913,6 @@ import { doc, getDoc, collection, query, orderBy, limit, getDocs } from "firebas
   const myResendBtn = document.getElementById('myResendEmailBtn');
   if (myResendBtn) {
     myResendBtn.addEventListener('click', async () => {
-      if (isDemo) {
-        showToast('আপনার ইমেইলে ভেরিফাই লিংক পাঠানো হয়েছে।');
-        return;
-      }
       if (!auth.currentUser) {
         showToast('অনুগ্রহ করে লগইন করুন।');
         return;
@@ -1062,66 +1057,6 @@ import { doc, getDoc, collection, query, orderBy, limit, getDocs } from "firebas
     myInvBonusNote.textContent = `শর্ত পূরণ হলে আপনি ${toBn(invPoints)} পয়েন্ট পাবেন।`;
   }
 
-  // Load Demo Data
-  function loadDemoData() {
-    demoBadge.style.display = 'inline-block';
-    updateConfigUI();
-
-    secCode.style.display = 'block';
-    secGuest.style.display = 'none';
-    setupCodeActions('GMR-4K7Q');
-
-    // My verification in demo: show unverified or verified
-    secMyVerifyWrap.style.display = 'block';
-    vStatusOk.style.display = 'none';
-    vStatusWarn.style.display = 'flex';
-
-    // 5 Demo referrals with review status
-    const demoReferrals = [
-      {
-        maskedName: 'সাকিব***',
-        emailVerified: true,
-        playedMinutes: 1560,
-        status: 'qualified',
-        referrerReward: 800
-      },
-      {
-        maskedName: 'রাকিব***',
-        emailVerified: true,
-        playedMinutes: 1500,
-        status: 'review',
-        referrerReward: 0
-      },
-      {
-        maskedName: 'তানভীর***',
-        emailVerified: true,
-        playedMinutes: 720,
-        status: 'pending',
-        referrerReward: 0
-      },
-      {
-        maskedName: 'ফারহান***',
-        emailVerified: false,
-        playedMinutes: 480,
-        status: 'pending',
-        referrerReward: 0
-      },
-      {
-        maskedName: 'নাঈম***',
-        emailVerified: false,
-        playedMinutes: 60,
-        status: 'pending',
-        referrerReward: 0
-      }
-    ];
-
-    secReferralsWrap.style.display = 'block';
-    renderReferrals(demoReferrals);
-
-    // Section G demo
-    renderReferredBy('করিম***', true, 900);
-  }
-
   // Load Live Firestore Data
   async function loadLiveUserData(user) {
     loadingView.style.display = 'block';
@@ -1130,19 +1065,7 @@ import { doc, getDoc, collection, query, orderBy, limit, getDocs } from "firebas
 
     try {
       // 1. Fetch config/referral if present
-      try {
-        const cfgDoc = await getDoc(doc(db, 'config', 'referral'));
-        if (cfgDoc.exists()) {
-          const cd = cfgDoc.data();
-          if (typeof cd.totalBonus === 'number') config.totalBonus = cd.totalBonus;
-          if (typeof cd.referrerPercent === 'number') config.referrerPercent = cd.referrerPercent;
-          if (typeof cd.inviteePercent === 'number') config.inviteePercent = cd.inviteePercent;
-          if (typeof cd.requiredHours === 'number') config.requiredHours = cd.requiredHours;
-        }
-      } catch (err) {
-        console.log('Referral config doc error (using defaults):', err.message);
-      }
-
+      await loadReferralConfig();
       updateConfigUI();
 
       // 2. Fetch User Profile (and ensure server-side ownCode & referral sync)
@@ -1225,7 +1148,8 @@ import { doc, getDoc, collection, query, orderBy, limit, getDocs } from "firebas
   }
 
   // Setup guest view when not logged in
-  function setupGuestView() {
+  async function setupGuestView() {
+    await loadReferralConfig();
     loadingView.style.display = 'none';
     errorView.style.display = 'none';
     mainCard.style.display = 'block';
@@ -1239,19 +1163,15 @@ import { doc, getDoc, collection, query, orderBy, limit, getDocs } from "firebas
   }
 
   // Execution
-  if (isDemo) {
-    loadDemoData();
-  } else {
-    updateConfigUI();
-    onAuthStateChanged(auth, user => {
-      if (user) {
-        loadLiveUserData(user);
-        retryBtn.onclick = () => loadLiveUserData(user);
-      } else {
-        setupGuestView();
-      }
-    });
-  }
+  updateConfigUI();
+  onAuthStateChanged(auth, user => {
+    if (user) {
+      loadLiveUserData(user);
+      retryBtn.onclick = () => loadLiveUserData(user);
+    } else {
+      setupGuestView();
+    }
+  });
 
 })();
 </script>

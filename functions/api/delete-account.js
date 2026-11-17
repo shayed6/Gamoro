@@ -1,10 +1,9 @@
 // functions/api/delete-account.js  →  POST /api/delete-account
-// Cloudflare Pages Function: অ্যাকাউন্ট স্থায়ীভাবে মুছে ফেলা (পিন সেট থাকলে যাচাই, না থাকলে ছাড়া)
+// Cloudflare Pages Function: অ্যাকাউন্ট স্থায়ীভাবে মুছে ফেলা (সাম্প্রতিক লগইন যাচাইসহ)
 
 import {
   json,
   requireAuth,
-  verifyAndTrackUserPin,
   deleteAuthUser,
   fsCtx,
   fsGet,
@@ -40,23 +39,10 @@ export async function onRequestPost({ request, env }) {
     const userPath = `users/${uid}`;
     const pinPath = `pins/${uid}`;
 
-    const [uRes, pRes] = await Promise.all([
-      fsGet(ctx, userPath),
-      fsGet(ctx, pinPath),
-    ]);
-
+    const uRes = await fsGet(ctx, userPath);
     const uData = uRes.data || {};
-    const hasPin = uData.pinSet === true && pRes.exists && pRes.data?.pinHash && pRes.data?.pinSalt;
 
-    // ২) পিন সেট থাকলে পিন বাধ্যতামূলক ও যাচাই (ভুলে ৫ বার ১৫ মিনিট লক); পিন না থাকলে লাগবে না
-    if (hasPin) {
-      const pinCheck = await verifyAndTrackUserPin(ctx, uid, body.pin);
-      if (!pinCheck.ok) {
-        return json({ ok: false, error: pinCheck.error }, pinCheck.status || 403);
-      }
-    }
-
-    // ৩) অপেক্ষমাণ উইথড্রয়াল আবেদন থাকলে মুছতে দেওয়া হবে না
+    // ২) অপেক্ষমাণ উইথড্রয়াল আবেদন থাকলে মুছতে দেওয়া হবে না
     const pendingWithdrawals = await fsRunQuery(ctx, {
       from: [{ collectionId: 'withdrawals' }],
       where: {
@@ -87,13 +73,13 @@ export async function onRequestPost({ request, env }) {
       return json({ ok: false, error: 'pending_payout' }, 409);
     }
 
-    // ৪) users/{uid}-এর সাবকালেকশনগুলো মুছে ফেলা
+    // ৩) users/{uid}-এর সাবকালেকশনগুলো মুছে ফেলা
     const subcollections = ['sessions', 'payouts', 'points', 'referrals', 'dailyClaims'];
     await Promise.all(
       subcollections.map((sub) => fsDeleteCollection(ctx, `${userPath}/${sub}`))
     );
 
-    // ৫) নিজস্ব ডকুমেন্ট ও সেশন মুছে ফেলা
+    // ৪) নিজস্ব ডকুমেন্ট, পুরোনো pins/{uid} ও সেশন মুছে ফেলা
     const deletes = [
       fsDelete(ctx, userPath),
       fsDelete(ctx, pinPath),
@@ -105,7 +91,7 @@ export async function onRequestPost({ request, env }) {
     }
     await Promise.all(deletes);
 
-    // ৬) withdrawals পরিচয়হীন (anonymize) করা — uid বদলে অজ্ঞাত চিহ্ন, ইমেইল/মোবাইল/আইপি/details মুছে ফেলা
+    // ৫) withdrawals পরিচয়হীন (anonymize) করা — uid বদলে অজ্ঞাত চিহ্ন, ইমেইল/মোবাইল/আইপি/details মুছে ফেলা
     const nowIso = new Date().toISOString();
     const userWithdrawals = await fsRunQuery(ctx, {
       from: [{ collectionId: 'withdrawals' }],
@@ -172,7 +158,7 @@ export async function onRequestPost({ request, env }) {
       );
     }
 
-    // ৭) Firebase Auth ইউজার মুছে ফেলা (Identity Toolkit REST)
+    // ৬) Firebase Auth ইউজার মুছে ফেলা (Identity Toolkit REST)
     await deleteAuthUser(env, uid);
 
     return json({ ok: true });

@@ -199,41 +199,6 @@ button:focus-visible, a:focus-visible, input:focus-visible {
   color: #17372B;
 }
 
-/* Simulation Test Bar */
-.test-bar {
-  background: var(--surface2);
-  border-bottom: 1px solid var(--line);
-  padding: 6px 12px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-  flex-wrap: wrap;
-  flex: none;
-  font-size: 11.5px;
-}
-.test-label {
-  font-weight: 700;
-  color: var(--green-2);
-}
-.test-btn-group {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-.test-btn {
-  border: 1px solid var(--line);
-  background: var(--surface);
-  color: var(--text);
-  font-size: 11px;
-  padding: 3px 8px;
-  border-radius: 6px;
-  transition: all .15s;
-}
-.test-btn:hover {
-  border-color: var(--green-2);
-}
-
 /* Ad Slot */
 .ad-slot-wrapper {
   background: var(--surface);
@@ -243,22 +208,16 @@ button:focus-visible, a:focus-visible, input:focus-visible {
   justify-content: center;
   align-items: center;
   flex: none;
-  min-height: 58px;
+}
+.ad-slot-wrapper[hidden] {
+  display: none;
 }
 #gamoro-ad {
   width: 100%;
   max-width: 320px;
-  height: 50px;
-  border: 1.5px dashed var(--line);
-  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--surface2);
-  font-size: 12px;
-  color: var(--muted);
-  font-weight: 600;
-  letter-spacing: 0.3px;
 }
 
 /* Status Line */
@@ -518,20 +477,9 @@ button:focus-visible, a:focus-visible, input:focus-visible {
     <a href="auth.html" class="guest-banner-btn" id="guestBannerLoginBtn">লগইন</a>
   </div>
 
-  <!-- TEMP: প্রোডাকশনের আগে মুছতে হবে -->
-  <div class="test-bar" id="testBar">
-    <span class="test-label">সিমুলেশন ও টেস্ট মোড</span>
-    <div class="test-btn-group">
-      <button type="button" class="test-btn" id="demoQuestionBtn">ডেমো: প্রশ্ন</button>
-      <button type="button" class="test-btn" id="demoActiveToggleBtn">ডেমো: সক্রিয়/নিষ্ক্রিয়</button>
-    </div>
-  </div>
-
   <!-- Display Ad Slot -->
-  <div class="ad-slot-wrapper">
-    <div id="gamoro-ad">
-      বিজ্ঞাপন (320 × 50)
-    </div>
+  <div class="ad-slot-wrapper" id="adSlotWrapper" hidden>
+    <div id="gamoro-ad"></div>
   </div>
 
   <!-- Status Line -->
@@ -616,10 +564,21 @@ function showToast(msg) {
   toastTimer = setTimeout(() => toast.classList.remove('show'), 2600);
 }
 
+/* Auto-hide ad slot unless real ad loads */
+const adSlotWrapper = document.getElementById('adSlotWrapper');
+const gamoroAd = document.getElementById('gamoro-ad');
+if (adSlotWrapper && gamoroAd) {
+  const syncPlayAdVisibility = () => {
+    const hasLoadedAd = gamoroAd.childElementCount > 0 || gamoroAd.textContent.trim().length > 0;
+    adSlotWrapper.hidden = !hasLoadedAd;
+  };
+  syncPlayAdVisibility();
+  new MutationObserver(syncPlayAdVisibility).observe(gamoroAd, { childList: true, subtree: true, characterData: true });
+}
+
 /* URL Params & Game Selection */
 const urlParams = new URLSearchParams(window.location.search);
 const gameIdParam = urlParams.get('game');
-const isDemoParam = urlParams.get('demo') === '1';
 
 const matchedGame = gameIdParam ? getGameById(gameIdParam) : null;
 const gameTitleElem = document.getElementById('gameTitle');
@@ -638,11 +597,9 @@ if (!matchedGame) {
 
 /* Activity Tracking */
 let lastUserActivity = Date.now();
-let isSimulatedInactive = false;
 
 function markActivity() {
-  if (!currentUser && !isDemoParam) return;
-  if (isSimulatedInactive) isSimulatedInactive = false;
+  if (!currentUser) return;
   lastUserActivity = Date.now();
   updateStatusLine();
 }
@@ -658,7 +615,7 @@ window.addEventListener('message', (e) => {
 
 /* Points & Auth State */
 let currentUser = null;
-let currentPoints = isDemoParam ? 1250 : 0;
+let currentPoints = 0;
 const pointsChip = document.getElementById('pointsChip');
 const guestLoginChip = document.getElementById('guestLoginChip');
 const guestBanner = document.getElementById('guestBanner');
@@ -668,11 +625,6 @@ function updatePointsDisplay(pts) {
   pointsValue.textContent = toBn(pts);
 }
 updatePointsDisplay(currentPoints);
-if (isDemoParam) {
-  if (pointsChip) pointsChip.hidden = false;
-  if (guestLoginChip) guestLoginChip.hidden = true;
-  if (guestBanner) guestBanner.hidden = true;
-}
 
 /* Get Asia/Dhaka Current Period (YYYY-MM) */
 function getDhakaPeriod() {
@@ -696,7 +648,7 @@ const statusLoginBtn = document.getElementById('statusLoginBtn');
 let dailyCapReached = false;
 
 function updateStatusLine() {
-  if (!currentUser && !isDemoParam) {
+  if (!currentUser) {
     statusDot.className = 'status-dot dot-gray';
     statusText.textContent = 'লগইন ছাড়া পয়েন্ট ও সময় কাউন্ট হবে না';
     statusLoginBtn.style.display = 'none';
@@ -717,7 +669,7 @@ function updateStatusLine() {
     return;
   }
 
-  const isRecentlyActive = !isSimulatedInactive && (Date.now() - lastUserActivity <= 60000);
+  const isRecentlyActive = (Date.now() - lastUserActivity <= 60000);
   if (isRecentlyActive) {
     statusDot.className = 'status-dot dot-green';
     statusText.textContent = 'সক্রিয়, প্রতি ২ মিনিটে ১ পয়েন্ট';
@@ -801,24 +753,6 @@ challengeOverlay.addEventListener('keydown', (e) => {
   }
 });
 
-/* Demo simulation buttons */
-document.getElementById('demoQuestionBtn').addEventListener('click', () => {
-  showChallengeModal({ id: 'demo_q', q: '৭ + ৮ = ?' }, async (ans) => {
-    if (ans === '১৫' || ans === '15') {
-      showToast('সঠিক উত্তর!');
-      return { ok: true };
-    }
-    return { ok: false, challenge: { id: 'demo_q2', q: '৯ + ৪ = ?' } };
-  });
-});
-
-document.getElementById('demoActiveToggleBtn').addEventListener('click', () => {
-  isSimulatedInactive = !isSimulatedInactive;
-  if (!isSimulatedInactive) lastUserActivity = Date.now();
-  updateStatusLine();
-  showToast(isSimulatedInactive ? 'অবস্থা: নিষ্ক্রিয়' : 'অবস্থা: সক্রিয়');
-});
-
 /* Session Management */
 let sessionInstance = null;
 let hasReportedError = false;
@@ -900,19 +834,11 @@ onAuthStateChanged(auth, async (user) => {
       try { sessionInstance.stop(); } catch (e) {}
       sessionInstance = null;
     }
-    if (isDemoParam) {
-      if (guestBanner) guestBanner.hidden = true;
-      if (guestLoginChip) guestLoginChip.hidden = true;
-      if (pointsChip) pointsChip.hidden = false;
-      currentPoints = 1250;
-      updatePointsDisplay(currentPoints);
-    } else {
-      if (guestBanner) guestBanner.hidden = false;
-      if (guestLoginChip) guestLoginChip.hidden = false;
-      if (pointsChip) pointsChip.hidden = true;
-      currentPoints = 0;
-      updatePointsDisplay(0);
-    }
+    if (guestBanner) guestBanner.hidden = false;
+    if (guestLoginChip) guestLoginChip.hidden = false;
+    if (pointsChip) pointsChip.hidden = true;
+    currentPoints = 0;
+    updatePointsDisplay(0);
   }
 });
 </script>

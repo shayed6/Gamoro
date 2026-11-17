@@ -167,23 +167,40 @@ export async function onRequestPost({ request, env }) {
       }
 
       if (rejectFlagReason === 'same_ip_cluster' || rejectFlagReason === 'same_mobile') {
-        await fsPatch(
-          ctx,
-          `flags/${randomFlagId()}`,
-          {
-            type: 'same_ip_cluster',
-            severity: 'high',
-            uid,
-            userName: uData.name || 'ব্যবহারকারী',
-            details:
-              rejectFlagReason === 'same_mobile'
-                ? 'রেফারেল ও আমন্ত্রিতের মোবাইল নম্বর এক'
-                : 'একই আইপি থেকে রেফারেল সাইনআপ শনাক্ত',
-            status: 'open',
-            detectedAt: tsValue(nowIso),
-          },
-          ['type', 'severity', 'uid', 'userName', 'details', 'status', 'detectedAt']
-        );
+        const alertDetails =
+          rejectFlagReason === 'same_mobile'
+            ? 'রেফারেল ও আমন্ত্রিতের মোবাইল নম্বর এক'
+            : 'একই আইপি থেকে একাধিক অ্যাকাউন্ট/রেফারেল সাইনআপ শনাক্ত';
+        await Promise.all([
+          fsPatch(
+            ctx,
+            `flags/${randomFlagId()}`,
+            {
+              type: 'same_ip_cluster',
+              severity: 'high',
+              uid,
+              userName: uData.name || 'ব্যবহারকারী',
+              details: alertDetails,
+              status: 'open',
+              detectedAt: tsValue(nowIso),
+            },
+            ['type', 'severity', 'uid', 'userName', 'details', 'status', 'detectedAt']
+          ),
+          fsPatch(
+            ctx,
+            `alerts/ip_${uid}_${Date.now()}`,
+            {
+              type: 'multi_account_ip',
+              severity: 'high',
+              uid,
+              userName: uData.name || 'ব্যবহারকারী',
+              details: alertDetails,
+              status: 'open',
+              createdAt: tsValue(nowIso),
+            },
+            ['type', 'severity', 'uid', 'userName', 'details', 'status', 'createdAt']
+          ),
+        ]);
         await fsPatch(ctx, userPath, { referralProcessed: true }, ['referralProcessed'], true);
       } else if (rejectFlagReason) {
         await fsPatch(ctx, userPath, { referralProcessed: true }, ['referralProcessed'], true);

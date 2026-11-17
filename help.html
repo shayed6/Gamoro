@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="bn" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0C4A34">
+<meta name="description" content="Gamoro – সহায়তা ও সাধারণ জিজ্ঞাসা (FAQ)">
+<title>Gamoro – সহায়তা ও FAQ</title>
+<link rel="icon" type="image/png" href="logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script type="importmap">
+{
+  "imports": {
+    "firebase/app": "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js",
+    "firebase/auth": "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js",
+    "firebase/firestore": "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"
+  }
+}
+</script>
+<style>
+:root{
+  color-scheme:light;
+  --green:#0C4A34;
+  --green-2:#176746;
+  --gold:#E9A820;
+  --coral:#D6403B;
+  --bg:#F0F8F2;
+  --surface:#ffffff;
+  --surface2:#E4F1E8;
+  --text:#17372B;
+  --muted:#63796D;
+  --line:#D5E5D9;
+  --shadow:0 8px 25px rgba(12,74,52,.08);
+  --focus:#D6403B;
+}
+:root[data-theme=dark]{
+  color-scheme:dark;
+  --bg:#101B17;
+  --surface:#182720;
+  --surface2:#25382E;
+  --text:#F1F7F3;
+  --muted:#B3C5B9;
+  --line:#354B3E;
+  --shadow:0 8px 25px rgba(0,0,0,.28);
+  --focus:#FFD16B;
+  --green-2:#9BD6B5;
+  --coral:#FF7A74;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:"Hind Siliguri",system-ui,sans-serif;
+  min-height:100vh;
+}
+button,input,a{font:inherit}
+button{cursor:pointer}
+button:focus-visible,a:focus-visible,input:focus-visible{
+  outline:3px solid var(--focus);
+  outline-offset:2px;
+}
+.app{
+  max-width:480px;
+  margin:auto;
+  min-height:100vh;
+  padding-bottom:calc(28px + env(safe-area-inset-bottom));
+  display:flex;
+  flex-direction:column;
+}
+.top{
+  background:var(--green);
+  color:#fff;
+  padding:calc(12px + env(safe-area-inset-top)) 16px 14px;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  position:sticky;
+  top:0;
+  z-index:30;
+  box-shadow:0 4px 15px rgba(6,43,29,.25);
+}
+.back{
+  width:40px;
+  height:40px;
+  border:0;
+  border-radius:12px;
+  background:#ffffff1c;
+  color:#fff;
+  font-size:20px;
+  display:grid;
+  place-items:center;
+  flex:none;
+  transition:background .15s;
+}
+.back:hover{background:#ffffff2a}
+.top-title{
+  margin:0;
+  font-size:20px;
+  font-weight:700;
+  flex:1;
+}
+.theme-btn{
+  width:36px;
+  height:36px;
+  border:0;
+  border-radius:10px;
+  background:#ffffff1c;
+  color:#fff;
+  font-size:16px;
+  display:grid;
+  place-items:center;
+  flex:none;
+}
+.main-content{
+  padding:16px;
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+}
+.intro-card{
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:18px;
+  padding:16px;
+  box-shadow:var(--shadow);
+}
+.intro-card h2{
+  margin:0 0 6px;
+  font-size:17px;
+  font-weight:700;
+}
+.intro-card p{
+  margin:0 0 12px;
+  font-size:13.5px;
+  color:var(--muted);
+  line-height:1.5;
+}
+.search-box{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  background:var(--bg);
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:0 12px;
+}
+.search-box:focus-within{
+  outline:3px solid var(--focus);
+  outline-offset:2px;
+}
+.search-box svg{
+  width:18px;
+  height:18px;
+  color:var(--muted);
+  flex:none;
+}
+.search-box input{
+  width:100%;
+  min-width:0;
+  border:0;
+  background:transparent;
+  color:var(--text);
+  padding:11px 0;
+  font-size:14px;
+  outline:none;
+}
+.search-box input:focus-visible{
+  outline:none;
+}
+.faq-list{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+.faq-item{
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:16px;
+  box-shadow:var(--shadow);
+  overflow:hidden;
+}
+.faq-item[hidden]{
+  display:none;
+}
+.faq-q{
+  width:100%;
+  border:0;
+  background:transparent;
+  color:var(--text);
+  padding:15px 16px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  text-align:left;
+  font-size:15px;
+  font-weight:700;
+  line-height:1.4;
+}
+.faq-q:hover{
+  background:var(--surface2);
+}
+.faq-chev{
+  flex:none;
+  width:24px;
+  height:24px;
+  border-radius:8px;
+  background:var(--surface2);
+  color:var(--green-2);
+  display:grid;
+  place-items:center;
+  font-size:14px;
+  transition:transform .2s ease;
+}
+.faq-item.open .faq-chev{
+  transform:rotate(180deg);
+}
+.faq-a{
+  display:none;
+  padding:0 16px 16px;
+  font-size:14px;
+  line-height:1.65;
+  color:var(--text);
+  border-top:1px solid var(--line);
+  padding-top:12px;
+}
+.faq-item.open .faq-a{
+  display:block;
+}
+.faq-a p{
+  margin:0 0 8px;
+}
+.faq-a p:last-child{
+  margin-bottom:0;
+}
+.faq-a ul{
+  margin:6px 0 0;
+  padding-left:18px;
+}
+.faq-a li{
+  margin-bottom:4px;
+}
+.inline-link{
+  color:var(--green-2);
+  font-weight:600;
+  text-decoration:underline;
+}
+.note-box{
+  margin-top:8px;
+  padding:10px 12px;
+  border-radius:10px;
+  background:var(--surface2);
+  font-size:13px;
+  line-height:1.5;
+}
+.empty-state{
+  display:none;
+  text-align:center;
+  padding:28px 16px;
+  background:var(--surface);
+  border:1px dashed var(--line);
+  border-radius:16px;
+  color:var(--muted);
+  font-size:14px;
+}
+.empty-state.show{
+  display:block;
+}
+@media (prefers-reduced-motion:reduce){
+  .faq-chev{transition:none}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <button class="back" id="backBtn" aria-label="ফিরে যান">←</button>
+    <h1 class="top-title">সহায়তা ও FAQ</h1>
+    <button class="theme-btn" id="themeToggle" aria-label="থিম পরিবর্তন">🌙</button>
+  </header>
+
+  <main class="main-content">
+    <section class="intro-card">
+      <h2>সাধারণ জিজ্ঞাসা</h2>
+      <p>Gamoro ব্যবহার, পয়েন্ট, রেফারেল ও উইথড্র সংক্রান্ত প্রশ্নের উত্তর এখানে পাবেন।</p>
+      <label class="search-box">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <circle cx="10.8" cy="10.8" r="6.8"></circle>
+          <path d="m16 16 5 5"></path>
+        </svg>
+        <input id="faqSearch" type="search" placeholder="প্রশ্ন বা বিষয় লিখুন..." aria-label="প্রশ্ন খুঁজুন">
+      </label>
+    </section>
+
+    <div class="faq-list" id="faqList">
+      <article class="faq-item open" data-keywords="পয়েন্ট খেলার সময় বোনাস গেস্ট লগইন">
+        <button class="faq-q" type="button" aria-expanded="true">
+          <span>১. কীভাবে পয়েন্ট পাওয়া যায়?</span>
+          <span class="faq-chev" aria-hidden="true">⌄</span>
+        </button>
+        <div class="faq-a">
+          <p>পয়েন্ট পেতে প্রথমে লগইন করতে হবে এবং ইমেইল ভেরিফাই সম্পন্ন থাকতে হবে। গেস্ট হিসেবে খেললে পয়েন্ট যোগ হয় না।</p>
+          <ul>
+            <li>লগইন করা ও ইমেইল ভেরিফাইড ব্যবহারকারী প্রতি <strong>২ মিনিট</strong> সক্রিয়ভাবে গেম খেললে <strong>১ পয়েন্ট</strong> পান।</li>
+            <li>প্রতিদিন হোমপেজ থেকে দৈনিক বোনাস দাবি করা যায়।</li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="faq-item" data-keywords="রেফারেল বন্ধু আমন্ত্রণ বোনাস কোড ঘণ্টা">
+        <button class="faq-q" type="button" aria-expanded="false">
+          <span>২. রেফারেল কীভাবে কাজ করে?</span>
+          <span class="faq-chev" aria-hidden="true">⌄</span>
+        </button>
+        <div class="faq-a">
+          <p>আপনার নিজস্ব রেফারেল কোড বা লিংকের মাধ্যমে কোনো বন্ধু সাইন আপ করলে এবং নির্ধারিত শর্ত পূরণ করলে উভয়েই পয়েন্ট বোনাস পান:</p>
+          <ul>
+            <li>আপনার ও আপনার বন্ধুর দুজনেরই ইমেইল ভেরিফাইড হতে হবে।</li>
+            <li>বন্ধুকে অন্তত <strong id="faqRefHours">২৫</strong> ঘণ্টা সক্রিয়ভাবে গেম খেলতে হবে।</li>
+            <li>শর্ত পূরণে মোট <strong id="faqRefTotal">১,০০০</strong> পয়েন্ট বোনাস (<span id="faqRefShare">আপনি ৮০% / ৮০০ পয়েন্ট</span> এবং <span id="faqInvShare">বন্ধু ২০% / ২০০ পয়েন্ট</span>)।</li>
+          </ul>
+          <div class="note-box" id="faqWaitNote">শর্ত পূরণ হলে যাচাইয়ের পর বোনাস যোগ হয়।</div>
+          <p style="margin-top:8px"><a class="inline-link" href="referral.html">রেফারেল পেজে যান →</a></p>
+        </div>
+      </article>
+
+      <article class="faq-item" data-keywords="উইথড্র পদ্ধতি সীমা রিচার্জ বাইন্যান্স গিফট কার্ড দান ডলার রেট">
+        <button class="faq-q" type="button" aria-expanded="false">
+          <span>৩. উইথড্র পদ্ধতি ও সীমা কী?</span>
+          <span class="faq-chev" aria-hidden="true">⌄</span>
+        </button>
+        <div class="faq-a">
+          <p>দেশ ও ব্যালেন্স অনুযায়ী নিচের পদ্ধতিগুলোর মাধ্যমে উইথড্র আবেদন করা যায় (হিসাবের রেট: ১ USD ≈ <strong id="faqRateBdt">৳১১০</strong>):</p>
+          <ul>
+            <li><strong>মোবাইল রিচার্জ (বাংলাদেশ):</strong> <span id="faqRechargeRange">$১ থেকে $১৯.৯৯</span> পর্যন্ত (শুধু নিবন্ধিত নম্বরে)।</li>
+            <li><strong>Binance Pay (আন্তর্জাতিক):</strong> সর্বনিম্ন <strong id="faqBinanceMin">$১০</strong>।</li>
+            <li><strong>গিফট কার্ড:</strong> সর্বনিম্ন <strong id="faqGiftMin">$২০</strong> (নিবন্ধিত ইমেইলে পাঠানো হয়)।</li>
+            <li><strong>দান (Donation):</strong> সর্বনিম্ন <strong id="faqDonationMin">$১</strong>।</li>
+          </ul>
+          <div class="note-box">
+            ব্যালেন্স <strong id="faqCarryBelow">$১</strong>-এর কম হলে তা পরবর্তী মাসের হিসাবে যোগ হয়। একবারে সর্বোচ্চ <strong id="faqMaxPending">১টি</strong> অপেক্ষমাণ আবেদন রাখা যায়।
+          </div>
+          <p style="margin-top:8px"><a class="inline-link" href="withdraw.html">উইথড্র পেজে যান →</a></p>
+        </div>
+      </article>
+
+      <article class="faq-item" data-keywords="উইথড্র প্রসেস সময় কত লাগে যাচাই অনুমোদন">
+        <button class="faq-q" type="button" aria-expanded="false">
+          <span>৪. উইথড্র প্রসেস হতে কত সময় লাগে?</span>
+          <span class="faq-chev" aria-hidden="true">⌄</span>
+        </button>
+        <div class="faq-a">
+          <p id="faqProcessingNote">অ্যাডমিন যাচাইয়ের পর পাঠানো হয়</p>
+          <div class="note-box">আপনার প্রতিটি আবেদনের বর্তমান ধাপ (জমা হয়েছে → যাচাই চলছে → অনুমোদিত → পাঠানো হয়েছে) <a class="inline-link" href="withdraw.html">উইথড্র পেজে</a> সরাসরি দেখতে পারবেন।</div>
+        </div>
+      </article>
+
+      <article class="faq-item" data-keywords="পাসওয়ার্ড ভুলে গেছি রিসেট লগইন সমস্যা">
+        <button class="faq-q" type="button" aria-expanded="false">
+          <span>৫. পাসওয়ার্ড ভুলে গেলে কী করব?</span>
+          <span class="faq-chev" aria-hidden="true">⌄</span>
+        </button>
+        <div class="faq-a">
+          <p>লগইন পেজের "পাসওয়ার্ড ভুলে গেছেন?" অপশনে গিয়ে আপনার নিবন্ধিত ইমেইল লিখুন। আপনার ইমেইলে পাসওয়ার্ড রিসেট লিংক পাঠানো হবে।</p>
+          <p><a class="inline-link" href="auth.html#forgot">পাসওয়ার্ড রিসেট পেজে যান →</a></p>
+        </div>
+      </article>
+
+      <article class="faq-item" data-keywords="অ্যাকাউন্ট ডিলিট মুছুন বন্ধ ডাটা">
+        <button class="faq-q" type="button" aria-expanded="false">
+          <span>৬. অ্যাকাউন্ট কীভাবে ডিলিট করব?</span>
+          <span class="faq-chev" aria-hidden="true">⌄</span>
+        </button>
+        <div class="faq-a">
+          <p>আপনি মেনু থেকে "অ্যাকাউন্ট মুছুন" অপশনে গিয়ে বা নিচের লিংক ব্যবহার করে নিজের অ্যাকাউন্ট স্থায়ীভাবে মুছে ফেলতে পারবেন। নিরাপত্তার জন্য সাম্প্রতিক লগইন নিশ্চিত করতে হতে পারে।</p>
+          <p><a class="inline-link" href="delete-account.html">অ্যাকাউন্ট ডিলিট পেজে যান →</a></p>
+        </div>
+      </article>
+
+      <article class="faq-item" data-keywords="পয়েন্ট বাড়ে না সমস্যা ট্রাবলশুটিং বিরতি">
+        <button class="faq-q" type="button" aria-expanded="false">
+          <span>৭. পয়েন্ট না বাড়লে কী করব?</span>
+          <span class="faq-chev" aria-hidden="true">⌄</span>
+        </button>
+        <div class="faq-a">
+          <p>পয়েন্ট না বাড়লে নিচের বিষয়গুলো যাচাই করুন:</p>
+          <ul>
+            <li>আপনি লগইন করা আছেন কি না দেখুন (গেস্ট মোডে পয়েন্ট যোগ হয় না)।</li>
+            <li>ইমেইল ভেরিফাই সম্পন্ন হয়েছে কি না নিশ্চিত করুন।</li>
+            <li>খেলা চলাকালে স্ক্রিনে সক্রিয় থাকুন; দীর্ঘক্ষণ নিষ্ক্রিয় থাকলে বা ট্যাব/ব্রাউজার বন্ধ থাকলে সময় গণনা থেমে যায়।</li>
+            <li>প্রতি ২ মিনিট সক্রিয় খেলার পর ১ পয়েন্ট যোগ হয় এবং দৈনিক সর্বোচ্চ সক্রিয় খেলার সীমা অতিক্রম করলে পরদিন পর্যন্ত অপেক্ষা করতে হয়।</li>
+            <li>ইন্টারনেট সংযোগ স্থিতিশীল আছে কি না দেখুন।</li>
+          </ul>
+        </div>
+      </article>
+    </div>
+
+    <div class="empty-state" id="faqEmpty">এই বিষয়ে কোনো প্রশ্ন পাওয়া যায়নি। অন্য শব্দ লিখে খুঁজুন।</div>
+  </main>
+</div>
+
+<script type="module">
+import { db } from "./firebase-config.js";
+import { doc, getDoc } from "firebase/firestore";
+
+(() => {
+  const root = document.documentElement;
+  const backBtn = document.getElementById('backBtn');
+  const themeToggle = document.getElementById('themeToggle');
+  const faqSearch = document.getElementById('faqSearch');
+  const faqItems = [...document.querySelectorAll('.faq-item')];
+  const faqEmpty = document.getElementById('faqEmpty');
+
+  const toBn = (n) => {
+    const num = Number(n);
+    if (!Number.isFinite(num)) return '০';
+    return num.toLocaleString('bn-BD');
+  };
+
+  function applyTheme(dark) {
+    root.setAttribute('data-theme', dark ? 'dark' : 'light');
+    themeToggle.textContent = dark ? '☀️' : '🌙';
+    localStorage.setItem('gamoro_theme', dark ? 'dark' : 'light');
+    const metaTheme = document.querySelector('meta[name="theme-color"]');
+    if (metaTheme) metaTheme.content = dark ? '#101B17' : '#0C4A34';
+  }
+  const savedTheme = localStorage.getItem('gamoro_theme');
+  const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  applyTheme(savedTheme ? savedTheme === 'dark' : prefersDark);
+
+  themeToggle.addEventListener('click', () => {
+    applyTheme(root.getAttribute('data-theme') !== 'dark');
+  });
+
+  backBtn.addEventListener('click', () => {
+    if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      window.location.href = 'index.html';
+    }
+  });
+
+  faqItems.forEach((item) => {
+    const btn = item.querySelector('.faq-q');
+    btn.addEventListener('click', () => {
+      const nextOpen = !item.classList.contains('open');
+      item.classList.toggle('open', nextOpen);
+      btn.setAttribute('aria-expanded', String(nextOpen));
+    });
+  });
+
+  faqSearch.addEventListener('input', () => {
+    const q = faqSearch.value.trim().toLocaleLowerCase('bn');
+    let shown = 0;
+    faqItems.forEach((item) => {
+      const text = `${item.dataset.keywords || ''} ${item.textContent || ''}`.toLocaleLowerCase('bn');
+      const match = !q || text.includes(q);
+      item.hidden = !match;
+      if (match) {
+        shown++;
+        if (q) {
+          item.classList.add('open');
+          item.querySelector('.faq-q')?.setAttribute('aria-expanded', 'true');
+        }
+      }
+    });
+    faqEmpty.classList.toggle('show', shown === 0);
+  });
+
+  async function loadLiveConfigs() {
+    try {
+      const [wSnap, rSnap] = await Promise.all([
+        getDoc(doc(db, 'config', 'withdraw')),
+        getDoc(doc(db, 'config', 'referral')),
+      ]);
+
+      if (wSnap.exists()) {
+        const w = wSnap.data() || {};
+        const usdToBdt = Number(w.usdToBdt || 110);
+        const rechargeMin = Number(w.mobileRechargeMin ?? 1);
+        const rechargeMax = w.mobileRechargeMax !== undefined
+          ? Number(w.mobileRechargeMax)
+          : (w.mobileRechargeMaxExclusive !== undefined ? Number(w.mobileRechargeMaxExclusive) - 0.01 : 19.99);
+        const binanceMin = Number(w.binanceMin ?? 10);
+        const giftCardMin = Number(w.giftCardMin ?? 20);
+        const donationMin = Number(w.donationMin ?? 1);
+        const carryBelow = Number(w.carryBelowUsd ?? 1);
+        const maxPending = Number(w.maxPending ?? w.maxPendingWithdrawals ?? 1);
+        const processingNote = typeof w.processingNote === 'string' ? w.processingNote.trim() : '';
+
+        document.getElementById('faqRateBdt').textContent = `৳${toBn(usdToBdt)}`;
+        document.getElementById('faqRechargeRange').textContent = `$${toBn(rechargeMin)} থেকে $${toBn(rechargeMax)}`;
+        document.getElementById('faqBinanceMin').textContent = `$${toBn(binanceMin)}`;
+        document.getElementById('faqGiftMin').textContent = `$${toBn(giftCardMin)}`;
+        document.getElementById('faqDonationMin').textContent = `$${toBn(donationMin)}`;
+        document.getElementById('faqCarryBelow').textContent = `$${toBn(carryBelow)}`;
+        document.getElementById('faqMaxPending').textContent = `${toBn(maxPending)}টি`;
+        document.getElementById('faqProcessingNote').textContent =
+          processingNote || 'অ্যাডমিন যাচাইয়ের পর পাঠানো হয়';
+      }
+
+      if (rSnap.exists()) {
+        const r = rSnap.data() || {};
+        const totalBonus = Number(r.totalBonus ?? 1000);
+        const refPct = Number(r.referrerPercent ?? 80);
+        const invPct = Number(r.inviteePercent ?? 20);
+        const reqHours = Number(r.requiredHours ?? 25);
+        const waitDays = Number(r.waitDays ?? 0);
+
+        const refPts = Math.round((totalBonus * refPct) / 100);
+        const invPts = Math.round((totalBonus * invPct) / 100);
+
+        document.getElementById('faqRefHours').textContent = toBn(reqHours);
+        document.getElementById('faqRefTotal').textContent = toBn(totalBonus);
+        document.getElementById('faqRefShare').textContent = `আপনি ${toBn(refPct)}% / ${toBn(refPts)} পয়েন্ট`;
+        document.getElementById('faqInvShare').textContent = `বন্ধু ${toBn(invPct)}% / ${toBn(invPts)} পয়েন্ট`;
+        document.getElementById('faqWaitNote').textContent = waitDays > 0
+          ? `শর্ত পূরণের পর যাচাইয়ের জন্য ${toBn(waitDays)} দিন সময় লাগে, তারপর বোনাস যোগ হয়।`
+          : 'শর্ত পূরণ হলে যাচাইয়ের পর বোনাস যোগ হয়।';
+      }
+    } catch {
+      // Fallback text remains clean if config cannot be fetched
+    }
+  }
+
+  loadLiveConfigs();
+})();
+</script>
+</body>
+</html>

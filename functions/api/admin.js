@@ -19,6 +19,7 @@ import {
   txUpdateWrite,
   txDeleteWrite,
   tsValue,
+  makeNotificationDocWrite,
 } from '../_lib/firebase.js';
 
 const DEFAULT_CONFIG = {
@@ -33,6 +34,7 @@ const DEFAULT_CONFIG = {
   donationMin: 1,
   maxPending: 1,
   carryBelowUsd: 1,
+  processingNote: '',
   totalBonus: 1000,
   referrerPercent: 80,
   inviteePercent: 20,
@@ -117,7 +119,6 @@ function mapUserSummary(u, period) {
     balanceUsd: Number(balanceUsd.toFixed(2)),
     totalEarnedUsd: Number(Number(u.totalEarnedUsd || 0).toFixed(2)),
     totalPoints: points,
-    pinSet: u.pinSet === true,
     status: u.status || 'active',
     suspendReason: u.suspendReason || '',
     country: u.country || 'BD',
@@ -141,6 +142,7 @@ async function loadMergedConfig(ctx) {
   if (wData.mobileRechargeMax === undefined && wData.mobileRechargeMaxExclusive !== undefined) {
     merged.mobileRechargeMax = Number(wData.mobileRechargeMaxExclusive) - 0.01;
   }
+  merged.processingNote = String(merged.processingNote || '');
   delete merged.bankWalletMin;
   delete merged.mobileRechargeMaxExclusive;
   return merged;
@@ -277,7 +279,7 @@ export async function onRequestPost({ request, env }) {
       }
 
       case 'payouts.list': {
-        const status = ['pending', 'paid', 'rejected'].includes(params.status)
+        const status = ['pending', 'verifying', 'approved', 'paid', 'rejected'].includes(params.status)
           ? params.status
           : 'pending';
         const rows = await fsRunQuery(ctx, {
@@ -303,14 +305,19 @@ export async function onRequestPost({ request, env }) {
           status: p.status || 'pending',
           txId: p.txId || '',
           rejectReason: p.rejectReason || '',
+          adminNote: p.adminNote || '',
           createdAt: formatBnDateTime(p.createdAt),
+          verifyingAt: formatBnDateTime(p.verifyingAt),
+          approvedAt: formatBnDateTime(p.approvedAt),
+          paidAt: formatBnDateTime(p.paidAt),
+          rejectedAt: formatBnDateTime(p.rejectedAt),
         }));
         return json({ ok: true, payouts });
       }
 
-      case 'payouts.markPaid': {
+      case 'payouts.markVerifying': {
         const id = String(params.id || '').trim();
-        const txId = String(params.txId || '').trim().slice(0, 120) || 'MANUAL_' + Date.now();
+        const note = String(params.note || '').trim().slice(0, 240);
         if (!id) return json({ ok: false, error: 'missing_id' }, 400);
 
         const wdPath = `withdrawals/${id}`;
@@ -327,25 +334,180 @@ export async function onRequestPost({ request, env }) {
         }
 
         const nowIso = new Date().toISOString();
+        const wdPatch = { status: 'verifying', verifyingAt: tsValue(nowIso), processedBy: adminEmail };
+        if (note) wdPatch.adminNote = note;
+
         const writes = [
-          txUpdateWrite(
+          txUpdateWrite(ctx, wdPath, wdPatch, Object.keys(wdPatch), { exists: true }),
+          makeAuditWrite(
             ctx,
-            wdPath,
-            { status: 'paid', txId, paidAt: tsValue(nowIso), processedBy: adminEmail },
-            ['status', 'txId', 'paidAt', 'processedBy'],
-            { exists: true }
+            adminEmail,
+            'payout.markVerifying',
+            `${id} (${wd.userName || wd.uid})`,
+            `যাচাই শুরু করা হয়েছে${note ? ` (নোট: ${note})` : ''}`
           ),
+        ];
+
+        if (wd.uid && !String(wd.uid).startsWith('deleted')) {
+          const [userRes, userPayoutRes] = await Promise.all([
+            fsGet(ctx, `users/${wd.uid}`, tx),
+            fsGet(ctx, `users/${wd.uid}/payouts/${id}`, tx),
+          ]);
+          if (userPayoutRes.exists) {
+            writes.push(
+              txUpdateWrite(
+                ctx,
+                `users/${wd.uid}/payouts/${id}`,
+                { status: 'verifying', verifyingAt: tsValue(nowIso) },
+                ['status', 'verifyingAt'],
+                { exists: true }
+              )
+            );
+          }
+          if (userRes.exists) {
+            const amt = Number(wd.amountUsd || 0).toFixed(2);
+            const mLabel = wd.methodLabel || wd.method || 'উইথড্র';
+            writes.push(
+              txUpdateWrite(
+                ctx,
+                `users/${wd.uid}`,
+                { lastNotifAt: tsValue(nowIso) },
+                ['lastNotifAt'],
+                { exists: true }
+              ),
+              makeNotificationDocWrite(ctx, wd.uid, {
+                type: 'withdraw_verifying',
+                title: 'উইথড্র যাচাই চলছে',
+                body: `$${amt} (${mLabel}) আবেদনটি এখন যাচাই করা হচ্ছে।`,
+                link: 'withdraw.html',
+                nowIso,
+              })
+            );
+          }
+        }
+
+        const commitRes = await fsCommitTx(ctx, tx, writes);
+        tx = null;
+        if (!commitRes.ok) return json({ ok: false, error: 'busy' }, 409);
+        return json({ ok: true });
+      }
+
+      case 'payouts.approve': {
+        const id = String(params.id || '').trim();
+        const note = String(params.note || '').trim().slice(0, 240);
+        if (!id) return json({ ok: false, error: 'missing_id' }, 400);
+
+        const wdPath = `withdrawals/${id}`;
+        tx = await fsBeginTx(ctx, true);
+        const wdRes = await fsGet(ctx, wdPath, tx);
+        if (!wdRes.exists) {
+          await fsRollbackTx(ctx, tx);
+          return json({ ok: false, error: 'not_found' }, 404);
+        }
+        const wd = wdRes.data;
+        if (wd.status !== 'pending' && wd.status !== 'verifying') {
+          await fsRollbackTx(ctx, tx);
+          return json({ ok: false, error: 'already_processed' }, 409);
+        }
+
+        const nowIso = new Date().toISOString();
+        const wdPatch = { status: 'approved', approvedAt: tsValue(nowIso), processedBy: adminEmail };
+        if (note) wdPatch.adminNote = note;
+
+        const writes = [
+          txUpdateWrite(ctx, wdPath, wdPatch, Object.keys(wdPatch), { exists: true }),
+          makeAuditWrite(
+            ctx,
+            adminEmail,
+            'payout.approve',
+            `${id} (${wd.userName || wd.uid})`,
+            `আবেদন অনুমোদিত হয়েছে${note ? ` (নোট: ${note})` : ''}`
+          ),
+        ];
+
+        if (wd.uid && !String(wd.uid).startsWith('deleted')) {
+          const [userRes, userPayoutRes] = await Promise.all([
+            fsGet(ctx, `users/${wd.uid}`, tx),
+            fsGet(ctx, `users/${wd.uid}/payouts/${id}`, tx),
+          ]);
+          if (userPayoutRes.exists) {
+            writes.push(
+              txUpdateWrite(
+                ctx,
+                `users/${wd.uid}/payouts/${id}`,
+                { status: 'approved', approvedAt: tsValue(nowIso) },
+                ['status', 'approvedAt'],
+                { exists: true }
+              )
+            );
+          }
+          if (userRes.exists) {
+            const amt = Number(wd.amountUsd || 0).toFixed(2);
+            const mLabel = wd.methodLabel || wd.method || 'উইথড্র';
+            writes.push(
+              txUpdateWrite(
+                ctx,
+                `users/${wd.uid}`,
+                { lastNotifAt: tsValue(nowIso) },
+                ['lastNotifAt'],
+                { exists: true }
+              ),
+              makeNotificationDocWrite(ctx, wd.uid, {
+                type: 'withdraw_approved',
+                title: 'উইথড্র অনুমোদিত হয়েছে',
+                body: `$${amt} (${mLabel}) আবেদনটি অনুমোদিত হয়েছে, শীঘ্রই পাঠানো হবে।`,
+                link: 'withdraw.html',
+                nowIso,
+              })
+            );
+          }
+        }
+
+        const commitRes = await fsCommitTx(ctx, tx, writes);
+        tx = null;
+        if (!commitRes.ok) return json({ ok: false, error: 'busy' }, 409);
+        return json({ ok: true });
+      }
+
+      case 'payouts.markPaid': {
+        const id = String(params.id || '').trim();
+        const txId = String(params.txId || '').trim().slice(0, 120) || 'MANUAL_' + Date.now();
+        const note = String(params.note || '').trim().slice(0, 240);
+        if (!id) return json({ ok: false, error: 'missing_id' }, 400);
+
+        const wdPath = `withdrawals/${id}`;
+        tx = await fsBeginTx(ctx, true);
+        const wdRes = await fsGet(ctx, wdPath, tx);
+        if (!wdRes.exists) {
+          await fsRollbackTx(ctx, tx);
+          return json({ ok: false, error: 'not_found' }, 404);
+        }
+        const wd = wdRes.data;
+        if (!['pending', 'verifying', 'approved'].includes(wd.status)) {
+          await fsRollbackTx(ctx, tx);
+          return json({ ok: false, error: 'already_processed' }, 409);
+        }
+
+        const nowIso = new Date().toISOString();
+        const wdPatch = { status: 'paid', txId, paidAt: tsValue(nowIso), processedBy: adminEmail };
+        if (note) wdPatch.adminNote = note;
+
+        const writes = [
+          txUpdateWrite(ctx, wdPath, wdPatch, Object.keys(wdPatch), { exists: true }),
           makeAuditWrite(
             ctx,
             adminEmail,
             'payout.markPaid',
             `${id} (${wd.userName || wd.uid})`,
-            `পরিশোধ সম্পন্ন (TxID: ${txId})`
+            `পরিশোধ সম্পন্ন (TxID: ${txId})${note ? ` · নোট: ${note}` : ''}`
           ),
         ];
 
         if (wd.uid && !String(wd.uid).startsWith('deleted')) {
-          const userPayoutRes = await fsGet(ctx, `users/${wd.uid}/payouts/${id}`, tx);
+          const [userRes, userPayoutRes] = await Promise.all([
+            fsGet(ctx, `users/${wd.uid}`, tx),
+            fsGet(ctx, `users/${wd.uid}/payouts/${id}`, tx),
+          ]);
           if (userPayoutRes.exists) {
             writes.push(
               txUpdateWrite(
@@ -355,6 +517,26 @@ export async function onRequestPost({ request, env }) {
                 ['status', 'txId', 'paidAt'],
                 { exists: true }
               )
+            );
+          }
+          if (userRes.exists) {
+            const amt = Number(wd.amountUsd || 0).toFixed(2);
+            const mLabel = wd.methodLabel || wd.method || 'উইথড্র';
+            writes.push(
+              txUpdateWrite(
+                ctx,
+                `users/${wd.uid}`,
+                { lastNotifAt: tsValue(nowIso) },
+                ['lastNotifAt'],
+                { exists: true }
+              ),
+              makeNotificationDocWrite(ctx, wd.uid, {
+                type: 'withdraw_paid',
+                title: 'উইথড্র পাঠানো হয়েছে',
+                body: `$${amt} (${mLabel}) পাঠানো হয়েছে।`,
+                link: 'withdraw.html',
+                nowIso,
+              })
             );
           }
         }
@@ -368,6 +550,7 @@ export async function onRequestPost({ request, env }) {
       case 'payouts.reject': {
         const id = String(params.id || '').trim();
         const reason = String(params.reason || '').trim().slice(0, 240) || 'বাতিল করা হয়েছে';
+        const note = String(params.note || '').trim().slice(0, 240);
         const refundBalance = Boolean(params.refundBalance);
         if (!id) return json({ ok: false, error: 'missing_id' }, 400);
 
@@ -379,24 +562,27 @@ export async function onRequestPost({ request, env }) {
           return json({ ok: false, error: 'not_found' }, 404);
         }
         const wd = wdRes.data;
-        if (wd.status !== 'pending') {
+        if (!['pending', 'verifying', 'approved'].includes(wd.status)) {
           await fsRollbackTx(ctx, tx);
           return json({ ok: false, error: 'already_processed' }, 409);
         }
 
         const nowIso = new Date().toISOString();
+        const wdPatch = {
+          status: 'rejected',
+          rejectReason: reason,
+          refunded: refundBalance,
+          rejectedAt: tsValue(nowIso),
+          processedBy: adminEmail,
+        };
+        if (note) wdPatch.adminNote = note;
+
         const writes = [
           txUpdateWrite(
             ctx,
             wdPath,
-            {
-              status: 'rejected',
-              rejectReason: reason,
-              refunded: refundBalance,
-              rejectedAt: tsValue(nowIso),
-              processedBy: adminEmail,
-            },
-            ['status', 'rejectReason', 'refunded', 'rejectedAt', 'processedBy'],
+            wdPatch,
+            Object.keys(wdPatch),
             { exists: true }
           ),
           makeAuditWrite(
@@ -424,20 +610,32 @@ export async function onRequestPost({ request, env }) {
               )
             );
           }
-          if (refundBalance && userRes.exists) {
-            const curBal =
-              typeof userRes.data?.balanceUsd === 'number'
-                ? userRes.data.balanceUsd
-                : Number(userRes.data?.balance || 0);
-            const nextBal = Number((curBal + Number(wd.amountUsd || 0)).toFixed(2));
+          if (userRes.exists) {
+            const userPatch = { lastNotifAt: tsValue(nowIso) };
+            const userMask = ['lastNotifAt'];
+            if (refundBalance) {
+              const curBal =
+                typeof userRes.data?.balanceUsd === 'number'
+                  ? userRes.data.balanceUsd
+                  : Number(userRes.data?.balance || 0);
+              userPatch.balanceUsd = Number((curBal + Number(wd.amountUsd || 0)).toFixed(2));
+              userMask.push('balanceUsd');
+            }
             writes.push(
               txUpdateWrite(
                 ctx,
                 `users/${wd.uid}`,
-                { balanceUsd: nextBal },
-                ['balanceUsd'],
+                userPatch,
+                userMask,
                 { exists: true }
-              )
+              ),
+              makeNotificationDocWrite(ctx, wd.uid, {
+                type: 'withdraw_rejected',
+                title: 'উইথড্র আবেদন বাতিল হয়েছে',
+                body: `কারণ: ${reason}`,
+                link: 'withdraw.html',
+                nowIso,
+              })
             );
           }
         }
@@ -553,15 +751,15 @@ export async function onRequestPost({ request, env }) {
           txUpdateWrite(
             ctx,
             `users/${referrerUid}`,
-            { points: refPrevPts + refBonus, pointsPeriod: period },
-            ['points', 'pointsPeriod'],
+            { points: refPrevPts + refBonus, pointsPeriod: period, lastNotifAt: tsValue(nowIso) },
+            ['points', 'pointsPeriod', 'lastNotifAt'],
             { exists: true }
           ),
           txUpdateWrite(
             ctx,
             `users/${inviteeUid}`,
-            { points: invPrevPts + invBonus, pointsPeriod: period },
-            ['points', 'pointsPeriod'],
+            { points: invPrevPts + invBonus, pointsPeriod: period, lastNotifAt: tsValue(nowIso) },
+            ['points', 'pointsPeriod', 'lastNotifAt'],
             { exists: true }
           ),
           txUpdateWrite(
@@ -584,6 +782,20 @@ export async function onRequestPost({ request, env }) {
             `${refData.referrerName || referrerUid} → ${refData.inviteeName || inviteeUid}`,
             `রেফারেল বোনাস অনুমোদিত (মোট ${refBonus + invBonus} পয়েন্ট)`
           ),
+          makeNotificationDocWrite(ctx, referrerUid, {
+            type: 'referral_bonus',
+            title: 'রেফারেল বোনাস যোগ হয়েছে',
+            body: `আপনার অ্যাকাউন্টে ${refBonus.toLocaleString('bn-BD')} পয়েন্ট রেফারেল বোনাস যোগ হয়েছে।`,
+            link: 'referral.html',
+            nowIso,
+          }),
+          makeNotificationDocWrite(ctx, inviteeUid, {
+            type: 'referral_bonus',
+            title: 'রেফারেল বোনাস যোগ হয়েছে',
+            body: `রেফারেল শর্ত পূরণে আপনার অ্যাকাউন্টে ${invBonus.toLocaleString('bn-BD')} পয়েন্ট যোগ হয়েছে।`,
+            link: 'referral.html',
+            nowIso,
+          }),
         ];
 
         if (subRes.exists) {
@@ -725,36 +937,6 @@ export async function onRequestPost({ request, env }) {
         tx = null;
         if (!commitRes.ok) return json({ ok: false, error: 'busy' }, 409);
         return json({ ok: true, balanceUsd: nextBal });
-      }
-
-      case 'users.resetPin': {
-        const uid = String(params.uid || '').trim();
-        if (!uid) return json({ ok: false, error: 'missing_uid' }, 400);
-
-        tx = await fsBeginTx(ctx, true);
-        const uRes = await fsGet(ctx, `users/${uid}`, tx);
-        if (!uRes.exists) {
-          await fsRollbackTx(ctx, tx);
-          return json({ ok: false, error: 'not_found' }, 404);
-        }
-        const pinRes = await fsGet(ctx, `pins/${uid}`, tx);
-        const writes = [
-          txUpdateWrite(ctx, `users/${uid}`, { pinSet: false }, ['pinSet'], { exists: true }),
-          makeAuditWrite(
-            ctx,
-            adminEmail,
-            'users.resetPin',
-            `${uid} (${uRes.data?.email || ''})`,
-            'উইথড্রয়াল পিন রিসেট করা হয়েছে'
-          ),
-        ];
-        if (pinRes.exists) {
-          writes.push(txDeleteWrite(ctx, `pins/${uid}`));
-        }
-        const commitRes = await fsCommitTx(ctx, tx, writes);
-        tx = null;
-        if (!commitRes.ok) return json({ ok: false, error: 'busy' }, 409);
-        return json({ ok: true });
       }
 
       case 'users.suspend': {
@@ -1120,6 +1302,8 @@ export async function onRequestPost({ request, env }) {
           );
         }
 
+        const processingNote = String(c.processingNote || '').trim().slice(0, 300);
+
         const withdrawCfg = {
           usdToBdt: clean.usdToBdt,
           carryBelowUsd: clean.carryBelowUsd,
@@ -1129,6 +1313,7 @@ export async function onRequestPost({ request, env }) {
           giftCardMin: clean.giftCardMin,
           donationMin: clean.donationMin,
           maxPending: Math.max(1, Math.floor(clean.maxPending)),
+          processingNote,
           updatedAt: tsValue(nowIso),
         };
         const referralCfg = {

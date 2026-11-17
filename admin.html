@@ -137,15 +137,6 @@ button:disabled {
   font-weight: 600;
   line-height: 1.4;
 }
-.badge-demo {
-  background: rgba(233,168,32,0.18);
-  color: #B26A00;
-  border: 1px solid rgba(233,168,32,0.4);
-}
-:root[data-theme="dark"] .badge-demo {
-  color: #FCD34D;
-  background: rgba(233,168,32,0.25);
-}
 .badge-success { background: rgba(12,74,52,0.12); color: var(--green); }
 :root[data-theme="dark"] .badge-success { color: #86EFAC; background: rgba(34,197,94,0.15); }
 .badge-warning { background: rgba(233,168,32,0.15); color: #B26A00; }
@@ -918,9 +909,6 @@ input:checked + .slider:before {
         <div class="topbar-title" id="currentSectionTitle">ড্যাশবোর্ড</div>
       </div>
       <div class="topbar-right">
-        <span class="badge badge-demo" id="demoBadge" style="display:none;">
-          ⚠️ ডেমো ডেটা
-        </span>
         <div class="inactivity-pill" title="সক্রিয় সেশন">
           <div class="pulse-dot"></div>
           <span id="sessionTimerText">সক্রিয়</span>
@@ -1003,6 +991,8 @@ input:checked + .slider:before {
 
           <div class="tabs-nav" id="payoutTabs">
             <button class="tab-btn active" data-status="pending">পেন্ডিং আবেদন</button>
+            <button class="tab-btn" data-status="verifying">যাচাই চলছে</button>
+            <button class="tab-btn" data-status="approved">অনুমোদিত</button>
             <button class="tab-btn" data-status="paid">পরিশোধিত</button>
             <button class="tab-btn" data-status="rejected">বাতিলকৃত</button>
           </div>
@@ -1095,12 +1085,12 @@ input:checked + .slider:before {
           <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:16px;">
             <div class="form-group">
               <label class="form-label">হিসাবের মাস</label>
-              <input type="text" id="periodMonthInput" class="form-input" value="2026-10" placeholder="YYYY-MM">
-              <span class="form-hint">উদাহরণ: ২০২৬-১০</span>
+              <input type="text" id="periodMonthInput" class="form-input" value="" placeholder="YYYY-MM">
+              <span class="form-hint">উদাহরণ: YYYY-MM</span>
             </div>
             <div class="form-group">
               <label class="form-label">নেটওয়ার্ক মোট আয় ($)</label>
-              <input type="number" id="periodRevenueInput" class="form-input" value="450.00" step="0.01">
+              <input type="number" id="periodRevenueInput" class="form-input" value="" placeholder="0.00" step="0.01">
               <span class="form-hint">অ্যাড নেটওয়ার্কের মোট রেভিনিউ</span>
             </div>
             <div class="form-group">
@@ -1110,7 +1100,7 @@ input:checked + .slider:before {
             </div>
             <div class="form-group">
               <label class="form-label">মোট অ্যাড ইমপ্রেশন</label>
-              <input type="number" id="periodImpressionsInput" class="form-input" value="128500">
+              <input type="number" id="periodImpressionsInput" class="form-input" value="" placeholder="0">
               <span class="form-hint">চলতি মাসের নেটওয়ার্ক ভ্যালিড ইমপ্রেশন</span>
             </div>
           </div>
@@ -1263,6 +1253,11 @@ input:checked + .slider:before {
                 <label class="form-label">পরবর্তী মাসে ট্রান্সফার সীমা ($)</label>
                 <input type="number" id="cfg_carryBelowUsd" class="form-input" value="1" step="0.01">
                 <span class="form-hint">এর কম হলে পরবর্তী মাসে যোগ হবে</span>
+              </div>
+              <div class="form-group" style="grid-column:1/-1;">
+                <label class="form-label">উইথড্র প্রসেস সময় নোট (processingNote)</label>
+                <input type="text" id="cfg_processingNote" class="form-input" maxlength="300" placeholder="যেমন: অ্যাডমিন যাচাইয়ের পর পাঠানো হয়">
+                <span class="form-hint">সহায়তা / FAQ পেজে ইউজারদের দেখানো হবে (ফাঁকা রাখলে ডিফল্ট বার্তা দেখাবে)</span>
               </div>
             </div>
 
@@ -1459,7 +1454,7 @@ input:checked + .slider:before {
       </div>
       <div class="form-group">
         <label class="form-label">গেম ইউআরএল (URL)</label>
-        <input type="text" id="gameUrlInput" class="form-input" required placeholder="/games/demo/index.html">
+        <input type="text" id="gameUrlInput" class="form-input" required placeholder="/games/game-id/index.html">
       </div>
       <div class="form-group">
         <label class="form-label">থাম্বনেইল ইমেজ ইউআরএল (বা ইমোজি)</label>
@@ -1482,7 +1477,7 @@ input:checked + .slider:before {
 <script type="module">
 import { auth, firebaseConfig } from "./firebase-config.js";
 import { onAuthStateChanged, signOut, getIdToken, signInWithEmailAndPassword } from "firebase/auth";
-import { ADMIN_API_URL, ADMIN_PRODUCTION } from "./api-config.js";
+import { ADMIN_API_URL } from "./api-config.js";
 
 // Helper for Bengali numerals
 function toBnNum(num) {
@@ -1514,459 +1509,8 @@ function copyToClipboard(text, label = 'কপি করা হয়েছে')
   });
 }
 
-// Determine Demo Mode
-// (ADMIN_PRODUCTION === true হলে ?demo=1 সহ সমস্ত ডেমো মোড সম্পূর্ণ বন্ধ থাকবে)
-const isDemoMode = !ADMIN_PRODUCTION && (
-  !ADMIN_API_URL || 
-  ADMIN_API_URL.trim() === '' || 
-  window.location.search.includes('demo=1') || 
-  window.location.hostname.includes('run.app') || 
-  window.location.hostname.includes('localhost') || 
-  window.location.protocol === 'file:'
-);
-
-const demoBadge = document.getElementById('demoBadge');
-if (demoBadge) {
-  demoBadge.style.display = isDemoMode ? 'inline-flex' : 'none';
-}
-
-// ============================================================
-// TEMP: আসল API যুক্ত হলে এই অংশ মুছতে হবে
-// ডেমো ডেটা সিমুলেটর (Admin Mock Handler)
-// ============================================================
-const DEMO_STORE = {
-  admin: { email: 'admin@gamoro.com', role: 'সুপার অ্যাডমিন', name: 'Gamoro Admin' },
-  dashboard: {
-    dau: 1420,
-    monthlyAdRevenue: 384.50,
-    pendingPayoutsCount: 14,
-    pendingPayoutsUsd: 182.00,
-    pendingReferralsCount: 8,
-    flagsCount: 5,
-    periodStatus: { month: '2026-10', daysLeft: 6, estimatedPoolUsd: 269.15 },
-    dauHistory: [
-      { date: '২৫ অক্টো', value: 1120 },
-      { date: '২৬ অক্টো', value: 1250 },
-      { date: '২৭ অক্টো', value: 1310 },
-      { date: '২৮ অক্টো', value: 1290 },
-      { date: '২৯ অক্টো', value: 1380 },
-      { date: '৩০ অক্টো', value: 1405 },
-      { date: '৩১ অক্টো', value: 1420 }
-    ],
-    adHistory: [
-      { date: '২৫ অক্টো', value: 14200 },
-      { date: '২৬ অক্টো', value: 15800 },
-      { date: '২৭ অক্টো', value: 16900 },
-      { date: '২৮ অক্টো', value: 16200 },
-      { date: '২৯ অক্টো', value: 17800 },
-      { date: '৩০ অক্টো', value: 18400 },
-      { date: '৩১ অক্টো', value: 19100 }
-    ]
-  },
-  payouts: [
-    { id: 'pay_01', uid: 'usr_8923', userName: 'শাকিল আহমেদ', method: 'gift_card', accountNo: 'google_play', amountUsd: 20.00, amountBdt: 2200, status: 'pending', createdAt: '৩১ অক্টো ২০২৬, ০৪:১৫ অপরাহ্ন' },
-    { id: 'pay_02', uid: 'usr_5412', userName: 'তানভীর হাসান', method: 'donation', accountNo: 'as_sunnah', amountUsd: 5.00, amountBdt: 550, status: 'pending', createdAt: '৩১ অক্টো ২০২৬, ০৩:১০ অপরাহ্ন' },
-    { id: 'pay_03', uid: 'usr_3211', userName: 'মো: আরিফুল', method: 'mobile_recharge', accountNo: '01933445566', operator: 'bl', amountUsd: 2.00, amountBdt: 220, status: 'pending', createdAt: '৩১ অক্টো ২০২৬, ০১:৪৫ অপরাহ্ন' },
-    { id: 'pay_04', uid: 'usr_9981', userName: 'ফারহান চৌধুরী', method: 'binance', accountNo: '728192019', amountUsd: 15.00, amountBdt: 1650, status: 'pending', createdAt: '৩০ অক্টো ২০২৬, ০৯:২০ অপরাহ্ন' },
-    { id: 'pay_05', uid: 'usr_1029', userName: 'সুমাইয়া আক্তার', method: 'mobile_recharge', accountNo: '01655667788', amountUsd: 10.00, amountBdt: 1100, status: 'paid', txId: 'TRX98273611', createdAt: '২৯ অক্টো ২০২৬, ০২:১২ অপরাহ্ন', paidAt: '৩০ অক্টো ২০২৬' },
-    { id: 'pay_06', uid: 'usr_4432', userName: 'রাকিবুল ইসলাম', method: 'gift_card', accountNo: 'google_play', amountUsd: 20.00, amountBdt: 2200, status: 'rejected', rejectReason: 'অবৈধ অনুরোধ', createdAt: '২৮ অক্টো ২০২৬, ১১:৩০ পূর্বাহ্ন' }
-  ],
-  referrals: [
-    { id: 'ref_01', referrerName: 'সাকিব আল হাসান', inviteeName: 'তাহমিদ ইসলাম', activeHours: 28, requiredHours: 25, emailVerified: true, status: 'verifying', totalBonus: 1000, referrerBonus: 800, inviteeBonus: 200, createdAt: '২৮ অক্টো ২০২৬' },
-    { id: 'ref_02', referrerName: 'নাঈম রহমান', inviteeName: 'সোহাগ মিয়া', activeHours: 26, requiredHours: 25, emailVerified: true, status: 'verifying', totalBonus: 1000, referrerBonus: 800, inviteeBonus: 200, createdAt: '২৯ অক্টো ২০২৬' },
-    { id: 'ref_03', referrerName: 'জাহিদুল ইসলাম', inviteeName: 'রুবেল হোসেন', activeHours: 14, requiredHours: 25, emailVerified: false, status: 'verifying', totalBonus: 1000, referrerBonus: 800, inviteeBonus: 200, createdAt: '৩০ অক্টো ২০২৬' },
-    { id: 'ref_04', referrerName: 'মাহমুদুল হাসান', inviteeName: 'কামরুল ইসলাম', activeHours: 25, requiredHours: 25, emailVerified: true, status: 'completed', totalBonus: 1000, completedAt: '৩১ অক্টো ২০২৬' },
-    { id: 'ref_05', referrerName: 'ইমরান খান', inviteeName: 'ফাহিম আশরাফ', activeHours: 2, requiredHours: 25, emailVerified: false, status: 'rejected', rejectReason: 'ভুয়া অ্যাকাউন্ট / আইপি ক্লোন', rejectedAt: '২৮ অক্টো ২০২৬' }
-  ],
-  users: [
-    { uid: 'usr_8923', email: 'shakil@gmail.com', name: 'শাকিল আহমেদ', phone: '01711223344', balanceUsd: 24.50, totalEarnedUsd: 120.00, totalPoints: 18450, pinSet: true, status: 'active', country: 'BD', joinedAt: '১৫ আগস্ট ২০২৬' },
-    { uid: 'usr_5412', email: 'tanvir@yahoo.com', name: 'তানভীর হাসান', phone: '01822334455', balanceUsd: 32.10, totalEarnedUsd: 95.00, totalPoints: 12300, pinSet: true, status: 'active', country: 'BD', joinedAt: '২০ সেপ্টেম্বর ২০২৬' },
-    { uid: 'usr_1029', email: 'sumaiya@gmail.com', name: 'সুমাইয়া আক্তার', phone: '01655667788', balanceUsd: 5.40, totalEarnedUsd: 40.00, totalPoints: 6400, pinSet: false, status: 'active', country: 'BD', joinedAt: '০১ অক্টোবর ২০২৬' },
-    { uid: 'usr_9981', email: 'farhan@dubai.ae', name: 'ফারহান চৌধুরী', phone: '+971501234567', balanceUsd: 18.00, totalEarnedUsd: 55.00, totalPoints: 9100, pinSet: true, status: 'suspended', suspendReason: 'স্বয়ংক্রিয় বট স্ক্রিপ্ট শনাক্ত', country: 'INTL', joinedAt: '০২ অক্টোবর ২০২৬' }
-  ],
-  flags: [
-    { id: 'flg_01', type: 'same_ip_cluster', severity: 'high', uid: 'usr_9981', userName: 'ফারহান চৌধুরী', ip: '103.114.98.22', details: 'একই আইপি থেকে ৪টি অ্যাকাউন্ট সক্রিয়', detectedAt: '৩১ অক্টো ২০২৬, ০১:৩০ অপরাহ্ন' },
-    { id: 'flg_02', type: 'many_challenge_misses', severity: 'medium', uid: 'usr_4432', userName: 'রাকিবুল ইসলাম', details: 'বিগত ৩ ঘণ্টায় টানা ৪ বার ক্যাপচা ব্যর্থ', detectedAt: '৩১ অক্টো ২০২৬, ১২:১৫ অপরাহ্ন' },
-    { id: 'flg_03', type: 'abnormal_hours', severity: 'medium', uid: 'usr_3211', userName: 'মো: আরিফুল', details: 'টানা ১৮ ঘণ্টা বিরতিহীন সেশন সক্রিয়', detectedAt: '৩০ অক্টো ২০২৬, ১০:৪০ অপরাহ্ন' },
-    { id: 'flg_04', type: 'ad_mismatch', severity: 'low', uid: 'usr_1029', userName: 'সুমাইয়া আক্তার', details: 'অ্যাড অনুপাত ০.০ কিন্তু পয়েন্ট রিকোয়েস্ট', detectedAt: '৩০ অক্টো ২০২৬, ০৮:২০ অপরাহ্ন' }
-  ],
-  announcement: {
-    active: true,
-    message: 'অক্টোবর মাসের পয়েন্ট টু ব্যালেন্স কনভার্সন আগামী ৩১ তারিখে সম্পন্ন হবে।'
-  },
-  games: [
-    { id: 'game-bubble-shooter', title: 'বাবল শুটার', category: 'আর্কেড', active: true, order: 1, url: '/games/demo/index.html', thumb: '🎯', playersToday: 840 },
-    { id: 'game-block-puzzle', title: 'ব্লক পাজল', category: 'ধাঁধা', active: true, order: 2, url: '/games/demo/index.html', thumb: '🧩', playersToday: 620 },
-    { id: 'game-candy-match', title: 'ক্যান্ডি ম্যাচ ৩', category: 'ধাঁধা', active: true, order: 3, url: '/games/demo/index.html', thumb: '🍬', playersToday: 510 },
-    { id: 'game-fruit-slice', title: 'ফ্রুট স্লাইস', category: 'অ্যাকশন', active: true, order: 4, url: '/games/demo/index.html', thumb: '🍉', playersToday: 390 },
-    { id: 'game-car-racing', title: 'স্পিড রেসার', category: 'আর্কেড', active: true, order: 5, url: '/games/demo/index.html', thumb: '🏎️', playersToday: 320 }
-  ],
-  config: {
-    pointsPerSec: 1,
-    idleSec: 60,
-    challengeIntervalMin: 15,
-    usdToBdt: 110,
-    mobileRechargeMin: 1,
-    mobileRechargeMax: 19.99,
-    binanceMin: 10,
-    giftCardMin: 20,
-    donationMin: 1,
-    carryBelowUsd: 1,
-    totalBonus: 1000,
-    referrerPercent: 80,
-    inviteePercent: 20,
-    requiredHours: 25,
-    waitDays: 0
-  },
-  audit: [
-    { id: 'aud_01', timestamp: '৩১ অক্টো ২০২৬, ০৪:৫০ অপরাহ্ন', admin: 'admin@gamoro.com', action: 'payout.markPaid', target: 'pay_05 (সুমাইয়া আক্তার)', details: 'পরিশোধ সম্পন্ন (TxID: TRX98273611)' },
-    { id: 'aud_02', timestamp: '৩১ অক্টো ২০২৬, ০২:১৫ অপরাহ্ন', admin: 'admin@gamoro.com', action: 'users.suspend', target: 'usr_9981 (ফারহান চৌধুরী)', details: 'অ্যাকাউন্ট স্থগিত: বট স্ক্রিপ্ট শনাক্ত' },
-    { id: 'aud_03', timestamp: '৩০ অক্টো ২০২৬, ০৬:০০ অপরাহ্ন', admin: 'admin@gamoro.com', action: 'config.set', target: 'গ্লোবাল সেটিংস', details: 'ডলার রেট ১০৮ থেকে ১১০ এ আপডেট' },
-    { id: 'aud_04', timestamp: '২৯ অক্টো ২০২৬, ১০:০০ পূর্বাহ্ন', admin: 'admin@gamoro.com', action: 'announcement.set', target: 'ইন-অ্যাপ ঘোষণা', details: 'অক্টোবর পুল নোটিশ আপডেট' }
-  ]
-};
-
-function handleDemoCall(action, params = {}) {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      switch (action) {
-        case 'whoami':
-          resolve({ ok: true, admin: DEMO_STORE.admin });
-          break;
-
-        case 'dashboard':
-          resolve({ ok: true, data: DEMO_STORE.dashboard });
-          break;
-
-        case 'payouts.list': {
-          const status = params.status || 'pending';
-          const list = DEMO_STORE.payouts.filter(p => p.status === status);
-          resolve({ ok: true, payouts: list });
-          break;
-        }
-
-        case 'payouts.markPaid': {
-          const item = DEMO_STORE.payouts.find(p => p.id === params.id);
-          if (item) {
-            item.status = 'paid';
-            item.txId = params.txId || 'MANUAL_' + Date.now();
-            item.paidAt = new Date().toLocaleDateString('bn-BD');
-            DEMO_STORE.dashboard.pendingPayoutsCount = Math.max(0, DEMO_STORE.dashboard.pendingPayoutsCount - 1);
-            DEMO_STORE.audit.unshift({
-              id: 'aud_' + Date.now(),
-              timestamp: new Date().toLocaleString('bn-BD'),
-              admin: DEMO_STORE.admin.email,
-              action: 'payout.markPaid',
-              target: `${item.id} (${item.userName})`,
-              details: `পরিশোধ সম্পন্ন (TxID: ${item.txId})`
-            });
-          }
-          resolve({ ok: true });
-          break;
-        }
-
-        case 'payouts.reject': {
-          const item = DEMO_STORE.payouts.find(p => p.id === params.id);
-          if (item) {
-            item.status = 'rejected';
-            item.rejectReason = params.reason || 'বাতিল করা হয়েছে';
-            DEMO_STORE.dashboard.pendingPayoutsCount = Math.max(0, DEMO_STORE.dashboard.pendingPayoutsCount - 1);
-            DEMO_STORE.audit.unshift({
-              id: 'aud_' + Date.now(),
-              timestamp: new Date().toLocaleString('bn-BD'),
-              admin: DEMO_STORE.admin.email,
-              action: 'payout.reject',
-              target: `${item.id} (${item.userName})`,
-              details: `আবেদন বাতিল: ${item.rejectReason} (রিফান্ড: ${params.refundBalance ? 'হ্যাঁ' : 'না'})`
-            });
-          }
-          resolve({ ok: true });
-          break;
-        }
-
-        case 'referrals.list': {
-          const status = params.status || 'verifying';
-          const list = DEMO_STORE.referrals.filter(r => r.status === status);
-          resolve({ ok: true, referrals: list });
-          break;
-        }
-
-        case 'referrals.approve': {
-          const ref = DEMO_STORE.referrals.find(r => r.id === params.id);
-          if (ref) {
-            ref.status = 'completed';
-            ref.completedAt = new Date().toLocaleDateString('bn-BD');
-            DEMO_STORE.dashboard.pendingReferralsCount = Math.max(0, DEMO_STORE.dashboard.pendingReferralsCount - 1);
-            DEMO_STORE.audit.unshift({
-              id: 'aud_' + Date.now(),
-              timestamp: new Date().toLocaleString('bn-BD'),
-              admin: DEMO_STORE.admin.email,
-              action: 'referrals.approve',
-              target: `${ref.referrerName} → ${ref.inviteeName}`,
-              details: `রেফারেল বোনাস অনুমোদিত (মোট ${ref.totalBonus} পয়েন্ট)`
-            });
-          }
-          resolve({ ok: true });
-          break;
-        }
-
-        case 'referrals.reject': {
-          const ref = DEMO_STORE.referrals.find(r => r.id === params.id);
-          if (ref) {
-            ref.status = 'rejected';
-            ref.rejectReason = params.reason || 'শর্ত পূরণ না হওয়ায় বাতিল';
-            DEMO_STORE.dashboard.pendingReferralsCount = Math.max(0, DEMO_STORE.dashboard.pendingReferralsCount - 1);
-            DEMO_STORE.audit.unshift({
-              id: 'aud_' + Date.now(),
-              timestamp: new Date().toLocaleString('bn-BD'),
-              admin: DEMO_STORE.admin.email,
-              action: 'referrals.reject',
-              target: `${ref.referrerName} → ${ref.inviteeName}`,
-              details: `রেফারেল বাতিল: ${ref.rejectReason}`
-            });
-          }
-          resolve({ ok: true });
-          break;
-        }
-
-        case 'users.search': {
-          const q = (params.query || '').trim().toLowerCase();
-          const results = DEMO_STORE.users.filter(u => 
-            u.uid.toLowerCase().includes(q) || 
-            u.email.toLowerCase().includes(q) || 
-            (u.phone && u.phone.includes(q))
-          );
-          resolve({ ok: true, users: results });
-          break;
-        }
-
-        case 'users.get': {
-          const u = DEMO_STORE.users.find(x => x.uid === params.uid);
-          resolve({ ok: !!u, user: u || null });
-          break;
-        }
-
-        case 'users.suspend': {
-          const u = DEMO_STORE.users.find(x => x.uid === params.uid);
-          if (u) {
-            u.status = 'suspended';
-            u.suspendReason = params.reason || 'অ্যাডমিন কর্তৃক স্থগিত';
-            DEMO_STORE.audit.unshift({
-              id: 'aud_' + Date.now(),
-              timestamp: new Date().toLocaleString('bn-BD'),
-              admin: DEMO_STORE.admin.email,
-              action: 'users.suspend',
-              target: `${u.uid} (${u.email})`,
-              details: `অ্যাকাউন্ট স্থগিত: ${u.suspendReason}`
-            });
-          }
-          resolve({ ok: true });
-          break;
-        }
-
-        case 'users.unsuspend': {
-          const u = DEMO_STORE.users.find(x => x.uid === params.uid);
-          if (u) {
-            u.status = 'active';
-            delete u.suspendReason;
-            DEMO_STORE.audit.unshift({
-              id: 'aud_' + Date.now(),
-              timestamp: new Date().toLocaleString('bn-BD'),
-              admin: DEMO_STORE.admin.email,
-              action: 'users.unsuspend',
-              target: `${u.uid} (${u.email})`,
-              details: 'অ্যাকাউন্ট পুনরায় সক্রিয় করা হয়েছে'
-            });
-          }
-          resolve({ ok: true });
-          break;
-        }
-
-        case 'users.resetPin': {
-          const u = DEMO_STORE.users.find(x => x.uid === params.uid);
-          if (u) {
-            u.pinSet = false;
-            DEMO_STORE.audit.unshift({
-              id: 'aud_' + Date.now(),
-              timestamp: new Date().toLocaleString('bn-BD'),
-              admin: DEMO_STORE.admin.email,
-              action: 'users.resetPin',
-              target: `${u.uid} (${u.email})`,
-              details: 'উইথড্রয়াল পিন রিসেট করা হয়েছে'
-            });
-          }
-          resolve({ ok: true });
-          break;
-        }
-
-        case 'users.adjustBalance': {
-          const u = DEMO_STORE.users.find(x => x.uid === params.uid);
-          if (u) {
-            const delta = Number(params.amountUsd) || 0;
-            u.balanceUsd = Math.max(0, Number((u.balanceUsd + delta).toFixed(2)));
-            DEMO_STORE.audit.unshift({
-              id: 'aud_' + Date.now(),
-              timestamp: new Date().toLocaleString('bn-BD'),
-              admin: DEMO_STORE.admin.email,
-              action: 'users.adjustBalance',
-              target: `${u.uid} (${u.email})`,
-              details: `ব্যালেন্স সমন্বয়: ${delta >= 0 ? '+' : ''}${delta}$ (কারণ: ${params.reason || 'সমন্বয়'})`
-            });
-          }
-          resolve({ ok: true });
-          break;
-        }
-
-        case 'flags.list':
-          resolve({ ok: true, flags: DEMO_STORE.flags });
-          break;
-
-        case 'flags.dismiss': {
-          DEMO_STORE.flags = DEMO_STORE.flags.filter(f => f.id !== params.id);
-          DEMO_STORE.dashboard.flagsCount = Math.max(0, DEMO_STORE.dashboard.flagsCount - 1);
-          DEMO_STORE.audit.unshift({
-            id: 'aud_' + Date.now(),
-            timestamp: new Date().toLocaleString('bn-BD'),
-            admin: DEMO_STORE.admin.email,
-            action: 'flags.dismiss',
-            target: params.id,
-            details: 'সন্দেহজনক ফ্ল্যাগ খারিজ করা হয়েছে'
-          });
-          resolve({ ok: true });
-          break;
-        }
-
-        case 'period.preview': {
-          const rev = Number(params.revenueUsd) || 450;
-          const pct = Number(params.poolPercent) || 70;
-          const userPoolUsd = Number(((rev * pct) / 100).toFixed(2));
-          const totalPoints = 1250000; // Simulated
-          const ratePerThousand = Number(((userPoolUsd / totalPoints) * 1000).toFixed(4));
-          const diffPct = Math.abs(((userPoolUsd - 300) / 300) * 100);
-          resolve({
-            ok: true,
-            preview: {
-              month: params.month || '2026-10',
-              revenueUsd: rev,
-              poolPercent: pct,
-              userPoolUsd,
-              totalPoints,
-              ratePerThousand,
-              diffPercent: Number(diffPct.toFixed(1)),
-              warning: diffPct > 15 ? 'সতর্কতা: রেভিনিউ ও প্রাক্কলিত পুলের মধ্যে ১৫%-এর বেশি পার্থক্য রয়েছে!' : null
-            }
-          });
-          break;
-        }
-
-        case 'period.close': {
-          DEMO_STORE.audit.unshift({
-            id: 'aud_' + Date.now(),
-            timestamp: new Date().toLocaleString('bn-BD'),
-            admin: DEMO_STORE.admin.email,
-            action: 'period.close',
-            target: params.month || '2026-10',
-            details: `মাসিক পিরিয়ড বন্ধ ও পয়েন্ট কনভার্সন সফল (রেভিনিউ: $${params.revenueUsd})`
-          });
-          resolve({ ok: true, message: 'পিরিয়ড সফলভাবে বন্ধ করা হয়েছে এবং পয়েন্ট কনভার্সন সম্পন্ন হয়েছে।' });
-          break;
-        }
-
-        case 'announcement.get':
-          resolve({ ok: true, announcement: DEMO_STORE.announcement });
-          break;
-
-        case 'announcement.set': {
-          DEMO_STORE.announcement = {
-            active: Boolean(params.active),
-            message: params.message || ''
-          };
-          DEMO_STORE.audit.unshift({
-            id: 'aud_' + Date.now(),
-            timestamp: new Date().toLocaleString('bn-BD'),
-            admin: DEMO_STORE.admin.email,
-            action: 'announcement.set',
-            target: 'ঘোষণা',
-            details: `ঘোষণা আপডেট (${params.active ? 'সক্রিয়' : 'নিষ্ক্রিয়'}): ${params.message.slice(0, 40)}...`
-          });
-          resolve({ ok: true });
-          break;
-        }
-
-        case 'games.list':
-          resolve({ ok: true, games: DEMO_STORE.games });
-          break;
-
-        case 'games.save': {
-          if (params.games) {
-            DEMO_STORE.games = params.games;
-          } else if (params.game) {
-            const idx = DEMO_STORE.games.findIndex(g => g.id === params.game.id);
-            if (idx >= 0) {
-              DEMO_STORE.games[idx] = { ...DEMO_STORE.games[idx], ...params.game };
-            } else {
-              DEMO_STORE.games.push({
-                ...params.game,
-                id: params.game.id || 'game-' + Date.now(),
-                order: DEMO_STORE.games.length + 1,
-                playersToday: 0
-              });
-            }
-          }
-          DEMO_STORE.audit.unshift({
-            id: 'aud_' + Date.now(),
-            timestamp: new Date().toLocaleString('bn-BD'),
-            admin: DEMO_STORE.admin.email,
-            action: 'games.save',
-            target: 'গেম ক্যাটালগ',
-            details: 'গেম তালিকা বা সেটিংস আপডেট করা হয়েছে'
-          });
-          resolve({ ok: true });
-          break;
-        }
-
-        case 'config.get':
-          resolve({ ok: true, config: DEMO_STORE.config });
-          break;
-
-        case 'config.set': {
-          DEMO_STORE.config = { ...DEMO_STORE.config, ...params.config };
-          DEMO_STORE.audit.unshift({
-            id: 'aud_' + Date.now(),
-            timestamp: new Date().toLocaleString('bn-BD'),
-            admin: DEMO_STORE.admin.email,
-            action: 'config.set',
-            target: 'প্ল্যাটফর্ম গ্লোবাল সেটিংস',
-            details: `সেটিংস পরিবর্তিত (কারণ: ${params.reason || 'উল্লেখ নেই'})`
-          });
-          resolve({ ok: true });
-          break;
-        }
-
-        case 'audit.list': {
-          let list = [...DEMO_STORE.audit];
-          if (params.filter && params.filter !== 'all') {
-            list = list.filter(a => a.action.toLowerCase().includes(params.filter.toLowerCase()));
-          }
-          resolve({ ok: true, audit: list });
-          break;
-        }
-
-        default:
-          resolve({ ok: false, error: 'unknown_action' });
-      }
-    }, 280);
-  });
-}
-// ============================================================
-
-
 // Backend API Caller
 async function adminCall(action, params = {}) {
-  if (isDemoMode) {
-    return handleDemoCall(action, params);
-  }
-
   const user = auth.currentUser;
   if (!user) {
     throw new Error('অনুগ্রহ করে প্রথমে লগইন করুন');
@@ -2261,6 +1805,15 @@ function renderSvgBarChart(containerId, data, options = {}) {
 // ============================================================
 let currentPayoutStatus = 'pending';
 
+function escHtml(str) {
+  return String(str ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 async function loadPayouts(status = 'pending') {
   currentPayoutStatus = status;
   const container = document.getElementById('payoutsListContainer');
@@ -2271,10 +1824,17 @@ async function loadPayouts(status = 'pending') {
     if (!res.ok) throw new Error(res.error || 'পেআউট লোড ব্যর্থ');
 
     if (!res.payouts || res.payouts.length === 0) {
+      const emptyLabels = {
+        pending: 'পেন্ডিং',
+        verifying: 'যাচাই চলমান',
+        approved: 'অনুমোদিত',
+        paid: 'পরিশোধিত',
+        rejected: 'বাতিলকৃত',
+      };
       container.innerHTML = `
         <div class="empty-state">
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none"><rect x="2" y="4" width="20" height="16" rx="2"></rect><line x1="6" y1="12" x2="18" y2="12"></line></svg>
-          <p>এই মুহূর্তে কোনো ${status === 'pending' ? 'পেন্ডিং' : status === 'paid' ? 'পরিশোধিত' : 'বাতিলকৃত'} আবেদন নেই।</p>
+          <p>এই মুহূর্তে কোনো ${emptyLabels[status] || ''} আবেদন নেই।</p>
         </div>
       `;
       return;
@@ -2283,40 +1843,65 @@ async function loadPayouts(status = 'pending') {
     let rows = '';
     res.payouts.forEach(p => {
       const methodBadge = getMethodBadge(p.method);
-      const isPending = p.status === 'pending';
+      const safeId = escHtml(p.id);
+      const safeName = escHtml(p.userName || 'ব্যবহারকারী');
+      const safeAcct = escHtml(p.accountNo || '');
+      const safeNote = p.adminNote ? `<div style="font-size:11px; color:var(--muted); margin-top:4px;">নোট: ${escHtml(p.adminNote)}</div>` : '';
+
+      let actionHtml = '';
+      if (p.status === 'pending') {
+        actionHtml = `
+          <div style="display:flex; flex-wrap:wrap; gap:6px;">
+            <button class="btn btn-secondary btn-sm" onclick="openPayoutModal('verify', '${safeId}', '${safeName}', ${Number(p.amountUsd || 0)})">যাচাই শুরু</button>
+            <button class="btn btn-primary btn-sm" onclick="openPayoutModal('approve', '${safeId}', '${safeName}', ${Number(p.amountUsd || 0)})">অনুমোদন</button>
+            <button class="btn btn-primary btn-sm" onclick="openPayoutModal('pay', '${safeId}', '${safeName}', ${Number(p.amountUsd || 0)})">পরিশোধ</button>
+            <button class="btn btn-danger btn-sm" onclick="openPayoutModal('reject', '${safeId}', '${safeName}', ${Number(p.amountUsd || 0)})">বাতিল</button>
+          </div>
+        `;
+      } else if (p.status === 'verifying') {
+        actionHtml = `
+          <div style="display:flex; flex-wrap:wrap; gap:6px;">
+            <button class="btn btn-primary btn-sm" onclick="openPayoutModal('approve', '${safeId}', '${safeName}', ${Number(p.amountUsd || 0)})">অনুমোদন</button>
+            <button class="btn btn-primary btn-sm" onclick="openPayoutModal('pay', '${safeId}', '${safeName}', ${Number(p.amountUsd || 0)})">পরিশোধ</button>
+            <button class="btn btn-danger btn-sm" onclick="openPayoutModal('reject', '${safeId}', '${safeName}', ${Number(p.amountUsd || 0)})">বাতিল</button>
+          </div>
+          ${safeNote}
+        `;
+      } else if (p.status === 'approved') {
+        actionHtml = `
+          <div style="display:flex; flex-wrap:wrap; gap:6px;">
+            <button class="btn btn-primary btn-sm" onclick="openPayoutModal('pay', '${safeId}', '${safeName}', ${Number(p.amountUsd || 0)})">পরিশোধ</button>
+            <button class="btn btn-danger btn-sm" onclick="openPayoutModal('reject', '${safeId}', '${safeName}', ${Number(p.amountUsd || 0)})">বাতিল</button>
+          </div>
+          ${safeNote}
+        `;
+      } else if (p.status === 'paid') {
+        actionHtml = `<span class="badge badge-success">পরিশোধিত (${escHtml(p.txId || 'ম্যাটিক')})</span>${safeNote}`;
+      } else {
+        actionHtml = `<span class="badge badge-danger">বাতিল: ${escHtml(p.rejectReason || '')}</span>${safeNote}`;
+      }
 
       rows += `
         <tr>
           <td>
-            <div style="font-weight:600;">${p.userName}</div>
-            <div style="font-size:11px; color:var(--muted);">${p.uid}</div>
+            <div style="font-weight:600;">${safeName}</div>
+            <div style="font-size:11px; color:var(--muted);">${escHtml(p.uid)}</div>
           </td>
           <td>${methodBadge}</td>
           <td>
             <div style="display:flex; align-items:center; gap:6px;">
-              <span>${p.accountNo}</span>
-              <button class="btn btn-secondary btn-sm" onclick="copyToClipboard('${p.accountNo}', 'অ্যাকাউন্ট নম্বর কপি করা হয়েছে')" style="padding:2px 6px;">
+              <span>${safeAcct}</span>
+              <button class="btn btn-secondary btn-sm" onclick="copyToClipboard('${safeAcct}', 'অ্যাকাউন্ট নম্বর কপি করা হয়েছে')" style="padding:2px 6px;">
                 📋
               </button>
             </div>
           </td>
           <td>
-            <div style="font-weight:700; color:var(--green);">$${p.amountUsd.toFixed(2)}</div>
+            <div style="font-weight:700; color:var(--green);">$${Number(p.amountUsd || 0).toFixed(2)}</div>
             <div style="font-size:11px; color:var(--muted);">৳ ${toBnNum(p.amountBdt)}</div>
           </td>
-          <td style="font-size:12px; color:var(--muted);">${p.createdAt}</td>
-          <td>
-            ${isPending ? `
-              <div style="display:flex; gap:6px;">
-                <button class="btn btn-primary btn-sm" onclick="openPayoutModal('pay', '${p.id}', '${p.userName}', ${p.amountUsd})">পরিশোধ</button>
-                <button class="btn btn-danger btn-sm" onclick="openPayoutModal('reject', '${p.id}', '${p.userName}', ${p.amountUsd})">বাতিল</button>
-              </div>
-            ` : p.status === 'paid' ? `
-              <span class="badge badge-success">পরিশোধিত (${p.txId || 'ম্যাটিক'})</span>
-            ` : `
-              <span class="badge badge-danger">বাতিল: ${p.rejectReason || ''}</span>
-            `}
-          </td>
+          <td style="font-size:12px; color:var(--muted);">${escHtml(p.createdAt)}</td>
+          <td>${actionHtml}</td>
         </tr>
       `;
     });
@@ -2340,7 +1925,7 @@ async function loadPayouts(status = 'pending') {
     `;
 
   } catch (err) {
-    container.innerHTML = `<div class="empty-state" style="color:var(--coral);"><p>${err.message}</p></div>`;
+    container.innerHTML = `<div class="empty-state" style="color:var(--coral);"><p>${escHtml(err.message)}</p></div>`;
   }
 }
 
@@ -2350,7 +1935,7 @@ function getMethodBadge(method) {
     case 'binance': return `<span class="badge" style="background:#F0B90B; color:#000;">Binance Pay</span>`;
     case 'gift_card': return `<span class="badge" style="background:#0F8A5F; color:#fff;">গিফট কার্ড</span>`;
     case 'donation': return `<span class="badge" style="background:#2563EB; color:#fff;">দান</span>`;
-    default: return `<span class="badge badge-muted">${method}</span>`;
+    default: return `<span class="badge badge-muted">${escHtml(method)}</span>`;
   }
 }
 
@@ -2370,16 +1955,77 @@ window.openPayoutModal = function(actionType, id, userName, amountUsd) {
   const title = document.getElementById('payoutActionTitle');
   const body = document.getElementById('payoutActionBody');
   const submitBtn = document.getElementById('payoutActionSubmitBtn');
+  const safeUser = escHtml(userName);
 
-  if (actionType === 'pay') {
-    title.textContent = `পরিশোধ সম্পন্ন নিশ্চিতকরণ (${userName})`;
+  if (actionType === 'verify') {
+    title.textContent = `যাচাই শুরু (${safeUser})`;
     body.innerHTML = `
       <p style="font-size:14px; margin-bottom:12px;">
-        আপনি <b>${userName}</b>-কে <b>$${amountUsd.toFixed(2)}</b> প্রদান করছেন।
+        <b>${safeUser}</b>-এর <b>$${Number(amountUsd).toFixed(2)}</b> আবেদনটি যাচাই পর্যায়ে নেওয়া হচ্ছে।
+      </p>
+      <div class="form-group">
+        <label class="form-label">অ্যাডমিন নোট (ঐচ্ছিক - ইউজার দেখবে না):</label>
+        <input type="text" id="payoutAdminNoteInput" class="form-input" maxlength="240" placeholder="যেমন: অ্যাকাউন্ট তথ্য মিলানো হচ্ছে">
+      </div>
+    `;
+    submitBtn.textContent = 'যাচাই শুরু করুন';
+    submitBtn.className = 'btn btn-primary';
+
+    submitBtn.onclick = async () => {
+      const note = document.getElementById('payoutAdminNoteInput').value.trim();
+      submitBtn.disabled = true;
+      try {
+        await adminCall('payouts.markVerifying', { id, note });
+        showToast('আবেদন যাচাই পর্যায়ে নেওয়া হয়েছে', 'success');
+        modal.classList.remove('open');
+        loadPayouts(currentPayoutStatus);
+      } catch (err) {
+        showToast(err.message, 'error');
+      } finally {
+        submitBtn.disabled = false;
+      }
+    };
+  } else if (actionType === 'approve') {
+    title.textContent = `আবেদন অনুমোদন (${safeUser})`;
+    body.innerHTML = `
+      <p style="font-size:14px; margin-bottom:12px;">
+        <b>${safeUser}</b>-এর <b>$${Number(amountUsd).toFixed(2)}</b> আবেদনটি অনুমোদিত হিসেবে চিহ্নিত হবে।
+      </p>
+      <div class="form-group">
+        <label class="form-label">অ্যাডমিন নোট (ঐচ্ছিক - ইউজার দেখবে না):</label>
+        <input type="text" id="payoutAdminNoteInput" class="form-input" maxlength="240" placeholder="যেমন: সব তথ্য সঠিক, পাঠানো হবে">
+      </div>
+    `;
+    submitBtn.textContent = 'অনুমোদন করুন';
+    submitBtn.className = 'btn btn-primary';
+
+    submitBtn.onclick = async () => {
+      const note = document.getElementById('payoutAdminNoteInput').value.trim();
+      submitBtn.disabled = true;
+      try {
+        await adminCall('payouts.approve', { id, note });
+        showToast('আবেদন অনুমোদিত হয়েছে', 'success');
+        modal.classList.remove('open');
+        loadPayouts(currentPayoutStatus);
+      } catch (err) {
+        showToast(err.message, 'error');
+      } finally {
+        submitBtn.disabled = false;
+      }
+    };
+  } else if (actionType === 'pay') {
+    title.textContent = `পরিশোধ সম্পন্ন নিশ্চিতকরণ (${safeUser})`;
+    body.innerHTML = `
+      <p style="font-size:14px; margin-bottom:12px;">
+        আপনি <b>${safeUser}</b>-কে <b>$${Number(amountUsd).toFixed(2)}</b> প্রদান করছেন।
       </p>
       <div class="form-group">
         <label class="form-label">ট্রানজ্যাকশন আইডি (TxID - ঐচ্ছিক):</label>
         <input type="text" id="payoutTxIdInput" class="form-input" placeholder="যেমন: TRX92837411">
+      </div>
+      <div class="form-group">
+        <label class="form-label">অ্যাডমিন নোট (ঐচ্ছিক - ইউজার দেখবে না):</label>
+        <input type="text" id="payoutAdminNoteInput" class="form-input" maxlength="240" placeholder="ঐচ্ছিক অভ্যন্তরীণ নোট">
       </div>
     `;
     submitBtn.textContent = 'হ্যাঁ, পরিশোধ সম্পন্ন হয়েছে';
@@ -2387,9 +2033,10 @@ window.openPayoutModal = function(actionType, id, userName, amountUsd) {
 
     submitBtn.onclick = async () => {
       const txId = document.getElementById('payoutTxIdInput').value.trim();
+      const note = document.getElementById('payoutAdminNoteInput').value.trim();
       submitBtn.disabled = true;
       try {
-        await adminCall('payouts.markPaid', { id, txId });
+        await adminCall('payouts.markPaid', { id, txId, note });
         showToast('পেআউট পরিশোধ সম্পন্ন মার্ক করা হয়েছে', 'success');
         modal.classList.remove('open');
         loadPayouts(currentPayoutStatus);
@@ -2400,7 +2047,7 @@ window.openPayoutModal = function(actionType, id, userName, amountUsd) {
       }
     };
   } else {
-    title.textContent = `পেআউট বাতিলকরণ (${userName})`;
+    title.textContent = `পেআউট বাতিলকরণ (${safeUser})`;
     body.innerHTML = `
       <p style="font-size:14px; margin-bottom:12px; color:var(--coral);">
         আপনি কি এই আবেদনটি বাতিল করতে চান?
@@ -2408,6 +2055,10 @@ window.openPayoutModal = function(actionType, id, userName, amountUsd) {
       <div class="form-group">
         <label class="form-label" style="color:var(--coral);">বাতিল করার কারণ (বাধ্যতামূলক):</label>
         <textarea id="payoutRejectReasonInput" class="form-textarea" rows="2" placeholder="যেমন: ভুল অ্যাকাউন্ট নম্বর বা ফ্রড সন্দেহ" required></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">অ্যাডমিন নোট (ঐচ্ছিক - ইউজার দেখবে না):</label>
+        <input type="text" id="payoutAdminNoteInput" class="form-input" maxlength="240" placeholder="ঐচ্ছিক অভ্যন্তরীণ নোট">
       </div>
       <div style="display:flex; align-items:center; gap:8px;">
         <input type="checkbox" id="refundBalanceCheck" checked>
@@ -2419,6 +2070,7 @@ window.openPayoutModal = function(actionType, id, userName, amountUsd) {
 
     submitBtn.onclick = async () => {
       const reason = document.getElementById('payoutRejectReasonInput').value.trim();
+      const note = document.getElementById('payoutAdminNoteInput').value.trim();
       if (!reason) {
         showToast('বাতিল করার কারণ লিখুন', 'error');
         return;
@@ -2426,7 +2078,7 @@ window.openPayoutModal = function(actionType, id, userName, amountUsd) {
       const refundBalance = document.getElementById('refundBalanceCheck').checked;
       submitBtn.disabled = true;
       try {
-        await adminCall('payouts.reject', { id, reason, refundBalance });
+        await adminCall('payouts.reject', { id, reason, note, refundBalance });
         showToast('আবেদনটি বাতিল করা হয়েছে', 'info');
         modal.classList.remove('open');
         loadPayouts(currentPayoutStatus);
@@ -2577,7 +2229,6 @@ window.rejectReferral = function(id) {
 // Expected JSON Response: { ok: true, user: { ... } }
 // Action: 'users.suspend'
 // Action: 'users.unsuspend'
-// Action: 'users.resetPin'
 // Action: 'users.adjustBalance'
 // ============================================================
 const userSearchInput = document.getElementById('userSearchInput');
@@ -2670,12 +2321,12 @@ window.viewUserDetails = async function(uid) {
           <div style="font-size:20px; font-weight:700;">${toBnNum(u.totalPoints)}</div>
         </div>
         <div style="background:var(--surface2); padding:10px; border-radius:var(--radius-sm);">
-          <div style="font-size:11px; color:var(--muted);">উইথড্রয়াল পিন</div>
-          <div style="font-size:14px; font-weight:600;">${u.pinSet ? '✓ সেট করা আছে' : '✗ সেট করা নেই'}</div>
-        </div>
-        <div style="background:var(--surface2); padding:10px; border-radius:var(--radius-sm);">
           <div style="font-size:11px; color:var(--muted);">কান্ট্রি কোড</div>
           <div style="font-size:14px; font-weight:600;">${u.country || 'BD'}</div>
+        </div>
+        <div style="background:var(--surface2); padding:10px; border-radius:var(--radius-sm);">
+          <div style="font-size:11px; color:var(--muted);">যোগদান</div>
+          <div style="font-size:13px; font-weight:600;">${u.joinedAt || '—'}</div>
         </div>
       </div>
 
@@ -2694,7 +2345,6 @@ window.viewUserDetails = async function(uid) {
       </div>
 
       <div style="display:flex; gap:10px; flex-wrap:wrap;">
-        <button class="btn btn-secondary btn-sm" onclick="submitResetPin('${u.uid}')">🔑 উইথড্র পিন রিসেট</button>
         ${isSuspended ? `
           <button class="btn btn-primary btn-sm" onclick="submitUnsuspend('${u.uid}')">সক্রিয় করুন (Unsuspend)</button>
         ` : `
@@ -2729,18 +2379,6 @@ window.submitBalanceAdjust = async function(uid) {
     onConfirm: async () => {
       await adminCall('users.adjustBalance', { uid, amountUsd: amt, reason });
       showToast('ব্যালেন্স সমন্বয় সম্পন্ন', 'success');
-      viewUserDetails(uid);
-    }
-  });
-};
-
-window.submitResetPin = function(uid) {
-  openConfirmModal({
-    title: 'উইথড্রয়াল পিন রিসেট',
-    message: 'ইউজারের বর্তমান পিনটি মুছে দেওয়া হবে এবং ইউজারকে নতুন পিন সেট করার সুযোগ দেওয়া হবে।',
-    onConfirm: async () => {
-      await adminCall('users.resetPin', { uid });
-      showToast('পিন রিসেট করা হয়েছে', 'success');
       viewUserDetails(uid);
     }
   });
@@ -3122,7 +2760,7 @@ addNewGameBtn.addEventListener('click', () => {
   document.getElementById('gameIdInput').value = '';
   document.getElementById('gameTitleInput').value = '';
   document.getElementById('gameCategoryInput').value = 'আর্কেড';
-  document.getElementById('gameUrlInput').value = '/games/demo/index.html';
+  document.getElementById('gameUrlInput').value = '';
   document.getElementById('gameThumbInput').value = '🎮';
   gameEditModal.classList.add('open');
 });
@@ -3190,6 +2828,7 @@ async function loadConfig() {
     document.getElementById('cfg_giftCardMin').value = c.giftCardMin ?? 20;
     document.getElementById('cfg_donationMin').value = c.donationMin ?? 1;
     document.getElementById('cfg_carryBelowUsd').value = c.carryBelowUsd;
+    document.getElementById('cfg_processingNote').value = c.processingNote || '';
 
     document.getElementById('cfg_totalBonus').value = c.totalBonus;
     document.getElementById('cfg_referrerPercent').value = c.referrerPercent;
@@ -3223,6 +2862,7 @@ document.getElementById('globalConfigForm').addEventListener('submit', async (e)
     giftCardMin: parseFloat(document.getElementById('cfg_giftCardMin').value),
     donationMin: parseFloat(document.getElementById('cfg_donationMin').value),
     carryBelowUsd: parseFloat(document.getElementById('cfg_carryBelowUsd').value),
+    processingNote: document.getElementById('cfg_processingNote').value.trim(),
     totalBonus: parseInt(document.getElementById('cfg_totalBonus').value),
     referrerPercent: parseInt(document.getElementById('cfg_referrerPercent').value),
     inviteePercent: parseInt(document.getElementById('cfg_inviteePercent').value),
@@ -3373,28 +3013,16 @@ if (adminLoginForm) {
 }
 
 async function initAdminApp() {
-  startInactivityWatcher();
-
   const appContainer = document.getElementById('appContainer');
   const loginScreen = document.getElementById('adminLoginScreen');
   const errorBox = document.getElementById('loginErrorMsg');
   const submitBtn = document.getElementById('adminLoginSubmitBtn');
 
-  // (গ) ADMIN_PRODUCTION === false হলে বিদ্যমান ডেমো আচরণ বজায় থাকবে (এপিআই না পেলে বা ?demo=1 থাকলে ডেমো ডেটা দিয়ে পেজ চলবে)
-  if (!ADMIN_PRODUCTION && isDemoMode) {
-    if (loginScreen) loginScreen.style.display = 'none';
-    if (appContainer) appContainer.style.display = 'flex';
-    adminEmailDisplay.textContent = DEMO_STORE.admin.email;
-    adminRoleDisplay.textContent = DEMO_STORE.admin.role;
-    loadDashboard();
-    return;
-  }
-
-  // (খ) ADMIN_PRODUCTION === true হলে whoami সফল হওয়ার আগে DOM-এ কোনো সেকশন বা ডেমো ডেটা তৈরি/প্রদর্শন করবে না
   if (appContainer) appContainer.style.display = 'none';
 
   onAuthStateChanged(auth, async (user) => {
     if (!user) {
+      if (inactivityTimer) clearInterval(inactivityTimer);
       if (appContainer) appContainer.style.display = 'none';
       if (loginScreen) loginScreen.style.display = 'flex';
       if (submitBtn) {
@@ -3410,7 +3038,6 @@ async function initAdminApp() {
         submitBtn.textContent = 'অনুমতি যাচাই হচ্ছে...';
       }
 
-      // (ক) লগইনের পর adminCall("whoami") সফল হলে তবেই পেজ লোড করো। এর ঠিক আগে একবার await auth.currentUser.getIdToken(true) চালিয়ে টোকেন ফ্রেশ করে নাও
       await user.getIdToken(true);
 
       const res = await adminCall('whoami');
@@ -3418,15 +3045,15 @@ async function initAdminApp() {
         throw new Error('এই অ্যাকাউন্টের অনুমতি নেই');
       }
 
-      // whoami সফল হয়েছে: এবার পেজ লোড করো
       if (loginScreen) loginScreen.style.display = 'none';
       if (appContainer) appContainer.style.display = 'flex';
       adminEmailDisplay.textContent = user.email || res.admin?.email || 'প্রশাসক';
       adminRoleDisplay.textContent = res.admin?.role || 'অ্যাডমিন';
+      startInactivityWatcher();
       loadDashboard();
 
     } catch (err) {
-      // (ঘ) নন-অ্যাডমিন ইমেইল দিয়ে লগইন করলে দেখাবে "এই অ্যাকাউন্টের অনুমতি নেই" এবং সঙ্গে সঙ্গে signOut করে দেবে
+      if (inactivityTimer) clearInterval(inactivityTimer);
       try {
         await signOut(auth);
       } catch (_) {}

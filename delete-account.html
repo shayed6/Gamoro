@@ -1,4 +1,4 @@
-<!-- সার্ভার ফাংশন (Cloudflare Pages): টোকেন যাচাই, পিন যাচাই (সেট থাকলে), অপেক্ষমাণ withdrawals থাকলে মুছতে না দেওয়া, তারপর users/{uid} ও সাবকালেকশন, pins/{uid}, activeSessions/{uid} মুছে Firebase Auth ইউজার মুছে ফেলা। withdrawals রেখে uid বদলে অজ্ঞাত করা, payoutAccounts-এ শুধু হ্যাশ রাখা। -->
+<!-- সার্ভার ফাংশন (Cloudflare Pages): টোকেন ও সাম্প্রতিক লগইন যাচাই, অপেক্ষমাণ withdrawals থাকলে মুছতে না দেওয়া, তারপর users/{uid} ও সাবকালেকশন, activeSessions/{uid} মুছে Firebase Auth ইউজার মুছে ফেলা। withdrawals রেখে uid বদলে অজ্ঞাত করা, payoutAccounts-এ শুধু হ্যাশ রাখা। -->
 <!DOCTYPE html>
 <html lang="bn" data-theme="light">
 <head>
@@ -520,42 +520,6 @@ main{
   transform:translate(-50%,0);
 }
 
-/* Demo Toolbar */
-.demo-bar{
-  margin-top:12px;
-  padding:12px;
-  background:var(--surface2);
-  border:1px dashed var(--line);
-  border-radius:14px;
-}
-.demo-bar-title{
-  font-size:11.5px;
-  font-weight:700;
-  color:var(--muted);
-  margin-bottom:8px;
-  text-transform:uppercase;
-  letter-spacing:.5px;
-}
-.demo-btn-grid{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:6px;
-}
-.demo-btn{
-  background:var(--surface);
-  border:1px solid var(--line);
-  border-radius:8px;
-  padding:7px 6px;
-  font-size:11.5px;
-  font-weight:600;
-  color:var(--text);
-  text-align:center;
-  transition:background .15s;
-}
-.demo-btn:hover{
-  background:var(--bg);
-}
-
 /* Loading state */
 .auth-loading{
   display:flex;
@@ -609,7 +573,7 @@ main{
           <span class="info-badge red" aria-hidden="true">✗</span>
           <span>মুছে যাবে</span>
         </div>
-        <p class="info-text">আপনার প্রোফাইল, পয়েন্ট, ব্যালেন্স, রেফারেল সংযোগ, টাকা তোলার পিন ও লগইন অ্যাকাউন্ট।</p>
+        <p class="info-text">আপনার প্রোফাইল, পয়েন্ট, ব্যালেন্স, রেফারেল সংযোগ ও লগইন অ্যাকাউন্ট।</p>
       </div>
 
       <div class="divider"></div>
@@ -674,39 +638,12 @@ main{
         </div>
       </div>
 
-      <!-- ধাপ ২ (টাকা তোলার পিন) -->
-      <div class="step-card locked" id="step2Card">
-        <div class="step-head">
-          <span class="step-number">
-            <span class="step-icon" id="step2Icon">২</span>
-            <span>ধাপ ২: টাকা তোলার পিন</span>
-          </span>
-          <span class="step-status" id="step2Status"></span>
-        </div>
-
-        <div id="step2Body">
-          <div id="pinInputWrap">
-            <div class="field">
-              <label class="label" for="userPinInput">৬ সংখ্যার টাকা তোলার পিন দিন</label>
-              <div class="inp-wrap" id="userPinWrap">
-                <input type="password" id="userPinInput" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" placeholder="৬ সংখ্যার পিন">
-              </div>
-              <div class="inp-msg err" id="userPinErr"></div>
-            </div>
-            <button class="btn btn-secondary" id="btnConfirmPin">পিন নিশ্চিত করুন</button>
-          </div>
-          <div id="pinNotRequiredWrap" style="display:none;" class="info-text">
-            <span>টাকা তোলার পিন সেট করা নেই — এই ধাপ প্রযোজ্য নয় ✓</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- ধাপ ৩ (চূড়ান্ত নিশ্চিতকরণ) -->
+      <!-- ধাপ ২ (চূড়ান্ত নিশ্চিতকরণ) -->
       <div class="step-card locked" id="step3Card">
         <div class="step-head">
           <span class="step-number">
-            <span class="step-icon" id="step3Icon">৩</span>
-            <span>ধাপ ৩: নিশ্চিতকরণ</span>
+            <span class="step-icon" id="step3Icon">২</span>
+            <span>ধাপ ২: নিশ্চিতকরণ</span>
           </span>
           <span class="step-status" id="step3Status"></span>
         </div>
@@ -730,7 +667,6 @@ main{
         <h2 class="card-title" id="headingGuestSteps">অ্যাকাউন্ট মুছে ফেলার ধাপ</h2>
         <ol style="margin:0; padding-left:20px; font-size:13.5px; line-height:1.75; color:var(--text);">
           <li>নিচের ফর্ম থেকে আপনার Gamoro অ্যাকাউন্টে লগইন ও পরিচয় যাচাই করুন।</li>
-          <li>টাকা তোলার পিন সেট করা থাকলে ৬ সংখ্যার পিন দিন (পিন না থাকলে লাগবে না)।</li>
           <li>নিশ্চিত করতে <strong>মুছে ফেলুন</strong> লিখে চূড়ান্ত অনুমোদন দিন।</li>
         </ol>
       </section>
@@ -774,16 +710,6 @@ main{
       <a href="index.html" class="btn btn-primary" style="display:inline-flex;width:auto;min-width:160px;margin:auto;">হোমে যান</a>
     </section>
 
-    <!-- TEMP: প্রোডাকশনের আগে মুছতে হবে -->
-    <aside class="demo-bar" aria-label="ডেমো কন্ট্রোল">
-      <div class="demo-bar-title">ডেমো প্রিভিউ কন্ট্রোল (টেস্ট)</div>
-      <div class="demo-btn-grid">
-        <button class="demo-btn" id="demoGoogleUser">ডেমো: Google ব্যবহারকারী</button>
-        <button class="demo-btn" id="demoPasswordUser">ডেমো: পাসওয়ার্ড ব্যবহারকারী</button>
-        <button class="demo-btn" id="demoLoggedOut">ডেমো: লগইন নেই</button>
-        <button class="demo-btn" id="demoSuccessState">ডেমো: সফল</button>
-      </div>
-    </aside>
   </main>
 </div>
 
@@ -803,7 +729,7 @@ main{
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script type="module">
-import { auth, db } from "./firebase-config.js";
+import { auth } from "./firebase-config.js";
 import { DELETE_ACCOUNT_URL } from "./api-config.js";
 import {
   onAuthStateChanged,
@@ -818,7 +744,6 @@ import {
   reauthenticateWithPopup,
   reauthenticateWithCredential
 } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
 
 (() => {
   // Elements
@@ -852,18 +777,7 @@ import { doc, getDoc } from "firebase/firestore";
   const reauthPasswordWrap = document.getElementById('reauthPasswordWrap');
   const reauthPasswordErr = document.getElementById('reauthPasswordErr');
 
-  // Step 2
-  const step2Card = document.getElementById('step2Card');
-  const step2Icon = document.getElementById('step2Icon');
-  const step2Status = document.getElementById('step2Status');
-  const userPinInput = document.getElementById('userPinInput');
-  const userPinWrap = document.getElementById('userPinWrap');
-  const userPinErr = document.getElementById('userPinErr');
-  const btnConfirmPin = document.getElementById('btnConfirmPin');
-  const pinInputWrap = document.getElementById('pinInputWrap');
-  const pinNotRequiredWrap = document.getElementById('pinNotRequiredWrap');
-
-  // Step 3
+  // Step 2 (Final Confirmation)
   const step3Card = document.getElementById('step3Card');
   const step3Icon = document.getElementById('step3Icon');
   const step3Status = document.getElementById('step3Status');
@@ -891,16 +805,10 @@ import { doc, getDoc } from "firebase/firestore";
   // State
   let currentUser = null;
   let isGoogleUser = false;
-  let hasPinSet = false;
   let step1Done = false;
-  let step2Done = false;
-  let enteredPin = '';
-  let isDemoMode = false;
 
   function resetSteps() {
     step1Done = false;
-    step2Done = false;
-    enteredPin = '';
 
     // Step 1 reset
     step1Card.className = 'step-card active';
@@ -912,16 +820,8 @@ import { doc, getDoc } from "firebase/firestore";
     reauthPasswordErr.textContent = '';
 
     // Step 2 reset
-    step2Card.className = 'step-card locked';
-    step2Icon.textContent = '২';
-    step2Status.textContent = '';
-    userPinInput.value = '';
-    userPinWrap.classList.remove('bad');
-    userPinErr.textContent = '';
-
-    // Step 3 reset
     step3Card.className = 'step-card locked';
-    step3Icon.textContent = '৩';
+    step3Icon.textContent = '২';
     step3Status.textContent = '';
     confirmTextInput.value = '';
     confirmTextWrap.classList.remove('bad');
@@ -929,7 +829,7 @@ import { doc, getDoc } from "firebase/firestore";
     btnDeleteAccount.textContent = 'আমার অ্যাকাউন্ট চিরতরে মুছুন';
   }
 
-  // Step 1 Success
+  // Step 1 Success -> Unlock Final Confirmation Step
   function markStep1Complete() {
     step1Done = true;
     step1Card.className = 'step-card completed';
@@ -937,40 +837,13 @@ import { doc, getDoc } from "firebase/firestore";
     step1Status.textContent = 'যাচাই সম্পন্ন ✓';
     step1Body.style.display = 'none';
 
-    // Proceed to Step 2 (পিন থাকলে যাচাই, না থাকলে স্বয়ংক্রিয় সম্পন্ন)
-    step2Card.classList.remove('locked');
-    step2Card.classList.add('active');
-
-    if (!hasPinSet) {
-      markStep2Complete(true);
-    } else {
-      userPinInput.focus();
-    }
-  }
-
-  // Step 2 Success
-  function markStep2Complete(skipped = false) {
-    step2Done = true;
-    step2Card.className = 'step-card completed';
-    step2Icon.textContent = '✓';
-    if (skipped) {
-      step2Status.textContent = 'প্রযোজ্য নয় ✓';
-      pinInputWrap.style.display = 'none';
-      pinNotRequiredWrap.style.display = 'block';
-    } else {
-      step2Status.textContent = 'পিন গৃহীত ✓';
-      pinInputWrap.style.display = 'none';
-      pinNotRequiredWrap.style.display = 'none';
-    }
-
-    // Unlock Step 3
     step3Card.classList.remove('locked');
     step3Card.classList.add('active');
     confirmTextInput.focus();
   }
 
   // Set up view for authenticated user
-  async function setupUserView(user) {
+  function setupUserView(user) {
     currentUser = user;
     authLoading.style.display = 'none';
     successCard.style.display = 'none';
@@ -993,27 +866,6 @@ import { doc, getDoc } from "firebase/firestore";
     }
 
     resetSteps();
-
-    // Check pinSet from Firestore
-    try {
-      const snap = await getDoc(doc(db, 'users', user.uid));
-      if (snap.exists()) {
-        const d = snap.data();
-        hasPinSet = (d.pinSet === true);
-      } else {
-        hasPinSet = false;
-      }
-    } catch (e) {
-      hasPinSet = false;
-    }
-
-    if (hasPinSet) {
-      pinInputWrap.style.display = 'block';
-      pinNotRequiredWrap.style.display = 'none';
-    } else {
-      pinInputWrap.style.display = 'none';
-      pinNotRequiredWrap.style.display = 'block';
-    }
   }
 
   // Set up view for unauthenticated / guest (Public page, no redirect)
@@ -1120,12 +972,6 @@ import { doc, getDoc } from "firebase/firestore";
 
   // Google Re-authentication
   btnGoogleReauth.addEventListener('click', async () => {
-    if (isDemoMode) {
-      markStep1Complete();
-      showToast('ডেমো: পরিচয় সফলভাবে নিশ্চিত হয়েছে ✓');
-      return;
-    }
-
     btnGoogleReauth.disabled = true;
     try {
       const provider = new GoogleAuthProvider();
@@ -1149,12 +995,6 @@ import { doc, getDoc } from "firebase/firestore";
       return;
     }
 
-    if (isDemoMode) {
-      markStep1Complete();
-      showToast('ডেমো: পরিচয় সফলভাবে নিশ্চিত হয়েছে ✓');
-      return;
-    }
-
     btnPasswordReauth.disabled = true;
     reauthPasswordWrap.classList.remove('bad');
     reauthPasswordErr.textContent = '';
@@ -1175,27 +1015,7 @@ import { doc, getDoc } from "firebase/firestore";
     }
   });
 
-  // PIN Confirmation (Step 2)
-  btnConfirmPin.addEventListener('click', () => {
-    const pin = userPinInput.value.trim();
-    if (pin.length !== 6 || !/^\d{6}$/.test(pin)) {
-      userPinWrap.classList.add('bad');
-      userPinErr.textContent = 'সঠিক ৬ সংখ্যার পিন দিন।';
-      return;
-    }
-    userPinWrap.classList.remove('bad');
-    userPinErr.textContent = '';
-    enteredPin = pin;
-    markStep2Complete(false);
-    showToast('পিন নিশ্চিত হয়েছে ✓');
-  });
-
-  userPinInput.addEventListener('input', () => {
-    userPinWrap.classList.remove('bad');
-    userPinErr.textContent = '';
-  });
-
-  // Step 3 Validation: only enabled when exactly "মুছে ফেলুন"
+  // Final Validation: only enabled when exactly "মুছে ফেলুন"
   confirmTextInput.addEventListener('input', () => {
     const val = confirmTextInput.value.trim();
     if (val === 'মুছে ফেলুন') {
@@ -1232,12 +1052,6 @@ import { doc, getDoc } from "firebase/firestore";
   btnConfirmModalDelete.addEventListener('click', async () => {
     closeModal();
 
-    if (isDemoMode) {
-      showSuccessView();
-      showToast('ডেমো: অ্যাকাউন্ট সফলভাবে মুছে ফেলা হয়েছে');
-      return;
-    }
-
     // Disable delete button to prevent double-click
     btnDeleteAccount.disabled = true;
     btnDeleteAccount.textContent = 'মুছে ফেলা হচ্ছে...';
@@ -1269,8 +1083,7 @@ import { doc, getDoc } from "firebase/firestore";
           'Authorization': `Bearer ${idToken}`
         },
         body: JSON.stringify({
-          confirmText: confirmTextInput.value.trim(),
-          pin: hasPinSet ? enteredPin : undefined
+          confirmText: confirmTextInput.value.trim()
         })
       });
 
@@ -1282,14 +1095,10 @@ import { doc, getDoc } from "firebase/firestore";
       } else {
         const errKey = data.error || data.message || '';
         let msg = 'সমস্যা হয়েছে, পরে আবার চেষ্টা করুন।';
-        if (errKey === 'wrong_pin') {
-          msg = 'পিন ভুল';
-        } else if (errKey === 'pin_locked') {
-          msg = '১৫ মিনিট পরে চেষ্টা করুন';
-        } else if (errKey === 'confirm_required') {
+        if (errKey === 'confirm_required') {
           msg = 'নিশ্চিত করতে "মুছে ফেলুন" লিখুন';
         } else if (errKey === 'pending_payout' || errKey === 'pending_exists') {
-          msg = 'অপেক্ষমাণ টাকা তোলার আবেদন আছে, সেটি শেষ হওয়ার পর আবার চেষ্টা করুন';
+          msg = 'আগে অপেক্ষমাণ উইথড্র শেষ হতে দিন';
         } else if (errKey === 'recent_login_required') {
           msg = 'নিরাপত্তার জন্য আবার লগইন করুন';
         }
@@ -1307,53 +1116,11 @@ import { doc, getDoc } from "firebase/firestore";
 
   // Auth state listener
   onAuthStateChanged(auth, (user) => {
-    if (isDemoMode) return;
     if (user) {
       setupUserView(user);
     } else {
       setupGuestView();
     }
-  });
-
-  // Demo Controls
-  document.getElementById('demoGoogleUser').addEventListener('click', () => {
-    isDemoMode = true;
-    if (guestSection) guestSection.style.display = 'none';
-    setupUserView({
-      email: 'demo.user@gmail.com',
-      uid: 'demo_uid_google',
-      providerData: [{ providerId: 'google.com' }]
-    });
-    hasPinSet = true;
-    pinInputWrap.style.display = 'block';
-    pinNotRequiredWrap.style.display = 'none';
-    showToast('সক্রিয়: ডেমো Google ব্যবহারকারী');
-  });
-
-  document.getElementById('demoPasswordUser').addEventListener('click', () => {
-    isDemoMode = true;
-    if (guestSection) guestSection.style.display = 'none';
-    setupUserView({
-      email: 'demo.user@gamoro.club',
-      uid: 'demo_uid_password',
-      providerData: [{ providerId: 'password' }]
-    });
-    hasPinSet = true;
-    pinInputWrap.style.display = 'block';
-    pinNotRequiredWrap.style.display = 'none';
-    showToast('সক্রিয়: ডেমো পাসওয়ার্ড ব্যবহারকারী');
-  });
-
-  document.getElementById('demoLoggedOut').addEventListener('click', () => {
-    isDemoMode = true;
-    setupGuestView();
-    showToast('সক্রিয়: ডেমো লগইন নেই');
-  });
-
-  document.getElementById('demoSuccessState').addEventListener('click', () => {
-    isDemoMode = true;
-    showSuccessView();
-    showToast('সক্রিয়: ডেমো সফল স্ক্রিন');
   });
 
 })();

@@ -5,7 +5,6 @@ import {
   json,
   sha256Hex,
   requireAuth,
-  verifyAndTrackUserPin,
   fsCtx,
   fsGet,
   fsRunQuery,
@@ -14,7 +13,10 @@ import {
   fsRollbackTx,
   txUpdateWrite,
   tsValue,
+  makeNotificationDocWrite,
 } from '../_lib/firebase.js';
+
+const RECENT_LOGIN_MAX_SEC = 300; // ৫ মিনিট
 
 const OPERATORS = {
   gp: 'গ্রামীণফোন',
@@ -48,11 +50,17 @@ export async function onRequestPost({ request, env }) {
       return json({ ok: false, error: 'email_not_verified' }, 403);
     }
 
+    // ১) সাম্প্রতিক লগইন যাচাই (৫ মিনিট)
+    const nowSec = Math.floor(Date.now() / 1000);
+    const authTime = Number(user.auth_time || 0);
+    if (!authTime || nowSec - authTime > RECENT_LOGIN_MAX_SEC) {
+      return json({ ok: false, error: 'recent_login_required' }, 403);
+    }
+
     const body = await request.json().catch(() => ({}));
     const method = String(body.method || '').trim();
     const rawAmt = Number(body.amountUsd);
     const amountUsd = Number.isFinite(rawAmt) ? Number(rawAmt.toFixed(2)) : 0;
-    const pin = String(body.pin || '').trim();
     const auto = Boolean(body.auto);
     const details = body.details && typeof body.details === 'object' ? body.details : {};
 
@@ -62,22 +70,12 @@ export async function onRequestPost({ request, env }) {
 
     ctx = await fsCtx(env);
 
-    // ১) পিন যাচাই (৫ বার ভুলে ১৫ মিনিট লক)
-    const pinCheck = await verifyAndTrackUserPin(ctx, user.sub, pin);
-    if (!pinCheck.ok) {
-      return json({ ok: false, error: pinCheck.error }, pinCheck.status || 403);
+    const uRes = await fsGet(ctx, `users/${user.sub}`);
+    if (!uRes.exists) {
+      return json({ ok: false, error: 'no-profile' }, 404);
     }
 
-    // পিন রিসেটের ২৪ ঘণ্টার মধ্যে উইথড্র নিষিদ্ধ (pin_cooldown)
-    const pinDoc = pinCheck.pinDoc || {};
-    if (pinDoc.pinResetAt) {
-      const resetMs = Date.parse(pinDoc.pinResetAt) || 0;
-      if (resetMs > 0 && Date.now() - resetMs < 24 * 60 * 60 * 1000) {
-        return json({ ok: false, error: 'pin_cooldown' }, 403);
-      }
-    }
-
-    const uProfile = pinCheck.userDoc || {};
+    const uProfile = uRes.data || {};
     if (uProfile.status === 'suspended') {
       return json({ ok: false, error: 'suspended', message: 'আপনার অ্যাকাউন্ট স্থগিত করা হয়েছে' }, 403);
     }
@@ -221,7 +219,7 @@ export async function onRequestPost({ request, env }) {
         {
           ok: false,
           error: 'pending_exists',
-          message: 'আপনার একটি আবেদন আগে থেকেই অপেক্ষমাণ।',
+          message: 'আপনার একটি আবেদন আগে থেকেই অপেক্ষমাণ',
         },
         409
       );
@@ -308,8 +306,9 @@ export async function onRequestPost({ request, env }) {
         {
           balanceUsd: newBalance,
           autoWithdraw: auto,
+          lastNotifAt: tsValue(nowIso),
         },
-        ['balanceUsd', 'autoWithdraw'],
+        ['balanceUsd', 'autoWithdraw', 'lastNotifAt'],
         { exists: true }
       ),
       txUpdateWrite(
@@ -326,6 +325,13 @@ export async function onRequestPost({ request, env }) {
         Object.keys(userPayoutFields),
         { exists: false }
       ),
+      makeNotificationDocWrite(ctx, user.sub, {
+        type: 'withdraw_pending',
+        title: 'উইথড্র আবেদন জমা হয়েছে',
+        body: `$${amountUsd.toFixed(2)} (${methodLabel}) আবেদনটি অপেক্ষমাণ আছে।`,
+        link: 'withdraw.html',
+        nowIso,
+      }),
     ];
 
     if (checkAccountHash && accountPath) {

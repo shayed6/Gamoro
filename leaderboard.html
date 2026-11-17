@@ -130,18 +130,7 @@ button:focus-visible,a:focus-visible{
   color:rgba(255,255,255,.85);
   font-weight:500;
 }
-.demo-badge{
-  display:inline-flex;
-  align-items:center;
-  gap:4px;
-  background:#FFE6A5;
-  color:#4A3500;
-  font-size:11px;
-  font-weight:700;
-  padding:3px 8px;
-  border-radius:99px;
-  margin-left:auto;
-}
+
 
 /* Theme Toggle button */
 .theme-btn{
@@ -463,7 +452,7 @@ main{
     <div class="top-bar">
       <button class="back-btn" id="backBtn" aria-label="ফিরে যান">←</button>
       <div class="header-info">
-        <h1 class="header-title">লিডারবোর্ড <span id="demoBadge" class="demo-badge" hidden>ডেমো ডেটা</span></h1>
+        <h1 class="header-title">লিডারবোর্ড</h1>
         <p class="header-sub" id="currentMonthLabel">চলতি মাস</p>
       </div>
       <button class="theme-btn" id="themeBtn" aria-label="থিম পরিবর্তন" title="থিম পরিবর্তন">🌙</button>
@@ -565,7 +554,6 @@ import { doc, getDoc } from "firebase/firestore";
   const root = document.documentElement;
   const backBtn = document.getElementById('backBtn');
   const themeBtn = document.getElementById('themeBtn');
-  const demoBadge = document.getElementById('demoBadge');
   const currentMonthLabel = document.getElementById('currentMonthLabel');
   
   const loadingSkeleton = document.getElementById('loadingSkeleton');
@@ -586,9 +574,6 @@ import { doc, getDoc } from "firebase/firestore";
   const userActionArea = document.getElementById('userActionArea');
   const lastUpdatedLabel = document.getElementById('lastUpdatedLabel');
 
-  // Check URL demo param (?demo=1 or #demo=1)
-  const urlParams = new URLSearchParams(window.location.search);
-  const isDemo = urlParams.get('demo') === '1' || window.location.hash.includes('demo=1');
 
   // Theme setup
   const savedTheme = localStorage.getItem('gamoro_theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
@@ -761,42 +746,10 @@ import { doc, getDoc } from "firebase/firestore";
     return div.innerHTML;
   }
 
-  // Demo Data Generator
-  function runDemoMode() {
-    demoBadge.hidden = false;
-    const demoData = {
-      updatedAt: new Date(),
-      top: [
-        { uid: 'u1', name: 'আরিফুল ইসলাম', points: 4520 },
-        { uid: 'u2', name: 'তানভীর আহমেদ', points: 3890 },
-        { uid: 'u3', name: 'নাজমুল হাসান', points: 3410 },
-        { uid: 'u4', name: 'সাইদুল ইসলাম', points: 2950 },
-        { uid: 'u5', name: 'রফিকুল ইসলাম', points: 2720 },
-        { uid: 'u6', name: 'মেহরাব হোসেন', points: 2400 },
-        { uid: 'u7', name: 'মাহমুদুল হাসান', points: 2150 },
-        { uid: 'u8', name: 'সাব্বির রহমান', points: 1980 },
-        { uid: 'u9', name: 'ফাহিম ফয়সাল', points: 1750 },
-        { uid: 'u10', name: 'আল-আমিন হোসাইন', points: 1520 }
-      ]
-    };
-
-    renderLeaderboard(demoData);
-
-    // User rank demo: "আপনার র্যাঙ্ক #২৭ · ৮৪০ পয়েন্ট"
-    userRankText.textContent = `আপনার র্যাঙ্ক #${bnNum(27)} · ${bnNum(840)} পয়েন্ট`;
-    userRankSubText.style.display = 'block';
-    userRankSubText.textContent = 'ডেমো অ্যাকাউন্ট ভিউ — লিডারবোর্ড সক্রিয়';
-    userActionArea.innerHTML = '';
-  }
-
   // Load Leaderboard from Cache or Firestore
   const CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
 
   async function loadLeaderboard() {
-    if (isDemo) {
-      runDemoMode();
-      return;
-    }
 
     const periodKey = getDhakaPeriodKey();
     const cacheStorageKey = `gamoro_leaderboard_${periodKey}`;
@@ -849,8 +802,6 @@ import { doc, getDoc } from "firebase/firestore";
 
   // Setup User Rank Card
   function setupUserRankTracker() {
-    if (isDemo) return;
-
     onAuthStateChanged(auth, async (user) => {
       if (!user) {
         // Not logged in
